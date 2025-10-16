@@ -1,4 +1,4 @@
-// src/screens/RegisterScreen.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -25,7 +25,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Facebook from 'expo-auth-session/providers/facebook';
-
+import { Image } from 'react-native';
 import { auth, db } from '../../config/firebaseConfig';
 import { router } from 'expo-router';
 import { validateEmail, validateFullName } from '@/utils/validation/validation';
@@ -73,19 +73,19 @@ export default function RegisterScreen() {
 
   const handleEmailChange = (text: string) => {
     setEmail(text);
-    // Clear error when user starts typing
+
     if (emailError) setEmailError('');
   };
 
   const handlePasswordChange = (text: string) => {
     setPassword(text);
-    // Clear error when user starts typing
+
     if (passwordError) setPasswordError('');
   };
 
   const handleConfirmPasswordChange = (text: string) => {
     setConfirmPassword(text);
-    // Clear error when user starts typing
+
     if (confirmPasswordError) setConfirmPasswordError('');
   };
 
@@ -97,13 +97,13 @@ export default function RegisterScreen() {
       return !querySnapshot.empty;
     } catch (error) {
       console.error('Error checking email:', error);
-     
+
       return false;
     }
   };
 
 
-  const createUserDocument = async (userId: string, email: string,  provider: string = 'email',userUId: string) => {
+  const createUserDocument = async (userId: string, email: string, provider: string = 'email', userUId: string) => {
     try {
       const userDocRef = doc(db, 'users', userUId);
       await setDoc(userDocRef, {
@@ -156,7 +156,7 @@ export default function RegisterScreen() {
       hasError = true;
     }
 
- 
+
     if (hasError) {
       return;
     }
@@ -192,8 +192,10 @@ export default function RegisterScreen() {
         [
           {
             text: 'OK',
-            onPress: () => router.push({pathname:'/(auth)/emailSent', 
-            params: { email:userCredential.user.email, type: 'verification' }}),
+            onPress: () => router.push({
+              pathname: '/(auth)/emailSent',
+              params: { email: userCredential.user.email, type: 'verification' }
+            }),
           },
         ]
       );
@@ -233,7 +235,8 @@ export default function RegisterScreen() {
         await createUserDocument(
           user.uid,
           user.email!,
-          provider
+          provider,
+          user.uid
         );
       }
 
@@ -257,10 +260,16 @@ export default function RegisterScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header Section */}
-        <View className="rounded-b-[40px] pt-20 pb-12 items-center px-6">
-          <View className="w-20 h-20 bg-white rounded-full items-center justify-center mb-6">
-            <Lock size={40} color="#ec4899" strokeWidth={2.5} />
+
+        <View className="rounded-b-[40px] pt-24 pb-12 items-center px-6">
+          <View className="w-28 h-28 rounded-full bg-white items-center justify-center mb-6">
+            <View className="w-24 h-24 rounded-full overflow-hidden">
+              <Image
+                source={require("../../assets/images/etaas.png")}
+                className="w-full h-full p-1"
+                resizeMode="cover"
+              />
+            </View>
           </View>
           <Text className="text-white text-3xl font-bold mb-2">E-Taas App</Text>
           <Text className="text-white text-2xl font-semibold mb-3">Create Account</Text>

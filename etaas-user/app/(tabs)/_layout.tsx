@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, View, Platform } from 'react-native'
+import { ActivityIndicator, View, Platform, StatusBar } from 'react-native'
 import { Tabs, Redirect } from 'expo-router'
 import Feather from '@expo/vector-icons/Feather'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/config/firebaseConfig'
-
+import { AppHeader } from '@/components/general/AppHeader'
+import { SafeAreaView } from 'react-native-safe-area-context'
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [cartCount] = useState<number>(3)
   const [loading, setLoading] = useState(true)
+
+  const handleCartPress = (): void => {
+    console.log('Navigate to cart')
+    // Add navigation logic here
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -18,7 +26,6 @@ const TabsLayout = () => {
     return () => unsubscribe()
   }, [])
 
- 
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -27,13 +34,23 @@ const TabsLayout = () => {
     )
   }
 
-  
   if (!user) {
     return <Redirect href="/(auth)" />
   }
 
   return (
-    <Tabs
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
+  
+      <AppHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        cartCount={cartCount}
+        onCartPress={handleCartPress}
+        showSearch={true}
+      />
+     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#f472b6',
@@ -64,46 +81,47 @@ const TabsLayout = () => {
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather 
-              name="home" 
-              size={focused ? 26 : 24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="products"
-        options={{
-          title: 'Products',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather 
-              name="shopping-bag" 
-              size={focused ? 26 : 24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather 
-              name="user" 
-              size={focused ? 26 : 24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-    </Tabs>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Feather 
+                name="home" 
+                size={focused ? 26 : 24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="products"
+          options={{
+            title: 'Products',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Feather 
+                name="shopping-bag" 
+                size={focused ? 26 : 24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Feather 
+                name="user" 
+                size={focused ? 26 : 24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+      </Tabs>
+    </SafeAreaView>
   )
 }
 
