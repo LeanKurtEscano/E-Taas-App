@@ -6,42 +6,20 @@ import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '@/config/firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
-
-interface SellerOption {
-    id: number;
-    title: string;
-    icon: any;
-}
-
+import { switchToRole } from '@/utils/general/switch';
+import { sellerOptions } from '@/constants/sellerHomeScreen';
+import { getInitials } from '@/utils/general/initials';
+import ReusableModal from '@/components/general/Modal';
 const SellerProfileScreen: React.FC = () => {
     const { userData, loading } = useCurrentUser();
     const router = useRouter();
     const [switching, setSwitching] = useState(false);
-
-    const getInitials = (name?: string | null): string => {
-        if (name) {
-            const names = name.trim().split(' ');
-            return names.length > 1
-                ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-                : names[0].substring(0, 2).toUpperCase();
-        }
-        return 'S';
-    };
-
-    const sellerOptions: SellerOption[] = [
-        { id: 1, title: 'My Products', icon: Package },
-        { id: 2, title: 'Orders Management', icon: Store },
-        { id: 3, title: 'Sales Analytics', icon: TrendingUp },
-        { id: 4, title: 'Revenue Report', icon: DollarSign },
-        { id: 5, title: 'Customer Reviews', icon: Users },
-        { id: 6, title: 'Shop Statistics', icon: BarChart3 },
-        { id: 7, title: 'Seller Settings', icon: Settings },
-        { id: 8, title: 'Help & Support', icon: HelpCircle },
-    ];
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showSwitchModal, setShowSwitchModal] = useState(false);
 
     const handleOptionPress = (optionId: number) => {
         console.log(`Seller Option ${optionId} pressed`);
-      
+
     };
 
     const handleSwitchToUser = async () => {
@@ -83,38 +61,24 @@ const SellerProfileScreen: React.FC = () => {
     };
 
     const handleGoToShop = () => {
-       
+
         router.push(`/seller/store`);
     };
 
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await signOut(auth);
-                            router.replace('/(auth)');
-                        } catch (error: any) {
-                            console.error('Error during logout:', error);
-                            Alert.alert(
-                                'Logout Error',
-                                error.message || 'Failed to logout. Please try again.'
-                            );
-                        }
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
+    const handleLogout = async () => {
+
+
+        try {
+            await signOut(auth);
+            router.replace('/(auth)');
+        } catch (error: any) {
+            console.error('Error during logout:', error);
+            Alert.alert(
+                'Logout Error',
+                error.message || 'Failed to logout. Please try again.'
+            );
+        }
+
     };
 
     if (loading) {
@@ -139,7 +103,7 @@ const SellerProfileScreen: React.FC = () => {
                     className="bg-white rounded-3xl p-6 "
 
                 >
-                  
+
                     <View className="flex-row items-center mb-6">
                         <View className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 justify-center items-center" style={{ backgroundColor: '#ec4899' }}>
                             <Text className="text-white text-2xl font-bold">
@@ -165,7 +129,7 @@ const SellerProfileScreen: React.FC = () => {
                         </View>
                     </View>
 
-                 
+
                     <View className="space-y-3">
                         <TouchableOpacity
                             onPress={handleGoToShop}
@@ -179,7 +143,7 @@ const SellerProfileScreen: React.FC = () => {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            onPress={handleSwitchToUser}
+                            onPress={() => setShowSwitchModal(true)}
                             disabled={switching}
                             className="flex-row items-center justify-center py-4 bg-gray-100 rounded-xl"
                             activeOpacity={0.7}
@@ -190,7 +154,7 @@ const SellerProfileScreen: React.FC = () => {
                                 <View className="flex-row items-center">
                                     <RefreshCw size={20} color="#6b7280" />
                                     <Text className="ml-2 text-gray-700 font-semibold text-base">
-                                        Switch to User 
+                                        Switch to User
                                     </Text>
                                 </View>
                             )}
@@ -199,9 +163,9 @@ const SellerProfileScreen: React.FC = () => {
                 </View>
 
 
-               
+
                 <View className="px-6 mt-6">
-                  
+
                     <Text className="text-gray-900 font-bold text-lg mb-4">
                         Business Management
                     </Text>
@@ -273,7 +237,7 @@ const SellerProfileScreen: React.FC = () => {
                         })}
                     </View>
 
-                  
+
                     <Text className="text-gray-900 font-bold text-lg mb-4">
                         Settings & Support
                     </Text>
@@ -311,7 +275,7 @@ const SellerProfileScreen: React.FC = () => {
 
                     {/* Logout Button */}
                     <TouchableOpacity
-                        onPress={handleLogout}
+                        onPress={() => setShowLogoutModal(true)}
                         className="bg-white rounded-2xl p-4 flex-row items-center justify-center mb-2"
                         style={{
                             shadowColor: '#000',
@@ -329,6 +293,24 @@ const SellerProfileScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            <ReusableModal
+                isVisible={showSwitchModal}
+                onCancel={() => setShowSwitchModal(false)}
+                title='Switch to User Mode?'
+                description='Are you sure you want to switch to user mode?'
+                onConfirm={() => switchToRole(userData, router, setSwitching, '/(tabs)/profile', false)}
+            />
+
+            <ReusableModal
+                isVisible={showLogoutModal}
+                onCancel={() => setShowLogoutModal(false)}
+                title='Logout?'
+                description='Are you sure you want to logout?'
+                onConfirm={handleLogout}
+                confirmButtonColor='bg-red-500'
+            />
+
         </View>
     );
 };

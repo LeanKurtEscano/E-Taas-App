@@ -4,110 +4,37 @@ import { ShoppingBag, Package, Truck, Wallet, Clock, HelpCircle, Settings, LogOu
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '@/config/firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
-
-interface ProfileOption {
-    id: number;
-    title: string;
-    icon: any;
-}
-
+import { auth } from '@/config/firebaseConfig';
+import { switchToRole } from '@/utils/general/switch';
+import { getInitials } from '@/utils/general/initials';
+import { profileOptions } from '@/constants/userHomeScreen';
+import ReusableModal from '@/components/general/Modal';
 const ProfileScreen: React.FC = () => {
+
     const { userData, loading } = useCurrentUser();
     const router = useRouter();
     const [switching, setSwitching] = useState(false);
-
-    const getInitials = (name?: string | null): string => {
-        if (name) {
-            const names = name.trim().split(' ');
-            return names.length > 1
-                ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-                : names[0].substring(0, 2).toUpperCase();
-        }
-        return 'U';
-    };
-
-    const profileOptions: ProfileOption[] = [
-        { id: 1, title: 'My Orders', icon: ShoppingBag },
-        { id: 2, title: 'To Ship', icon: Package },
-        { id: 3, title: 'To Receive', icon: Truck },
-        { id: 4, title: 'To Pay', icon: Wallet },
-        { id: 5, title: 'My Purchase History', icon: Clock },
-        { id: 6, title: 'Help & Support', icon: HelpCircle },
-        { id: 7, title: 'Settings', icon: Settings },
-    ];
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showSwitchModal, setShowSwitchModal] = useState(false);
 
     const handleOptionPress = (optionId: number) => {
         console.log(`Option ${optionId} pressed`);
     };
 
-    const handleSwitchToSeller = async () => {
-        Alert.alert(
-            'Switch to Seller Mode',
-            'Do you want to switch to seller mode?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Switch',
-                    onPress: async () => {
-                        try {
-                            setSwitching(true);
-                            if (userData?.uid) {
-                                const userRef = doc(db, 'users', userData.uid);
-                                await updateDoc(userRef, {
-                                    isSeller: true,
-                                    updatedAt: new Date(),
-                                });
-                               
-                            }
-                        } catch (error: any) {
-                            console.error('Error switching to seller mode:', error);
-                            Alert.alert(
-                                'Error',
-                                'Failed to switch to seller mode. Please try again.'
-                            );
-                        } finally {
-                            setSwitching(false);
-                        }
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
-    };
 
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await signOut(auth);
-                            router.replace('/(auth)');
-                        } catch (error: any) {
-                            console.error('Error during logout:', error);
-                            Alert.alert(
-                                'Logout Error',
-                                error.message || 'Failed to logout. Please try again.'
-                            );
-                        }
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
+    const handleLogout = async () => {
+
+        try {
+            await signOut(auth);
+            router.replace('/(auth)');
+        } catch (error: any) {
+            console.error('Error during logout:', error);
+            Alert.alert(
+                'Logout Error',
+                error.message || 'Failed to logout. Please try again.'
+            );
+        }
+
     };
 
     if (loading) {
@@ -120,7 +47,7 @@ const ProfileScreen: React.FC = () => {
 
     return (
         <View className="flex-1 bg-gray-50">
-            
+
             <View className="bg-white px-6 pt-12 pb-6">
                 <View className="flex-row items-center mb-6">
                     <View className="w-20 h-20 rounded-full bg-pink-500 justify-center items-center">
@@ -131,7 +58,7 @@ const ProfileScreen: React.FC = () => {
 
                     <View className="ml-4 flex-1">
                         <Text className="text-lg font-semibold text-gray-800">
-                            {userData?.username || 'User'} 
+                            {userData?.username || 'User'}
                         </Text>
                         <Text className="text-sm text-gray-500 mt-1">
                             {userData?.email || 'No email'}
@@ -144,8 +71,8 @@ const ProfileScreen: React.FC = () => {
 
                 {/* Conditional Button - Show "Switch to Seller" if user has sellerInfo, otherwise "Become a Seller" */}
                 {userData?.sellerInfo ? (
-                    <TouchableOpacity 
-                        onPress={handleSwitchToSeller}
+                    <TouchableOpacity
+                        onPress={() => setShowSwitchModal(true)}
                         disabled={switching}
                         className="flex-row items-center justify-center py-4 bg-pink-500 rounded-xl"
                         activeOpacity={0.7}
@@ -160,7 +87,7 @@ const ProfileScreen: React.FC = () => {
                         )}
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => router.push('/seller/registerAsSeller')}
                         className="flex-row items-center justify-center py-3 border border-pink-400 rounded-xl"
                         activeOpacity={0.7}
@@ -173,16 +100,16 @@ const ProfileScreen: React.FC = () => {
             </View>
 
             {/* Scrollable Menu Options */}
-            <ScrollView 
+            <ScrollView
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24 }}
-            >  
+            >
                 {/* My Purchases Section */}
                 <Text className="text-gray-900 font-semibold text-base mb-3">
                     My Purchases
                 </Text>
-                
+
                 <View className="mb-6">
                     {profileOptions.slice(0, 4).map((option) => {
                         const IconComponent = option.icon;
@@ -252,7 +179,7 @@ const ProfileScreen: React.FC = () => {
 
                 {/* Logout Button */}
                 <TouchableOpacity
-                    onPress={handleLogout}
+                    onPress={() => setShowLogoutModal(true)}
                     className="bg-white rounded-2xl p-4 flex-row items-center justify-center mt-2 shadow-sm"
                     style={{
                         shadowColor: '#000',
@@ -269,6 +196,25 @@ const ProfileScreen: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
+
+
+            <ReusableModal
+                isVisible={showSwitchModal}
+                onCancel={() => setShowSwitchModal(false)}
+                title='Switch to Seller Mode?'
+                description='Are you sure you want to switch to seller mode?'
+                onConfirm={() => switchToRole(userData, router, setSwitching, '/(tabs)/profile', true)}
+            />
+
+            <ReusableModal
+                isVisible={showLogoutModal}
+                onCancel={() => setShowLogoutModal(false)}
+                title='Logout?'
+                description='Are you sure you want to logout?'
+                onConfirm={handleLogout}
+                confirmButtonColor='bg-red-500'
+            />
+
         </View>
     );
 };
