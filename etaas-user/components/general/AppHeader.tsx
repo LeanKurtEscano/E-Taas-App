@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ShoppingCart } from 'lucide-react-native';
-import { SearchBar } from '../userHomeScreen/SearchBar';
+import { SearchBar } from '../user/userHomeScreen/SearchBar';
 
 interface AppHeaderProps {
   searchQuery: string;
@@ -21,12 +21,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <View className="bg-white pt-4 pb-9 px-5">
       <View className="flex-row items-center justify-between">
-        {/* Logo */}
+      
         <Text className="text-pink-500 text-2xl font-bold tracking-tight">
           E-Taas
         </Text>
         
-        {/* Search Bar */}
+      
         {showSearch && (
           <View className="flex-1 mx-4">
             <SearchBar 
@@ -37,7 +37,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </View>
         )}
         
-        {/* Cart */}
+       
         <TouchableOpacity 
           className="relative" 
           activeOpacity={0.7}

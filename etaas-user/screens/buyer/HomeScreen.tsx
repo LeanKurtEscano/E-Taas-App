@@ -11,10 +11,9 @@ import {
     ChevronRight
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FeatureCard } from '@/components/userHomeScreen/FeatureCard';
-import { CategoryCard } from '@/components/userHomeScreen/CategoryCard';
-import { PromoBanner } from '@/components/userHomeScreen/PromoBanner';
-
+import { FeatureCard } from '@/components/user/userHomeScreen/FeatureCard';
+import { PromoBanner } from '@/components/user/userHomeScreen/PromoBanner';
+import { CategoryCard } from '@/components/user/userHomeScreen/CategoryCard';
 
 
 import { MOCK_CATEGORIES, MOCK_PROMOS, FEATURES } from '@/constants/userHomeScreen';

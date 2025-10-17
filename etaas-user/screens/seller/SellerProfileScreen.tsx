@@ -41,7 +41,7 @@ const SellerProfileScreen: React.FC = () => {
 
     const handleOptionPress = (optionId: number) => {
         console.log(`Seller Option ${optionId} pressed`);
-        // Add navigation logic here
+      
     };
 
     const handleSwitchToUser = async () => {
@@ -83,8 +83,8 @@ const SellerProfileScreen: React.FC = () => {
     };
 
     const handleGoToShop = () => {
-        // Navigate to shop page
-        router.push(`/seller/shop/${userData?.uid}`);
+       
+        router.push(`/seller/store`);
     };
 
     const handleLogout = () => {
@@ -131,90 +131,81 @@ const SellerProfileScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 24 }}
             >
-                {/* Header with gradient background */}
-                <View 
-                    className="px-6 pt-16 pb-32 bg-pink-400" 
-             
+
+
+
+
+                <View
+                    className="bg-white rounded-3xl p-6 "
+
                 >
-                    <Text className="text-white text-2xl font-bold mb-2">Seller Dashboard</Text>
-                    <Text className="text-pink-100 text-sm">Manage your business</Text>
-                </View>
-
-               
-                <View className="px-6" style={{ marginTop: -100 }}>
-                    <View 
-                        className="bg-white rounded-3xl p-6 shadow-lg"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 12,
-                            elevation: 8,
-                        }}
-                    >
-                        {/* Profile Info - Horizontal Layout */}
-                        <View className="flex-row items-center mb-6">
-                            <View className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 justify-center items-center" style={{ backgroundColor: '#ec4899' }}>
-                                <Text className="text-white text-2xl font-bold">
-                                    {getInitials(userData?.sellerInfo?.name || userData?.username)}
-                                </Text>
-                            </View>
-                            
-                            <View className="flex-1 ml-4">
-                                <Text className="text-xl font-bold text-gray-900">
-                                    {userData?.sellerInfo?.shopName || 'My Shop'}
-                                </Text>
-                                <Text className="text-sm text-gray-600 mt-1">
-                                    {userData?.sellerInfo?.businessName || 'Business'}
-                                </Text>
-                                <Text className="text-xs text-gray-500 mt-1">
-                                    📍 {userData?.sellerInfo?.addressLocation || 'No location'}
-                                </Text>
-                                {userData?.emailVerified && (
-                                    <View className="bg-green-100 px-3 py-1 rounded-full mt-2 self-start">
-                                        <Text className="text-xs text-green-700 font-medium">✓ Verified Seller</Text>
-                                    </View>
-                                )}
-                            </View>
+                  
+                    <View className="flex-row items-center mb-6">
+                        <View className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 justify-center items-center" style={{ backgroundColor: '#ec4899' }}>
+                            <Text className="text-white text-2xl font-bold">
+                                {getInitials(userData?.sellerInfo?.name || userData?.username)}
+                            </Text>
                         </View>
 
-                        {/* Action Buttons */}
-                        <View className="space-y-3">
-                            <TouchableOpacity
-                                onPress={handleGoToShop}
-                                className="flex-row mb-2 items-center justify-center py-4 bg-pink-500 rounded-xl"
-                                activeOpacity={0.7}
-                            >
-                                <Store size={20} color="#ffffff" />
-                                <Text className="ml-2 text-white font-semibold text-base">View My Shop</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={handleSwitchToUser}
-                                disabled={switching}
-                                className="flex-row items-center justify-center py-4 bg-gray-100 rounded-xl"
-                                activeOpacity={0.7}
-                            >
-                                {switching ? (
-                                    <ActivityIndicator size="small" color="#6b7280" />
-                                ) : (
-                                    <>
-                                        <RefreshCw size={20} color="#6b7280" />
-                                        <Text className="ml-2 text-gray-700 font-semibold text-base">Switch to User Mode</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
+                        <View className="flex-1 ml-4">
+                            <Text className="text-xl font-bold text-gray-900">
+                                {userData?.sellerInfo?.shopName || 'My Shop'}
+                            </Text>
+                            <Text className="text-sm text-gray-600 mt-1">
+                                {userData?.sellerInfo?.businessName || 'Business'}
+                            </Text>
+                            <Text className="text-xs text-gray-500 mt-1">
+                                📍 {userData?.sellerInfo?.addressLocation || 'No location'}
+                            </Text>
+                            {userData?.emailVerified && (
+                                <View className="bg-green-100 px-3 py-1 rounded-full mt-2 self-start">
+                                    <Text className="text-xs text-green-700 font-medium">✓ Verified Seller</Text>
+                                </View>
+                            )}
                         </View>
+                    </View>
+
+                 
+                    <View className="space-y-3">
+                        <TouchableOpacity
+                            onPress={handleGoToShop}
+                            className="flex-row items-center justify-center mb-3 pr-52  py-4 bg-pink-500 rounded-xl"
+                            activeOpacity={0.7}
+                        >
+                            <Store size={20} color="#ffffff" />
+                            <Text className="ml-2 text-white  font-semibold text-base">
+                                View My Shop
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={handleSwitchToUser}
+                            disabled={switching}
+                            className="flex-row items-center justify-center py-4 bg-gray-100 rounded-xl"
+                            activeOpacity={0.7}
+                        >
+                            {switching ? (
+                                <ActivityIndicator size="small" color="#6b7280" />
+                            ) : (
+                                <View className="flex-row items-center">
+                                    <RefreshCw size={20} color="#6b7280" />
+                                    <Text className="ml-2 text-gray-700 font-semibold text-base">
+                                        Switch to User 
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Menu Options */}
+
+               
                 <View className="px-6 mt-6">
-                    {/* Business Management Section */}
+                  
                     <Text className="text-gray-900 font-bold text-lg mb-4">
                         Business Management
                     </Text>
-                    
+
                     <View className="mb-6">
                         {sellerOptions.slice(0, 3).map((option) => {
                             const IconComponent = option.icon;
@@ -233,7 +224,7 @@ const SellerProfileScreen: React.FC = () => {
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="bg-pink-100 w-12 h-12 rounded-xl items-center justify-center">
+                                        <View className=" w-12 h-12 rounded-xl items-center justify-center">
                                             <IconComponent size={22} color="#ec4899" />
                                         </View>
                                         <Text className="text-gray-800 font-semibold text-base ml-4">
@@ -269,7 +260,7 @@ const SellerProfileScreen: React.FC = () => {
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="bg-purple-100 w-12 h-12 rounded-xl items-center justify-center">
+                                        <View className=" w-12 h-12 rounded-xl items-center justify-center">
                                             <IconComponent size={22} color="#a855f7" />
                                         </View>
                                         <Text className="text-gray-800 font-semibold text-base ml-4">
@@ -282,7 +273,7 @@ const SellerProfileScreen: React.FC = () => {
                         })}
                     </View>
 
-                    {/* Settings & Support Section */}
+                  
                     <Text className="text-gray-900 font-bold text-lg mb-4">
                         Settings & Support
                     </Text>
@@ -305,7 +296,7 @@ const SellerProfileScreen: React.FC = () => {
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="bg-gray-100 w-12 h-12 rounded-xl items-center justify-center">
+                                        <View className="w-12 h-12 rounded-xl items-center justify-center">
                                             <IconComponent size={22} color="#6b7280" />
                                         </View>
                                         <Text className="text-gray-800 font-semibold text-base ml-4">

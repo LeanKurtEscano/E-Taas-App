@@ -147,7 +147,7 @@ const ProfileScreen: React.FC = () => {
                     <TouchableOpacity 
                         onPress={handleSwitchToSeller}
                         disabled={switching}
-                        className="flex-row items-center justify-center py-3 bg-pink-500 rounded-xl"
+                        className="flex-row items-center justify-center py-4 bg-pink-500 rounded-xl"
                         activeOpacity={0.7}
                     >
                         {switching ? (
@@ -155,7 +155,7 @@ const ProfileScreen: React.FC = () => {
                         ) : (
                             <>
                                 <Store size={18} color="#ffffff" />
-                                <Text className="ml-2 text-white font-semibold">Switch to Seller Mode</Text>
+                                <Text className="ml-2 text-white font-semibold">Switch to Seller </Text>
                             </>
                         )}
                     </TouchableOpacity>
