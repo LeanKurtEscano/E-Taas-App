@@ -1,17 +1,20 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { Product,ViewMode } from '@/types/seller/shop';
+import { Product, ViewMode } from '@/types/seller/shop';
+import { Pencil } from 'lucide-react-native';
 
 interface ProductCardProps {
   product: Product;
   viewMode: ViewMode;
   onPress: () => void;
+  onEdit: () => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   viewMode,
   onPress,
+  onEdit,
 }) => {
   const statusColors = {
     available: 'bg-green-500',
@@ -41,13 +44,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <Text className="text-pink-500 font-bold text-lg">
               ₱{product.price.toLocaleString()}
             </Text>
-            <View className={`${statusColors[product.availability]} px-2 py-1 rounded`}>
-              <Text className="text-white text-xs font-medium capitalize">
-                {product.availability}
-              </Text>
+            <View className="flex-row items-center gap-2">
+              <View className={`${statusColors[product.availability]} px-2 py-1 rounded`}>
+                <Text className="text-white text-xs font-medium capitalize">
+                  {product.availability}
+                </Text>
+              </View>
+             
             </View>
           </View>
         </View>
+         <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="bg-pink-500 px-3 py-2 rounded-lg flex-row items-center gap-1"
+              >
+                <Pencil size={14} color="#FFFFFF" />
+                <Text className="text-white text-xs font-semibold">Edit Product</Text>
+              </TouchableOpacity>
       </TouchableOpacity>
     );
   }
@@ -64,11 +80,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           className="w-full h-40"
           resizeMode="cover"
         />
-        <View className={`absolute top-2 right-2 ${statusColors[product.availability]} px-2 py-1 rounded`}>
+        <View className={`absolute top-2 left-2 ${statusColors[product.availability]} px-2 py-1 rounded`}>
           <Text className="text-white text-xs font-medium capitalize">
             {product.availability}
           </Text>
         </View>
+       
       </View>
       <View className="p-3">
         <Text className="text-gray-900 font-semibold" numberOfLines={2}>
@@ -79,6 +96,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ₱{product.price.toLocaleString()}
         </Text>
       </View>
+       <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="absolute bottom-2 right-2 bg-pink-500 px-3 py-2 rounded-lg flex-row items-center gap-1 "
+        >
+          <Pencil size={14} color="#FFFFFF" />
+          <Text className="text-white text-xs font-semibold">Edit</Text>
+        </TouchableOpacity>
     </TouchableOpacity>
   );
 };

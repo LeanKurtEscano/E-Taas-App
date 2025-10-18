@@ -1,4 +1,4 @@
-// components/AddProductModal.tsx
+// components/ProductModal.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -19,25 +19,22 @@ import { Product } from '@/types/seller/shop';
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => void;
-  sellerId: string;
+  sellerId?: string;
   existingProduct?: Product;
 }
 
-export const AddProductModal: React.FC<AddProductModalProps> = ({
+export const ProductModal: React.FC<AddProductModalProps> = ({
   visible,
   onClose,
-  onSuccess,
   sellerId,
   existingProduct,
 }) => {
-
-    const { addProduct, updateProduct } = useSellerStore();
-  const [name, setName] = useState(existingProduct?.name || '');
-  const [price, setPrice] = useState(existingProduct?.price?.toString() || '');
-  const [description, setDescription] = useState(existingProduct?.description || '');
-  const [category, setCategory] = useState(existingProduct?.category || 'Clothing');
-  const [availability, setAvailability] = useState<'available' | 'sold' | 'reserved'>(
+  const { addProduct, updateProduct } = useSellerStore();
+  const [productName, setProductName] = useState(existingProduct?.name || '');
+  const [productPrice, setProductPrice] = useState(existingProduct?.price?.toString() || '');
+  const [productDescription, setProductDescription] = useState(existingProduct?.description || '');
+  const [productCategory, setProductCategory] = useState(existingProduct?.category || 'Clothing');
+  const [productAvailability, setProductAvailability] = useState<'available' | 'sold' | 'reserved'>(
     existingProduct?.availability || 'available'
   );
   const [imageUris, setImageUris] = useState<string[]>([]);
@@ -81,12 +78,17 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
+    if (!sellerId) {
+      Alert.alert('Error', 'Seller ID is required');
+      return;
+    }
+
+    if (!productName.trim()) {
       Alert.alert('Error', 'Please enter product name');
       return;
     }
 
-    if (!price.trim() || isNaN(Number(price))) {
+    if (!productPrice.trim() || isNaN(Number(productPrice))) {
       Alert.alert('Error', 'Please enter valid price');
       return;
     }
@@ -100,11 +102,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
     try {
       const productData = {
-        name: name.trim(),
-        price: Number(price),
-        description: description.trim(),
-        category,
-        availability,
+        name: productName.trim(),
+        price: Number(productPrice),
+        description: productDescription.trim(),
+        category: productCategory,
+        availability: productAvailability,
         sellerId,
       };
 
@@ -116,7 +118,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         Alert.alert('Success', 'Product added successfully');
       }
 
-      onSuccess();
       resetForm();
       onClose();
     } catch (error) {
@@ -128,13 +129,17 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   };
 
   const resetForm = () => {
-    setName('');
-    setPrice('');
-    setDescription('');
-    setCategory('Clothing');
-    setAvailability('available');
+    setProductName('');
+    setProductPrice('');
+    setProductDescription('');
+    setProductCategory('Clothing');
+    setProductAvailability('available');
     setImageUris([]);
   };
+
+  // Calculate visible images and remaining count
+  const visibleImages = imageUris.slice(0, 3);
+  const remainingCount = imageUris.length - 3;
 
   return (
     <Modal
@@ -158,39 +163,55 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          className="flex-1 px-6" 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Image Upload Section */}
           <View className="mt-6">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Product Images *
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row">
-                {imageUris.map((uri, index) => (
-                  <View key={index} className="mr-3 relative">
-                    <Image
-                      source={{ uri }}
-                      className="w-28 h-28 rounded-xl"
-                      resizeMode="cover"
-                    />
-                    <TouchableOpacity
-                      className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1.5 shadow-lg"
-                      onPress={() => removeImage(index)}
-                      activeOpacity={0.7}
-                    >
-                      <Trash2 size={14} color="white" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  className="w-28 h-28 bg-gray-50 rounded-xl items-center justify-center border-2 border-dashed border-gray-300"
-                  onPress={pickImages}
-                  activeOpacity={0.7}
-                >
-                  <Upload size={28} color="#9CA3AF" />
-                  <Text className="text-gray-500 text-xs mt-2 font-medium">Add Photo</Text>
-                </TouchableOpacity>
-              </View>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled={true}
+            >
+              {/* Add Photo Button - Always first */}
+              <TouchableOpacity
+                className="w-28 h-28 bg-gray-50 rounded-xl items-center justify-center border-2 border-dashed border-gray-300 mr-3"
+                onPress={pickImages}
+                activeOpacity={0.7}
+              >
+                <Upload size={28} color="#9CA3AF" />
+                <Text className="text-gray-500 text-xs mt-2 font-medium">Add Photo</Text>
+              </TouchableOpacity>
+
+              {/* First 3 images */}
+              {visibleImages.map((uri, index) => (
+                <View key={index} className="mr-3 relative">
+                  <Image
+                    source={{ uri }}
+                    className="w-28 h-28 rounded-xl"
+                    resizeMode="cover"
+                  />
+                  {index === 2 && remainingCount > 0 && (
+                    <View className="absolute inset-0 bg-black/50 rounded-xl items-center justify-center">
+                      <Text className="text-white text-2xl font-bold">
+                        +{remainingCount}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1.5 shadow-lg"
+                    onPress={() => removeImage(index)}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </ScrollView>
           </View>
 
@@ -202,8 +223,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             <TextInput
               className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
               placeholder="Enter product name"
-              value={name}
-              onChangeText={setName}
+              value={productName}
+              onChangeText={setProductName}
               placeholderTextColor="#9CA3AF"
             />
           </View>
@@ -216,8 +237,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             <TextInput
               className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
               placeholder="0.00"
-              value={price}
-              onChangeText={setPrice}
+              value={productPrice}
+              onChangeText={setProductPrice}
               keyboardType="numeric"
               placeholderTextColor="#9CA3AF"
             />
@@ -226,29 +247,32 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           {/* Category */}
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row">
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    onPress={() => setCategory(cat)}
-                    className={`px-5 py-3 rounded-full mr-2 ${
-                      category === cat 
-                        ? 'bg-pink-500 shadow-md' 
-                        : 'bg-gray-50 border border-gray-200'
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              contentContainerStyle={{ paddingRight: 20 }}
+            >
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => setProductCategory(cat)}
+                  className={`px-5 py-3 rounded-full mr-2 ${
+                    productCategory === cat 
+                      ? 'bg-pink-500 shadow-md' 
+                      : 'bg-gray-50 border border-gray-200'
+                  }`}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    className={`font-semibold text-sm ${
+                      productCategory === cat ? 'text-white' : 'text-gray-700'
                     }`}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      className={`font-semibold text-sm ${
-                        category === cat ? 'text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {cat}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
 
@@ -261,9 +285,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               {availabilityOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
-                  onPress={() => setAvailability(option)}
+                  onPress={() => setProductAvailability(option)}
                   className={`px-5 py-3 rounded-full mr-2 mb-2 ${
-                    availability === option 
+                    productAvailability === option 
                       ? 'bg-pink-500 shadow-md' 
                       : 'bg-gray-50 border border-gray-200'
                   }`}
@@ -271,7 +295,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 >
                   <Text
                     className={`font-semibold text-sm capitalize ${
-                      availability === option ? 'text-white' : 'text-gray-700'
+                      productAvailability === option ? 'text-white' : 'text-gray-700'
                     }`}
                   >
                     {option}
@@ -289,8 +313,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             <TextInput
               className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
               placeholder="Tell us more about this product..."
-              value={description}
-              onChangeText={setDescription}
+              value={productDescription}
+              onChangeText={setProductDescription}
               multiline
               numberOfLines={4}
               textAlignVertical="top"

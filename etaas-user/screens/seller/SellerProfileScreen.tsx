@@ -61,7 +61,6 @@ const SellerProfileScreen: React.FC = () => {
     };
 
     const handleGoToShop = () => {
-
         router.push(`/seller/store`);
     };
 
@@ -299,7 +298,7 @@ const SellerProfileScreen: React.FC = () => {
                 onCancel={() => setShowSwitchModal(false)}
                 title='Switch to User Mode?'
                 description='Are you sure you want to switch to user mode?'
-                onConfirm={() => switchToRole(userData, router, setSwitching, '/(tabs)/profile', false)}
+                onConfirm={() => switchToRole(userData, setSwitching, false)}
             />
 
             <ReusableModal

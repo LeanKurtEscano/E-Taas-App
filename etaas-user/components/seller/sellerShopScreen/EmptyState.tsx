@@ -1,12 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Grid, Plus } from 'lucide-react-native';
+import { router } from 'expo-router';
 
-interface EmptyStateProps {
-  onAddProduct: () => void;
-}
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onAddProduct }) => {
+export const EmptyState: React.FC = () => {
   return (
     <View className="flex-1 items-center justify-center py-20 px-6">
       <View className="bg-pink-100 rounded-full p-6 mb-4">
@@ -20,7 +18,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddProduct }) => {
       </Text>
       <TouchableOpacity 
         className="bg-pink-500 py-3 px-6 rounded-lg flex-row items-center"
-        onPress={onAddProduct}
+        onPress={() => router.push('/seller/product')}
       >
         <Plus size={20} color="white" />
         <Text className="text-white font-semibold ml-2">Add First Product</Text>

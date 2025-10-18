@@ -9,14 +9,21 @@ import {
     query,
     where,
     orderBy,
-    Timestamp
+    Timestamp,
+    onSnapshot
 } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { Product, ShopData } from '@/types/seller/shop';
+import { useCurrentUser } from '../useCurrentUser';
+const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
 const useSellerStore = () => {
+
+    const { userData } = useCurrentUser();
     const uploadToCloudinary = async (imageUri: string): Promise<string> => {
-        const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUD_NAME';
-        const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET';
+        const CLOUDINARY_CLOUD_NAME = cloudName;
+        const CLOUDINARY_UPLOAD_PRESET = uploadPreset;
 
         const formData = new FormData();
         formData.append('file', {
@@ -50,30 +57,36 @@ const useSellerStore = () => {
     };
 
 
-    const fetchSellerProducts = async (sellerId: string): Promise<Product[]> => {
-        try {
-            const productsRef = collection(db, 'products');
-            const q = query(
-                productsRef,
-                where('sellerId', '==', sellerId),
-                orderBy('createdAt', 'desc')
-            );
 
-            const querySnapshot = await getDocs(q);
+
+    const listenToSellerProducts = (callback: (products: Product[]) => void) => {
+
+        if (!userData?.uid) {
+            console.warn('User not loaded yet — skipping Firestore listener');
+            return () => { };
+        }
+
+
+        const productsRef = collection(db, 'products');
+        const q = query(
+            productsRef,
+            where('sellerId', '==', userData?.uid),
+            orderBy('createdAt', 'desc')
+        );
+
+        // Realtime listener
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             const products: Product[] = [];
-
-            querySnapshot.forEach((doc) => {
+            snapshot.forEach((doc) => {
                 products.push({
                     id: doc.id,
                     ...doc.data(),
                 } as Product);
             });
+            callback(products);
+        });
 
-            return products;
-        } catch (error) {
-            console.error('Error fetching products:', error);
-            throw error;
-        }
+        return unsubscribe; // Call this to stop listening
     };
 
 
@@ -104,20 +117,60 @@ const useSellerStore = () => {
     const updateProduct = async (
         productId: string,
         updates: Partial<Product>,
-        newImageUris?: string[]
+        newImageUris?: string[],
+        existingImages?: string[],
+        imagesToDelete?: string[]
     ): Promise<void> => {
         try {
             const productRef = doc(db, 'products', productId);
 
             let updateData: any = { ...updates };
 
+            if (imagesToDelete && imagesToDelete.length > 0) {
+                console.log('Deleting images from Cloudinary:', imagesToDelete);
 
-            if (newImageUris && newImageUris.length > 0) {
-                const uploadedImageUrls = await uploadMultipleImages(newImageUris);
-                updateData.images = uploadedImageUrls;
+                const deletePromises = imagesToDelete.map(async (imageUrl) => {
+                    try {
+
+                        const urlParts = imageUrl.split('/');
+                        const uploadIndex = urlParts.indexOf('upload');
+
+                        if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+                           
+                            const pathAfterVersion = urlParts.slice(uploadIndex + 2).join('/');
+                            const publicId = pathAfterVersion.split('.')[0];
+                            console.log('Deleting public_id:', publicId);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting Cloudinary image:', imageUrl, error);
+                        // Continue even if one image fails to delete
+                    }
+                });
+
+                await Promise.all(deletePromises);
             }
 
+            // Step 2: Upload new images to Cloudinary
+            let uploadedImageUrls: string[] = [];
+            if (newImageUris && newImageUris.length > 0) {
+                console.log('Uploading new images:', newImageUris.length);
+                uploadedImageUrls = await uploadMultipleImages(newImageUris);
+            }
+
+            // Step 3: Combine existing images (that weren't deleted) with newly uploaded images
+            const finalImageUrls = [
+                ...(existingImages || []),
+                ...uploadedImageUrls
+            ];
+
+           
+            if (imagesToDelete?.length || newImageUris?.length) {
+                updateData.images = finalImageUrls;
+            }
+            // Step 4: Update Firestore document
             await updateDoc(productRef, updateData);
+            console.log('Product updated successfully');
+
         } catch (error) {
             console.error('Error updating product:', error);
             throw error;
@@ -125,6 +178,9 @@ const useSellerStore = () => {
     };
 
 
+
+
+    
     const deleteProduct = async (productId: string): Promise<void> => {
         try {
             const productRef = doc(db, 'products', productId);
@@ -170,7 +226,7 @@ const useSellerStore = () => {
     };
 
     return {
-        fetchSellerProducts,
+        listenToSellerProducts,
         addProduct,
         updateProduct,
         deleteProduct,

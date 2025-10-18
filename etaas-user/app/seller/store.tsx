@@ -20,6 +20,8 @@ import { Product, ShopData, ViewMode } from '@/types/seller/shop';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+
+
 const MyShopScreen: React.FC = () => {
   const { userData } = useCurrentUser();
   const [loading, setLoading] = useState(false);
@@ -27,13 +29,15 @@ const MyShopScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const { fetchSellerProducts } = useSellerStore();
+  const { listenToSellerProducts } = useSellerStore();
+
   const categories = [
     'All',
     'Clothing',
     'Accessories',
     'Electronics',
     'Home',
+    'Food & Beverages',
     'Others',
   ];
 
@@ -48,25 +52,18 @@ const MyShopScreen: React.FC = () => {
     followers: 1523,
     description: 'Quality thrift finds at affordable prices! ✨',
   };
-  {/* useEffect(() => {
-    loadProducts();
-  }, [userData?.uid]);*/ }
 
-
-  const loadProducts = async () => {
-    if (!userData?.uid) return;
-
-    setLoading(true);
-    try {
-      const fetchedProducts = await fetchSellerProducts(userData.uid);
-      setProducts(fetchedProducts);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      Alert.alert('Error', 'Failed to load products');
-    } finally {
+   useEffect(() => {
+        const unsubscribe = listenToSellerProducts((newProducts) => {
+      setProducts(newProducts);
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+
+  }, [userData?.uid]); 
+
+
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
@@ -77,10 +74,7 @@ const MyShopScreen: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddProduct = () => {
 
-    Alert.alert('Add Product', 'Navigate to Add Product screen');
-  };
 
   const handleEditShop = () => {
 
@@ -136,7 +130,7 @@ const MyShopScreen: React.FC = () => {
             <ActivityIndicator size="large" color="#E91E8C" />
           </View>
         ) : !filteredProducts || filteredProducts.length === 0 ? (
-          <EmptyState onAddProduct={handleAddProduct} />
+          <EmptyState />
         ) : (
           <View className="p-3">
             {viewMode === "grid" ? (
@@ -147,6 +141,7 @@ const MyShopScreen: React.FC = () => {
                     product={product}
                     viewMode={viewMode}
                     onPress={() => handleProductPress(product)}
+                    onEdit={() => router.push(`/seller/product?productId=${product.id}`)}
                   />
                 ))}
               </View>
@@ -158,6 +153,7 @@ const MyShopScreen: React.FC = () => {
                     product={product}
                     viewMode={viewMode}
                     onPress={() => handleProductPress(product)}
+                    onEdit={() => router.push(`/seller/product?productId=${product.id}`)}
                   />
                 ))}
               </View>
@@ -167,7 +163,7 @@ const MyShopScreen: React.FC = () => {
 
       </ScrollView>
 
-      <FloatingAddButton onPress={handleAddProduct} />
+      <FloatingAddButton onPress={() => router.push('/seller/product')} />
     </SafeAreaView>
   );
 };

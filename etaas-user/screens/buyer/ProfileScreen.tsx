@@ -128,7 +128,7 @@ const ProfileScreen: React.FC = () => {
                                 activeOpacity={0.7}
                             >
                                 <View className="flex-row items-center flex-1">
-                                    <View className="bg-pink-100 w-12 h-12 rounded-full items-center justify-center">
+                                    <View className=" w-12 h-12 rounded-full items-center justify-center">
                                         <IconComponent size={20} color="#ec4899" />
                                     </View>
                                     <Text className="text-gray-800 font-medium text-base ml-4">
@@ -141,7 +141,7 @@ const ProfileScreen: React.FC = () => {
                     })}
                 </View>
 
-                {/* General Section */}
+             
                 <Text className="text-gray-900 font-semibold text-base mb-3">
                     General
                 </Text>
@@ -164,7 +164,7 @@ const ProfileScreen: React.FC = () => {
                                 activeOpacity={0.7}
                             >
                                 <View className="flex-row items-center flex-1">
-                                    <View className="bg-pink-100 w-12 h-12 rounded-full items-center justify-center">
+                                    <View className=" w-12 h-12 rounded-full items-center justify-center">
                                         <IconComponent size={20} color="#ec4899" />
                                     </View>
                                     <Text className="text-gray-800 font-medium text-base ml-4">
@@ -203,7 +203,7 @@ const ProfileScreen: React.FC = () => {
                 onCancel={() => setShowSwitchModal(false)}
                 title='Switch to Seller Mode?'
                 description='Are you sure you want to switch to seller mode?'
-                onConfirm={() => switchToRole(userData, router, setSwitching, '/(tabs)/profile', true)}
+                onConfirm={() => switchToRole(userData,  setSwitching, true)}
             />
 
             <ReusableModal

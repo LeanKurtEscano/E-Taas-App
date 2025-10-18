@@ -5,9 +5,7 @@ import { db
 import { UserData } from '@/types/seller/shop';
 export const switchToRole = async (
   userData : UserData | null,
-  router: any,
   setSwitching : (switching: boolean) => void,
-  route: string,
   isSeller: boolean
 ) => {
   try {
@@ -19,8 +17,6 @@ export const switchToRole = async (
         isSeller: isSeller,
         updatedAt: new Date(),
       });
-
-      router.replace(route);
     }
   } catch (error) {
     console.error('Error switching mode:', error);
