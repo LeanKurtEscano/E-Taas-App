@@ -13,7 +13,6 @@ import {
 import { ArrowLeft, Upload, Trash2, Plus, Minus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import useSellerStore from '@/hooks/seller/useSellerStore';
-import { Product } from '@/types/seller/shop';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { db } from '@/config/firebaseConfig';
@@ -36,8 +35,8 @@ const ProductScreen: React.FC = () => {
   const [productAvailability, setProductAvailability] = useState<'available' | 'sold' | 'reserved'>('available');
   const [productQuantity, setProductQuantity] = useState(0);
   const [imageUris, setImageUris] = useState<string[]>([]);
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]); // Track original images
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); // Track deleted images
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]); 
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); 
   const [loading, setLoading] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(false);
   const [imageError, setImageError] = useState('');
@@ -49,7 +48,7 @@ const ProductScreen: React.FC = () => {
     'reserved',
   ];
 
-  // Fetch product data if editing
+ 
   useEffect(() => {
     const fetchProductData = async () => {
       if (!productId) return;
@@ -68,7 +67,7 @@ const ProductScreen: React.FC = () => {
           setProductAvailability(data.availability || 'available');
           setProductQuantity(data.quantity || 0);
           
-          // Store both in imageUris (for display) and existingImageUrls (for tracking)
+        
           const existingImages = data.images || [];
           setImageUris(existingImages);
           setExistingImageUrls(existingImages);
@@ -107,7 +106,7 @@ const ProductScreen: React.FC = () => {
       if (!result.canceled && result.assets) {
         const newUris = result.assets.map(asset => asset.uri);
         setImageUris(prev => [...prev, ...newUris]);
-        setImageError(''); // Clear error when images are added
+        setImageError(''); 
       }
     } catch (error) {
       console.error('Error picking images:', error);
@@ -153,7 +152,7 @@ const ProductScreen: React.FC = () => {
 
     if (imageUris.length === 0) {
       setImageError('Please add at least one image');
-      Alert.alert('Error', 'Please add at least one image');
+      Alert.alert('Please Select an Image', 'Please add at least one image');
       return;
     }
 

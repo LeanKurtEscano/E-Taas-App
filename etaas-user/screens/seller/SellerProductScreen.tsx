@@ -7,44 +7,30 @@ import {
   DollarSign, 
   Search, 
   X, 
-  Eye, 
-  Edit, 
-  Trash2, 
   Plus,
   PackageOpen
 } from 'lucide-react-native';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useSellerStore from '@/hooks/seller/useSellerStore';
 import { Product } from '@/types/seller/shop';
-
-interface Statistics {
-  totalProducts: number;
-  inStock: number;
-  outOfStock: number;
-  totalValue: number;
-}
-
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-}
-
-interface ProductCardProps {
-  product: Product;
-}
+import { router } from 'expo-router';
+import { Statistics } from '@/types/seller/manageProducts';
+import { StatCard } from '@/components/seller/manageProductsScreen/StatisticsCard';
+import { ProductCard } from '@/components/seller/manageProductsScreen/ProductCard';
+import ReusableModal from '@/components/general/Modal';
 
 const SellerProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedAvailability, setSelectedAvailability] = useState<string>('All');
-
+  const [showDeleteProduct, setShowDeleteProduct] = useState(false);
+  const [productIdToDelete, setProductIdToDelete] = useState<string | null>(null);
   const { listenToSellerProducts } = useSellerStore();
-
+  const { deleteProduct } = useSellerStore();
   useEffect(() => {
     const unsubscribe = listenToSellerProducts((newProducts: Product[]) => {
       setProducts(newProducts);
@@ -54,7 +40,7 @@ const SellerProductScreen: React.FC = () => {
     return () => unsubscribe();
   }, [userData?.uid, listenToSellerProducts]);
 
-  // Statistics calculations
+
   const statistics = useMemo<Statistics>(() => {
     const totalProducts = products.length;
     const inStock = products.filter(p => p.availability !== 'out of stock').length;
@@ -81,80 +67,23 @@ const SellerProductScreen: React.FC = () => {
     return ['All', 'Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
   }, []);
 
-  const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon }) => (
-    <View className="bg-white rounded-2xl p-4 flex-1 shadow-sm" style={{ minHeight: 110 }}>
-      <View className="flex-row justify-between items-start mb-2">
-        <Text className="text-gray-500 text-xs font-medium">{title}</Text>
-        {icon}
-      </View>
-      <Text className="text-2xl font-bold text-gray-900 mb-1">{value}</Text>
-      {subtitle && <Text className="text-xs text-gray-400">{subtitle}</Text>}
-    </View>
-  );
 
-  const ProductCard: React.FC<ProductCardProps> = ({ product }) => (
-    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-      <View className="flex-row">
-        {/* Product Image */}
-        <View className="relative">
-          <Image
-            source={{ uri: product.images?.[0] }}
-            className="w-24 h-24 rounded-xl"
-            resizeMode="cover"
-          />
-          {product.availability === 'out of stock' && (
-            <View className="absolute top-2 left-2 bg-red-500 px-2 py-1 rounded-md">
-              <Text className="text-white text-xs font-semibold">Sold</Text>
-            </View>
-          )}
-        </View>
+  const handleDeleteProduct = (productId: string) => {
+    setProductIdToDelete(productId);
+    setShowDeleteProduct(true);
+  }
 
-        {/* Product Details */}
-        <View className="flex-1 ml-4">
-          <Text className="text-base font-bold text-gray-900 mb-1" numberOfLines={1}>
-            {product.name}
-          </Text>
-          <Text className="text-xs text-gray-500 mb-2">{product.category}</Text>
-          <Text className="text-lg font-bold mb-1" style={{ color: '#E84393' }}>
-            ₱{product.price.toLocaleString()}
-          </Text>
-          <Text className="text-xs text-gray-400">
-            Quantity: {product.quantity} • {product.availability === 'out of stock' ? 'Out of Stock' : 'In Stock'}
-          </Text>
-        </View>
-      </View>
+  const confirmDeleteProduct = async () => {
+    if (productIdToDelete) {
+      await deleteProduct(productIdToDelete);
+      setProductIdToDelete(null);
+      setShowDeleteProduct(false);
+    }
 
-      {/* Action Buttons */}
-      <View className="flex-row mt-4 space-x-2" style={{ gap: 8 }}>
-        <TouchableOpacity 
-          className="flex-1 py-3 rounded-xl border border-gray-200 items-center flex-row justify-center"
-          onPress={() => console.log('View', product.name)}
-        >
-          <Eye size={16} color="#374151" strokeWidth={2} />
-          <Text className="text-gray-700 font-semibold text-sm ml-1">View</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          className="flex-1 py-3 rounded-xl items-center flex-row justify-center"
-          style={{ backgroundColor: '#E84393' }}
-          onPress={() => console.log('Edit', product.name)}
-        >
-          <Edit size={16} color="#FFFFFF" strokeWidth={2} />
-          <Text className="text-white font-semibold text-sm ml-1">Edit</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          className="flex-1 py-3 rounded-xl border items-center flex-row justify-center"
-          style={{ borderColor: '#EF4444' }}
-          onPress={() => console.log('Delete', product.name)}
-        >
-          <Trash2 size={16} color="#EF4444" strokeWidth={2} />
-          <Text className="font-semibold text-sm ml-1" style={{ color: '#EF4444' }}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
+  }
+
+ 
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center" style={{ backgroundColor: '#F9FAFB' }}>
@@ -165,11 +94,11 @@ const SellerProductScreen: React.FC = () => {
   }
 
   return (
-    <View className="flex-1" style={{ backgroundColor: '#F9FAFB' }}>
+    <View className="flex-1 " style={{ backgroundColor: '#F9FAFB' }}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+    
         <View className="px-5 pt-6 pb-4">
           <View className="flex-row justify-between items-center mb-1">
             <View className="flex-1">
@@ -177,9 +106,9 @@ const SellerProductScreen: React.FC = () => {
               <Text className="text-gray-500 text-sm">Track and manage your inventory</Text>
             </View>
             <TouchableOpacity
-              className="rounded-xl items-center justify-center shadow-lg ml-3 px-4 py-3 flex-row"
+              className="rounded-xl items-center justify-center  ml-3 px-4 py-3 flex-row"
               style={{ backgroundColor: '#E84393' }}
-              onPress={() => console.log('Add Product')}
+              onPress={() => router.push('/seller/product')}
             >
               <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
               <Text className="text-white font-bold text-sm ml-1.5">Add Product</Text>
@@ -187,7 +116,7 @@ const SellerProductScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Statistics Cards - 2x2 Grid */}
+       
         <View className="px-5 mb-6">
           <View className="flex-row mb-3" style={{ gap: 12 }}>
             <StatCard
@@ -219,7 +148,7 @@ const SellerProductScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Search Bar */}
+    
         <View className="px-5 mb-4">
           <View className="bg-white rounded-xl px-4 py-3 flex-row items-center shadow-sm">
             <Search size={20} color="#9CA3AF" strokeWidth={2} />
@@ -238,7 +167,7 @@ const SellerProductScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Category Filter */}
+ 
         <View className="px-5 mb-4">
           <Text className="text-xs font-semibold text-gray-500 mb-3 uppercase">Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -266,7 +195,7 @@ const SellerProductScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* Availability Filter */}
+  
         <View className="px-5 mb-4">
           <Text className="text-xs font-semibold text-gray-500 mb-3 uppercase">Availability</Text>
           <View className="flex-row" style={{ gap: 8 }}>
@@ -292,7 +221,6 @@ const SellerProductScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Products List */}
         <View className="px-5 pb-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-base font-bold text-gray-900">
@@ -310,11 +238,23 @@ const SellerProductScreen: React.FC = () => {
             </View>
           ) : (
             filteredProducts.map((product, index) => (
-              <ProductCard key={product.id || index} product={product} />
+              <ProductCard key={product.id || index} product={product} showDeleteModal={handleDeleteProduct} />
             ))
           )}
         </View>
       </ScrollView>
+      {productIdToDelete && (
+         <ReusableModal
+           isVisible={showDeleteProduct}
+           onCancel={() => setShowDeleteProduct(false)}
+           onConfirm={confirmDeleteProduct}
+           title="Confirm Deletion"
+           description={`Are you sure you want to delete ${products.find(product => product.id === productIdToDelete)?.name}?`}
+           confirmButtonColor='bg-red-500'
+           confirmText='Delete'
+         />
+         
+      )}
     </View>
   );
 };

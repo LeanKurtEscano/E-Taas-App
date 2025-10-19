@@ -19,7 +19,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   showSearch = true,
 }) => {
   return (
-    <View className="bg-white pt-4 pb-9 px-5">
+    <View className="bg-white pt-4 pb-4 px-5">
       <View className="flex-row items-center justify-between">
       
         <Text className="text-pink-500 text-2xl font-bold tracking-tight">
