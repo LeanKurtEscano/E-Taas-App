@@ -34,7 +34,7 @@ const ProductScreen: React.FC = () => {
   const [productDescription, setProductDescription] = useState('');
   const [productCategory, setProductCategory] = useState('Clothing');
   const [productAvailability, setProductAvailability] = useState<'available' | 'sold' | 'reserved'>('available');
-  const [productQuantity, setProductQuantity] = useState(1);
+  const [productQuantity, setProductQuantity] = useState(0);
   const [imageUris, setImageUris] = useState<string[]>([]);
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]); // Track original images
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); // Track deleted images
@@ -43,9 +43,9 @@ const ProductScreen: React.FC = () => {
   const [imageError, setImageError] = useState('');
 
   const categories = ['Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
-  const availabilityOptions: Array<'available' | 'sold' | 'reserved'> = [
+  const availabilityOptions: Array<'available' | 'out of stock' | 'reserved'> = [
     'available',
-    'sold',
+    'out of stock',
     'reserved',
   ];
 
@@ -66,7 +66,7 @@ const ProductScreen: React.FC = () => {
           setProductDescription(data.description || '');
           setProductCategory(data.category || 'Clothing');
           setProductAvailability(data.availability || 'available');
-          setProductQuantity(data.quantity || 1);
+          setProductQuantity(data.quantity || 0);
           
           // Store both in imageUris (for display) and existingImageUrls (for tracking)
           const existingImages = data.images || [];
@@ -132,7 +132,7 @@ const ProductScreen: React.FC = () => {
   };
 
   const decrementQuantity = () => {
-    setProductQuantity(prev => (prev > 1 ? prev - 1 : 1));
+    setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
   };
 
   const handleSubmit = async () => {
@@ -400,7 +400,7 @@ const ProductScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Description */}
+        
         <View className="mt-5 mb-6">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Description
@@ -419,7 +419,6 @@ const ProductScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Footer Actions */}
       <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
         <TouchableOpacity
           onPress={handleSubmit}

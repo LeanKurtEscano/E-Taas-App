@@ -4,7 +4,9 @@ export interface Product {
   name: string;
   price: number;
   category: string;
-  availability: 'available' | 'sold' | 'reserved';
+  quantity: number;
+  images: string[];
+  availability: 'available' | 'out of stock' | 'reserved';
   createdAt: Date | any;
   description?: string;
   sellerId: string;
