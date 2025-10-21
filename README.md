@@ -47,7 +47,7 @@ DTI eTaaS (Electronic Trade as a Service) is a comprehensive mobile commerce pla
 - **React Native** - Cross-platform mobile framework
 - **Expo** - Development platform and toolchain
 - **React Navigation** - Navigation library
-- **Redux/Context API** - State management
+- **Zustand/Context API** - State management
 
 ### Backend
 - **Firebase Authentication** - User authentication and authorization
