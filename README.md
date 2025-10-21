@@ -75,7 +75,6 @@ DTI eTaaS (Electronic Trade as a Service) is a comprehensive mobile commerce pla
 
 ### Phase 4 - Q1 2026
 - 📋 AI-powered recommendations
-- 📋 Offline support
 - 📋 Multi-language support
 - 📋 Enhanced vendor tools
 
