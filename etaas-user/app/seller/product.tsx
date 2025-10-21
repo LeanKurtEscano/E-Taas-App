@@ -18,13 +18,15 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { db } from '@/config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 
+import VariantModal from '@/components/seller/manageProductsScreen/ProductVariant';
+import { VariantCategory, Variant } from '@/types/product/product';
+
+
 const ProductScreen: React.FC = () => {
   const {userData} = useCurrentUser();
   const params = useLocalSearchParams();
   const sellerId = userData?.uid;
   const productId = params.productId as string | undefined;
-  console.log('Editing product with ID:', productId);
-  
   const router = useRouter();
   const sellerStore = useSellerStore();
   
@@ -41,6 +43,12 @@ const ProductScreen: React.FC = () => {
   const [fetchingProduct, setFetchingProduct] = useState(false);
   const [imageError, setImageError] = useState('');
 
+  const [variantModalVisible, setVariantModalVisible] = useState(false);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variantCategories, setVariantCategories] = useState<VariantCategory[]>([]);
+  const [variants, setVariants] = useState<Variant[]>([]);
+  
+  console.log(variants)
   const categories = ['Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
   const availabilityOptions: Array<'available' | 'out of stock' | 'reserved'> = [
     'available',
@@ -67,6 +75,10 @@ const ProductScreen: React.FC = () => {
           setProductAvailability(data.availability || 'available');
           setProductQuantity(data.quantity || 0);
           
+          // Variant data
+          setHasVariants(data.hasVariants || false);
+          setVariantCategories(data.variantCategories || []);
+          setVariants(data.variants || []);
         
           const existingImages = data.images || [];
           setImageUris(existingImages);
@@ -117,7 +129,7 @@ const ProductScreen: React.FC = () => {
   const removeImage = (index: number) => {
     const imageToRemove = imageUris[index];
     
-    // If this is an existing image (not a newly picked one), track it for deletion
+  
     if (existingImageUrls.includes(imageToRemove)) {
       setImagesToDelete(prev => [...prev, imageToRemove]);
     }
@@ -134,6 +146,13 @@ const ProductScreen: React.FC = () => {
     setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
   };
 
+  const handleSaveVariants = (categories: VariantCategory[], variantsList: Variant[]) => {
+    setVariantCategories(categories);
+    setVariants(variantsList);
+    setHasVariants(true);
+    Alert.alert('Success', 'Variants saved successfully!');
+  };
+
   const handleSubmit = async () => {
     if (!sellerId) {
       Alert.alert('Error', 'Seller ID is required');
@@ -145,7 +164,7 @@ const ProductScreen: React.FC = () => {
       return;
     }
 
-    if (!productPrice.trim() || isNaN(Number(productPrice))) {
+    if (!hasVariants && (!productPrice.trim() || isNaN(Number(productPrice)))) {
       Alert.alert('Error', 'Please enter valid price');
       return;
     }
@@ -156,18 +175,39 @@ const ProductScreen: React.FC = () => {
       return;
     }
 
+  
+    if (hasVariants) {
+      if (variantCategories.length === 0 || variants.length === 0) {
+        Alert.alert('Error', 'Please configure variants or disable variants');
+        return;
+      }
+      
+      const invalidVariants = variants.filter(v => v.price <= 0 );
+      if (invalidVariants.length > 0) {
+        Alert.alert('Error', 'All variants must have valid price and stock');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       const productData = {
         name: productName.trim(),
-        price: Number(productPrice),
+        price: hasVariants ? 0 : Number(productPrice),
         description: productDescription.trim(),
         category: productCategory,
         availability: productAvailability,
-        quantity: productQuantity,
+        quantity: hasVariants ? 0 : productQuantity,
         sellerId,
+        hasVariants,
+        ...(hasVariants && {
+          variantCategories,
+          variants,
+        }),
       };
+
+      console.log(productData);
 
       if (productId) {
         // Separate existing images from new ones
@@ -290,23 +330,25 @@ const ProductScreen: React.FC = () => {
           />
         </View>
 
-        {/* Price */}
-        <View className="mt-5">
-          <Text className="text-base font-semibold text-gray-900 mb-3">
-            Price (₱) *
-          </Text>
-          <TextInput
-            className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
-            placeholder="0.00"
-            value={productPrice}
-            onChangeText={setProductPrice}
-            keyboardType="numeric"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
+        {/* Price - Hide when variants are enabled */}
+        {!hasVariants && (
+          <View className="mt-5">
+            <Text className="text-base font-semibold text-gray-900 mb-3">
+              Price (₱) *
+            </Text>
+            <TextInput
+              className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
+              placeholder="0.00"
+              value={productPrice}
+              onChangeText={setProductPrice}
+              keyboardType="numeric"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+        )}
 
-        {/* Quantity - Only in Edit Mode */}
-        {productId && (
+        {/* Quantity - Only in Edit Mode AND when variants are disabled */}
+        {productId && !hasVariants && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Quantity
@@ -368,8 +410,8 @@ const ProductScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* Availability - Only in Edit Mode */}
-        {productId && ( 
+        {/* Availability - Only in Edit Mode AND when variants are disabled */}
+        {productId && !hasVariants && ( 
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Availability
@@ -399,7 +441,87 @@ const ProductScreen: React.FC = () => {
           </View>
         )}
 
+        {/* Variant Section */}
+        <View className="mt-6">
+          <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-base font-semibold text-gray-900">
+              Product Variants
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (hasVariants) {
+                  Alert.alert(
+                    'Disable Variants',
+                    'Are you sure you want to disable variants? This will remove all variant data.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Disable',
+                        style: 'destructive',
+                        onPress: () => {
+                          setHasVariants(false);
+                          setVariantCategories([]);
+                          setVariants([]);
+                        },
+                      },
+                    ]
+                  );
+                } else {
+                  setHasVariants(true);
+                }
+              }}
+              className={`px-4 py-2 rounded-full ${
+                hasVariants ? 'bg-pink-500' : 'bg-gray-200'
+              }`}
+            >
+              <Text className={`text-xs font-semibold ${
+                hasVariants ? 'text-white' : 'text-gray-700'
+              }`}>
+                {hasVariants ? 'Enabled' : 'Disabled'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {hasVariants ? (
+            <View>
+              <Text className="text-sm text-gray-600 mb-3">
+                Add variants like Color, Size, Material to create different product options.
+              </Text>
+              
+              {variantCategories.length > 0 && (
+                <View className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200">
+                  <Text className="text-sm font-semibold text-gray-900 mb-2">
+                    Current Variants ({variants.length})
+                  </Text>
+                  {variantCategories.map((cat) => (
+                    <Text key={cat.id} className="text-xs text-gray-600 mb-1">
+                      • {cat.name}: {cat.values.join(', ')}
+                    </Text>
+                  ))}
+                  
+                  {/* Show summary of variant availability */}
+                 
+                </View>
+              )}
+              
+              <TouchableOpacity
+                onPress={() => setVariantModalVisible(true)}
+                className="bg-pink-500 rounded-xl py-3 items-center flex-row justify-center"
+              >
+                <Plus size={20} color="white" />
+                <Text className="text-white font-semibold text-sm ml-2">
+                  {variantCategories.length > 0 ? 'Edit Variants' : 'Add Variants'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text className="text-sm text-gray-600">
+              Enable variants to create different options for this product (e.g., colors, sizes).
+            </Text>
+          )}
+        </View>
         
+        {/* Description */}
         <View className="mt-5 mb-6">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Description
@@ -418,6 +540,7 @@ const ProductScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      {/* Submit Button */}
       <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
         <TouchableOpacity
           onPress={handleSubmit}
@@ -441,6 +564,16 @@ const ProductScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Variant Modal */}
+      <VariantModal
+        visible={variantModalVisible}
+        onClose={() => setVariantModalVisible(false)}
+        onSave={handleSaveVariants}
+        initialCategories={variantCategories}
+        initialVariants={variants}
+        basePrice={Number(productPrice) || 0}
+      />
     </View>
   );
 };

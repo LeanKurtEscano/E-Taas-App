@@ -1,4 +1,4 @@
-
+import { VariantCategory,Variant } from "../product/product";
 export interface Product {
   id: string;
   name: string;
@@ -6,9 +6,11 @@ export interface Product {
   category: string;
   quantity: number;
   images: string[];
-  availability: 'available' | 'out of stock' | 'reserved';
+  availability: 'available' | 'out of stock' | 'reserved'|'sold';
   createdAt: Date | any;
   description?: string;
+  VariantCategories?: VariantCategory[];
+  variants?: Variant[];
   sellerId: string;
 }
 

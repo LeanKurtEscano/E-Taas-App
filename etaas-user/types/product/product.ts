@@ -1,9 +1,14 @@
 
-
-interface ProductVariant {
-    name : string;
-    values : string[];
+export interface VariantCategory {
+  id: string;
+  name: string;
+  values: string[];
 }
- export interface Variant {
-   options: ProductVariant[];
+
+export interface Variant {
+  id: string;
+  combination: string[];
+  price: number;
+  stock: number;
+  image?: string;
 }

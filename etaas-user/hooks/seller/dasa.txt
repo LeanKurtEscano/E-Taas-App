@@ -1,0 +1,9 @@
+const { step, setStep, categories, setCategories,
+    variants, setVariants, currentCategoryName, setCurrentCategoryName,
+    currentCategoryValues, setCurrentCategoryValues,
+    editingCategoryId, setEditingCategoryId,
+    editingVariantId, setEditingVariantId, editPrice, setEditPrice,
+    editStock, setEditStock, handleSaveCategory, removeCategory, generateCombinations,
+    editCategory, handleGenerateVariants, updateVariant, deleteVariant,
+    startEditingVariant, saveEditingVariant, cancelEditingVariant,
+    pickVariantImage, removeVariantImage, handleSave, } = useVariant();
