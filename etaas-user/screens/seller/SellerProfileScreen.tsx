@@ -22,43 +22,7 @@ const SellerProfileScreen: React.FC = () => {
 
     };
 
-    const handleSwitchToUser = async () => {
-        Alert.alert(
-            'Switch to User Mode',
-            'Do you want to switch to user mode? You can switch back anytime.',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Switch',
-                    onPress: async () => {
-                        try {
-                            setSwitching(true);
-                            if (userData?.uid) {
-                                const userRef = doc(db, 'users', userData.uid);
-                                await updateDoc(userRef, {
-                                    isSeller: false,
-                                    updatedAt: new Date(),
-                                });
-                                router.replace('/(tabs)/profile');
-                            }
-                        } catch (error: any) {
-                            console.error('Error switching to user mode:', error);
-                            Alert.alert(
-                                'Error',
-                                'Failed to switch to user mode. Please try again.'
-                            );
-                        } finally {
-                            setSwitching(false);
-                        }
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
-    };
+  
 
     const handleGoToShop = () => {
         router.push(`/seller/store`);
@@ -69,7 +33,7 @@ const SellerProfileScreen: React.FC = () => {
 
         try {
             await signOut(auth);
-            router.replace('/(auth)');
+            router.push('/(auth)');
         } catch (error: any) {
             console.error('Error during logout:', error);
             Alert.alert(
@@ -144,13 +108,13 @@ const SellerProfileScreen: React.FC = () => {
                         <TouchableOpacity
                             onPress={() => setShowSwitchModal(true)}
                             disabled={switching}
-                            className="flex-row items-center justify-center py-4 bg-gray-100 rounded-xl"
+                            className="flex-row items-center  border border-gray-300 justify-center py-4 bg-gray-100 rounded-xl"
                             activeOpacity={0.7}
                         >
                             {switching ? (
                                 <ActivityIndicator size="small" color="#6b7280" />
                             ) : (
-                                <View className="flex-row items-center">
+                                <View className="flex-row  items-center">
                                     <RefreshCw size={20} color="#6b7280" />
                                     <Text className="ml-2 text-gray-700 font-semibold text-base">
                                         Switch to User
@@ -176,7 +140,7 @@ const SellerProfileScreen: React.FC = () => {
                                 <TouchableOpacity
                                     key={option.id}
                                     onPress={() => handleOptionPress(option.id)}
-                                    className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-3"
+                                    className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
                                     style={{
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
@@ -212,7 +176,7 @@ const SellerProfileScreen: React.FC = () => {
                                 <TouchableOpacity
                                     key={option.id}
                                     onPress={() => handleOptionPress(option.id)}
-                                    className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-3"
+                                    className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
                                     style={{
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
@@ -248,7 +212,7 @@ const SellerProfileScreen: React.FC = () => {
                                 <TouchableOpacity
                                     key={option.id}
                                     onPress={() => handleOptionPress(option.id)}
-                                    className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-3"
+                                    className="bg-white rounded-2xl border border-gray-300 p-4 flex-row items-center justify-between mb-3"
                                     style={{
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
@@ -275,7 +239,7 @@ const SellerProfileScreen: React.FC = () => {
                     {/* Logout Button */}
                     <TouchableOpacity
                         onPress={() => setShowLogoutModal(true)}
-                        className="bg-white rounded-2xl p-4 flex-row items-center justify-center mb-2"
+                        className="bg-white rounded-2xl p-4 border border-gray-200  flex-row items-center justify-center mb-2"
                         style={{
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },

@@ -5,15 +5,13 @@ import { SearchBar } from '../user/userHomeScreen/SearchBar';
 
 interface AppHeaderProps {
   searchQuery: string;
-  onSearchChange: (text: string) => void;
+
   cartCount: number;
   onCartPress: () => void;
   showSearch?: boolean;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  searchQuery,
-  onSearchChange,
   cartCount,
   onCartPress,
   showSearch = true,
@@ -30,8 +28,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {showSearch && (
           <View className="flex-1 mx-4">
             <SearchBar 
-              value={searchQuery}
-              onChangeText={onSearchChange}
+      
               placeholder="Search products..."
             />
           </View>

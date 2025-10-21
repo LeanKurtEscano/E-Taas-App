@@ -26,7 +26,7 @@ const ProfileScreen: React.FC = () => {
 
         try {
             await signOut(auth);
-            router.replace('/(auth)');
+            router.push('/(auth)');
         } catch (error: any) {
             console.error('Error during logout:', error);
             Alert.alert(
@@ -117,7 +117,7 @@ const ProfileScreen: React.FC = () => {
                             <TouchableOpacity
                                 key={option.id}
                                 onPress={() => handleOptionPress(option.id)}
-                                className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-3 shadow-sm"
+                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
                                 style={{
                                     shadowColor: '#000',
                                     shadowOffset: { width: 0, height: 1 },
@@ -153,7 +153,7 @@ const ProfileScreen: React.FC = () => {
                             <TouchableOpacity
                                 key={option.id}
                                 onPress={() => handleOptionPress(option.id)}
-                                className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-3 shadow-sm"
+                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
                                 style={{
                                     shadowColor: '#000',
                                     shadowOffset: { width: 0, height: 1 },

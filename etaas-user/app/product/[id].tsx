@@ -33,10 +33,10 @@ import {
 } from 'lucide-react-native';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchProductData } from '@/services/seller/shop/shop';
-import { Product } from '@/types/seller/shop';
+import { Product, UserData } from '@/types/seller/shop';
 import { getInitials } from '@/utils/general/initials';
+import { fetchShopBySellerId } from '@/services/general/getShop';
 
-const { width } = Dimensions.get('window');
 
 const ViewProductScreen = () => {
 
@@ -48,11 +48,12 @@ const ViewProductScreen = () => {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shopData, setShopData] = useState<UserData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-
+ 
   const mockShopData = {
     totalProducts: 127,
     rating: 4.8,
@@ -74,7 +75,16 @@ const ViewProductScreen = () => {
 
       try {
         setLoading(true);
+       
         const fetchedProduct = await fetchProductData(productId);
+        const shopData = await fetchShopBySellerId(fetchedProduct?.sellerId || '');
+
+        if(shopData) {
+          setShopData(shopData);
+        } else {
+          setError('Unable to load shop details');
+        }
+        
         if (fetchedProduct) {
           setProduct(fetchedProduct);
           setSelectedImage(fetchedProduct.images?.[0] || '');
@@ -102,17 +112,13 @@ const ViewProductScreen = () => {
     // Navigate to checkout
   };
 
-  const handleEditProduct = () => {
-   
-  };
+
 
   const handleViewOrders = () => {
   
   };
 
-  const handleViewShop = () => {
-   
-  };
+  
 
   const handleShare = () => {
     console.log('Share product');
@@ -155,8 +161,8 @@ const ViewProductScreen = () => {
   }
 
   const isOwner = userData?.uid === product.sellerId;
-  const shopName = userData?.sellerInfo?.shopName || 'Shop';
-  const businessName = userData?.sellerInfo?.businessName || '';
+  const shopName = shopData?.sellerInfo?.shopName || 'Shop';
+  const businessName = shopData?.sellerInfo?.businessName || '';
   const shopInitials = getInitials(shopName);
 
   const descriptionLength = product.description?.length || 0;
@@ -341,13 +347,13 @@ const ViewProductScreen = () => {
               
              
                 <TouchableOpacity
-                  onPress={() => router.push(`/store/${product.sellerId}`)}
+                  onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/shop/${product.sellerId}`)}
                   className="flex-row items-center border border-pink-500 bg-white px-4 py-2 rounded-lg "
                   style={{ elevation: 2 }}
                 >
                   <Store size={14} color="#EC4899" strokeWidth={2.5} />
                   <Text className="text-pink-500 font-semibold text-sm ml-1.5">
-                    View Shop
+                    {isOwner ? 'View My Shop' : 'Visit Shop'}
                   </Text>
                   <ChevronRight size={14} color="#EC4899" strokeWidth={2.5} />
                 </TouchableOpacity>
@@ -509,7 +515,7 @@ const ViewProductScreen = () => {
               
               <TouchableOpacity
                 onPress={handleBuyDirectly}
-                className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center shadow-md"
+                className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center"
                 style={{ elevation: 3 }}
               >
                 <CreditCard size={18} color="#ffffff" strokeWidth={2.5} />

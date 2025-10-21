@@ -10,7 +10,7 @@ import {
 import { router } from "expo-router";
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteModal }) => (
-    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+    <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-300">
       <View className="flex-row">
      
         <View className="relative">

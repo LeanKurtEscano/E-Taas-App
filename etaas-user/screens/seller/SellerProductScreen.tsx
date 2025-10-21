@@ -150,7 +150,7 @@ const SellerProductScreen: React.FC = () => {
 
     
         <View className="px-5 mb-4">
-          <View className="bg-white rounded-xl px-4 py-3 flex-row items-center shadow-sm">
+          <View className="bg-white rounded-xl px-4 py-3 flex-row items-center border border-gray-300">
             <Search size={20} color="#9CA3AF" strokeWidth={2} />
             <TextInput
               placeholder="Search products..."
@@ -170,13 +170,15 @@ const SellerProductScreen: React.FC = () => {
  
         <View className="px-5 mb-4">
           <Text className="text-xs font-semibold text-gray-500 mb-3 uppercase">Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 2 }}
+          >
             <View className="flex-row" style={{ gap: 8 }}>
               {categories.map((category) => (
                 <TouchableOpacity
                   key={category}
                   onPress={() => setSelectedCategory(category)}
-                  className="px-5 py-2.5 rounded-full"
+                  className="px-5 py-2.5 border border-gray-300 rounded-full"
                   style={{
                     backgroundColor: selectedCategory === category ? '#E84393' : 'white',
                   }}
@@ -196,14 +198,14 @@ const SellerProductScreen: React.FC = () => {
         </View>
 
   
-        <View className="px-5 mb-4">
+        <View className="px-5 mb-3">
           <Text className="text-xs font-semibold text-gray-500 mb-3 uppercase">Availability</Text>
           <View className="flex-row" style={{ gap: 8 }}>
             {['All', 'In Stock', 'Out of Stock'].map((status) => (
               <TouchableOpacity
                 key={status}
                 onPress={() => setSelectedAvailability(status)}
-                className="px-5 py-2.5 rounded-full"
+                className="px-5 py-2.5 border border-gray-300 rounded-full"
                 style={{
                   backgroundColor: selectedAvailability === status ? '#E84393' : 'white',
                 }}
@@ -222,7 +224,7 @@ const SellerProductScreen: React.FC = () => {
         </View>
 
         <View className="px-5 pb-6">
-          <View className="flex-row justify-between items-center mb-4">
+          <View className="flex-row justify-between items-center mb-3">
             <Text className="text-base font-bold text-gray-900">
               Products ({filteredProducts.length})
             </Text>
