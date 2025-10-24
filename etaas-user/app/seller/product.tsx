@@ -345,9 +345,11 @@ const ProductScreen: React.FC = () => {
               placeholderTextColor="#9CA3AF"
             />
           </View>
+        
         )}
 
-        {/* Quantity - Only in Edit Mode AND when variants are disabled */}
+        
+
         {productId && !hasVariants && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">

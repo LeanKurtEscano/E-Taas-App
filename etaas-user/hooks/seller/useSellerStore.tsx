@@ -18,9 +18,12 @@ import { useCurrentUser } from '../useCurrentUser';
 const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
+import { Variant } from '@/types/product/product';
+import { deleteField } from 'firebase/firestore';
 const useSellerStore = () => {
 
     const { userData } = useCurrentUser();
+
     const uploadToCloudinary = async (imageUri: string): Promise<string> => {
         const CLOUDINARY_CLOUD_NAME = cloudName;
         const CLOUDINARY_UPLOAD_PRESET = uploadPreset;
@@ -86,7 +89,7 @@ const useSellerStore = () => {
             callback(products);
         });
 
-        return unsubscribe; // Call this to stop listening
+        return unsubscribe; 
     };
 
 
@@ -97,6 +100,37 @@ const useSellerStore = () => {
         try {
 
             const uploadedImageUrls = await uploadMultipleImages(imageUris);
+
+            const variantsWithImages: Variant[] =
+                product.variants?.filter(
+                    (variant) => variant.image && variant.image.trim() !== ""
+                ) || [];
+
+
+
+            const getVariantImages =
+                variantsWithImages?.length > 0
+                    ? variantsWithImages.map((variant) => variant.image!)
+                    : [];
+
+            const uploadVariantImageUrls = await uploadMultipleImages(getVariantImages);
+
+            const updatedProduct = { ...product };
+
+            updatedProduct.variants = product.variants?.map((variant) => {
+              
+                const index = variantsWithImages.findIndex((v) => v.id === variant.id);
+
+               
+                if (index !== -1 && uploadVariantImageUrls[index]) {
+                    return { ...variant, image: uploadVariantImageUrls[index] };
+                }
+
+                
+                return variant;
+            }) || [];
+
+
 
 
             const productsRef = collection(db, 'products');
@@ -114,73 +148,86 @@ const useSellerStore = () => {
     };
 
 
-    const updateProduct = async (
-        productId: string,
-        updates: Partial<Product>,
-        newImageUris?: string[],
-        existingImages?: string[],
-        imagesToDelete?: string[]
-    ): Promise<void> => {
-        try {
-            const productRef = doc(db, 'products', productId);
+  const updateProduct = async (
+    productId: string,
+    updates: Partial<Product>,
+    newImageUris?: string[],
+    existingImages?: string[],
+    imagesToDelete?: string[]
+): Promise<void> => {
+    try {
+        const productRef = doc(db, 'products', productId);
 
-            let updateData: any = { ...updates };
+        let updateData: any = { ...updates };
 
-            if (imagesToDelete && imagesToDelete.length > 0) {
-                console.log('Deleting images from Cloudinary:', imagesToDelete);
-
-                const deletePromises = imagesToDelete.map(async (imageUrl) => {
-                    try {
-
-                        const urlParts = imageUrl.split('/');
-                        const uploadIndex = urlParts.indexOf('upload');
-
-                        if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
-                           
-                            const pathAfterVersion = urlParts.slice(uploadIndex + 2).join('/');
-                            const publicId = pathAfterVersion.split('.')[0];
-                            console.log('Deleting public_id:', publicId);
-                        }
-                    } catch (error) {
-                        console.error('Error deleting Cloudinary image:', imageUrl, error);
-                        // Continue even if one image fails to delete
-                    }
-                });
-
-                await Promise.all(deletePromises);
-            }
-
-            // Step 2: Upload new images to Cloudinary
-            let uploadedImageUrls: string[] = [];
-            if (newImageUris && newImageUris.length > 0) {
-                console.log('Uploading new images:', newImageUris.length);
-                uploadedImageUrls = await uploadMultipleImages(newImageUris);
-            }
-
-            // Step 3: Combine existing images (that weren't deleted) with newly uploaded images
-            const finalImageUrls = [
-                ...(existingImages || []),
-                ...uploadedImageUrls
-            ];
-
-           
-            if (imagesToDelete?.length || newImageUris?.length) {
-                updateData.images = finalImageUrls;
-            }
-            // Step 4: Update Firestore document
-            await updateDoc(productRef, updateData);
-            console.log('Product updated successfully');
-
-        } catch (error) {
-            console.error('Error updating product:', error);
-            throw error;
+        if (updates.hasVariants === false) {
+            updateData.variantCategories = deleteField();
+            updateData.variants = deleteField();
         }
-    };
+
+        if (imagesToDelete && imagesToDelete.length > 0) {
+            const deletePromises = imagesToDelete.map(async (imageUrl) => {
+                try {
+                    const urlParts = imageUrl.split('/');
+                    const uploadIndex = urlParts.indexOf('upload');
+                    if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+                        const pathAfterVersion = urlParts.slice(uploadIndex + 2).join('/');
+                        const publicId = pathAfterVersion.split('.')[0];
+                        console.log('Deleting public_id:', publicId);
+                    }
+                } catch (error) {
+                    console.error('Error deleting Cloudinary image:', imageUrl, error);
+                }
+            });
+            await Promise.all(deletePromises);
+        }
+
+     
+        let uploadedImageUrls: string[] = [];
+        if (newImageUris && newImageUris.length > 0) {
+            uploadedImageUrls = await uploadMultipleImages(newImageUris);
+        }
+
+        const finalImageUrls = [
+            ...(existingImages || []),
+            ...uploadedImageUrls
+        ];
+
+        if (imagesToDelete?.length || newImageUris?.length) {
+            updateData.images = finalImageUrls;
+        }
+
+        if (updates.variants && updates.variants.length > 0) {
+            const variantsWithLocalImages = updates.variants.filter(
+                (variant) => variant.image && !variant.image.startsWith('http')
+            );
+
+            if (variantsWithLocalImages.length > 0) {
+                const localImageUris = variantsWithLocalImages.map(v => v.image!);
+                const uploadedVariantUrls = await uploadMultipleImages(localImageUris);
+
+                updateData.variants = updates.variants.map((variant) => {
+                    const index = variantsWithLocalImages.findIndex((v) => v.id === variant.id);
+                    if (index !== -1 && uploadedVariantUrls[index]) {
+                        return { ...variant, image: uploadedVariantUrls[index] };
+                    }
+                    return variant;
+                });
+            }
+        }
+
+        await updateDoc(productRef, updateData);
+        console.log('Product updated successfully');
+
+    } catch (error) {
+        console.error('Error updating product:', error);
+        throw error;
+    }
+};
 
 
 
 
-    
     const deleteProduct = async (productId: string): Promise<void> => {
         try {
             const productRef = doc(db, 'products', productId);

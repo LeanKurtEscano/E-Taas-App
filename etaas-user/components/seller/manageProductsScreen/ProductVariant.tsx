@@ -64,12 +64,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
     }
   }, [visible, initialCategories, initialVariants]);
 
-
- 
-
-  
-
-  // Render Step 1: Category Setup
   const renderCategorySetup = () => (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
       <View className="p-6">
@@ -80,7 +74,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
           Add categories like Color, Size, Material, etc.
         </Text>
 
-        {/* Existing Categories */}
         {categories.map((category) => (
           <View
             key={category.id}
@@ -113,7 +106,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         ))}
 
-        {/* Add/Edit Category Form */}
+      
         {categories.length < 3  ? (
            <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
           <Text className="text-sm font-semibold text-gray-900 mb-3">
@@ -169,7 +162,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
         )}
        
 
-        {/* Generate Variants Button */}
+      
         {categories.length > 0 && (
           <TouchableOpacity
             onPress={() => variants.length > 0 ? setStep(2) :handleGenerateVariants(basePrice)}
@@ -184,7 +177,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
     </ScrollView>
   );
 
-  // Render Custom Variant Form
+
   const renderCustomVariantForm = () => (
     <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
       <View className="flex-row justify-between items-center mb-4">
@@ -204,7 +197,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
         Select options to create a custom variant combination
       </Text>
 
-      {/* Category Value Selectors */}
+
       {categories.map((category) => (
         <View key={category.id} className="mb-4">
           <Text className="text-sm font-semibold text-gray-900 mb-2">
@@ -236,7 +229,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
         </View>
       ))}
 
-      {/* Selected Combination Preview */}
+
       {Object.values(selectedCategoryValues).filter(value => value).length > 0 && (
         <View className="bg-gray-50 rounded-lg p-3 mb-4">
           <Text className="text-sm font-semibold text-gray-900 mb-1">
@@ -286,7 +279,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Add Custom Variant Button */}
         <TouchableOpacity
           onPress={() => setShowCustomVariant(!showCustomVariant)}
           className="bg-blue-500 rounded-xl py-3 px-4 items-center flex-row justify-center mb-4"
@@ -297,10 +289,9 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Custom Variant Form */}
         {showCustomVariant && renderCustomVariantForm()}
 
-        {/* Delete All Variants Button */}
+       
         {variants.length > 0 && (
           <View className="mb-4">
             <TouchableOpacity
@@ -328,7 +319,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
 
-        {/* Table Header */}
+        
         {variants.length > 0 && (
           <View className="bg-gray-100 rounded-lg p-4 mb-2 flex-row border border-gray-200">
             <View className="flex-1">
@@ -349,14 +340,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
 
-        {/* Table Rows */}
+        
         {variants.length > 0 ? (
           variants.map((variant, index) => (
             <View
               key={variant.id}
               className="bg-white rounded-lg p-4 mb-2 border border-gray-200 flex-row items-center"
             >
-              {/* Variant Combination */}
+           
               <View className="flex-1">
                 <Text className="text-sm font-medium text-gray-900">
                   {variant.combination.join(' • ')}
@@ -366,7 +357,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 </Text>
               </View>
 
-              {/* Image */}
               <View className="w-20 items-center">
                 {variant.image ? (
                   <TouchableOpacity
@@ -395,7 +385,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 )}
               </View>
 
-              {/* Price */}
+        
               <View className="w-24 items-center">
                 {editingVariantId === variant.id ? (
                   <TextInput
@@ -412,7 +402,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 )}
               </View>
 
-              {/* Stock */}
+        
               <View className="w-20 items-center">
                 {editingVariantId === variant.id ? (
                   <TextInput
@@ -495,7 +485,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
 
-        {/* Summary */}
+   
         {variants.length > 0 && (
           <View className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
             <Text className="text-sm font-semibold text-gray-900 mb-2">

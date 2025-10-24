@@ -36,8 +36,7 @@ import { fetchProductData } from '@/services/seller/shop/shop';
 import { Product, UserData } from '@/types/seller/shop';
 import { getInitials } from '@/utils/general/initials';
 import { fetchShopBySellerId } from '@/services/general/getShop';
-
-
+import ProductDetailsModal from '@/components/user/browseProduct/VariantModal';
 const ViewProductScreen = () => {
 
   const router = useRouter();
@@ -53,6 +52,9 @@ const ViewProductScreen = () => {
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showVariantModal, setShowVariantModal] = useState(false);
  
   const mockShopData = {
     totalProducts: 127,
@@ -78,6 +80,7 @@ const ViewProductScreen = () => {
        
         const fetchedProduct = await fetchProductData(productId);
         const shopData = await fetchShopBySellerId(fetchedProduct?.sellerId || '');
+        console.log(fetchedProduct);
 
         if(shopData) {
           setShopData(shopData);
@@ -504,7 +507,7 @@ const ViewProductScreen = () => {
           ) : (
             <View className="flex-row gap-2">
               <TouchableOpacity
-                onPress={handleAddToCart}
+                onPress={() => setShowVariantModal(true)}
                 className="flex-1 bg-white border-2 border-pink-500 py-4 rounded-xl flex-row items-center justify-center"
               >
                 <ShoppingCart size={18} color="#EC4899" strokeWidth={2.5} />
@@ -526,6 +529,17 @@ const ViewProductScreen = () => {
             </View>
           )}
         </View>
+         
+         <ProductDetailsModal
+  isVisible={showVariantModal}
+  onClose={() => setShowVariantModal(false)}
+    product={product}
+   onAddToCart={(product, variant, quantity) => {
+    console.log('Add to cart:', product.name, variant, quantity);
+    // Add your cart logic here
+    setShowVariantModal(false); // Close modal after adding
+  }}
+/>
       </SafeAreaView>
     </SafeAreaView>
   );

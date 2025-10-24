@@ -9,7 +9,8 @@ export interface Product {
   availability: 'available' | 'out of stock' | 'reserved'|'sold';
   createdAt: Date | any;
   description?: string;
-  VariantCategories?: VariantCategory[];
+  hasVariants?: boolean;
+  variantCategories?: VariantCategory[];
   variants?: Variant[];
   sellerId: string;
 }

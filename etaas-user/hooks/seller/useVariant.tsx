@@ -213,7 +213,7 @@ const useVariant = () => {
                 {
                     text: 'Remove',
                     style: 'destructive',
-                    onPress: () => {updateVariant(variantId, 'image', undefined)
+                    onPress: () => {updateVariant(variantId, 'image', '');
                         
                     },
                 },
@@ -262,7 +262,7 @@ const useVariant = () => {
           combination,
           price: basePrice,
           stock: 0,
-          image: undefined,
+          image: "",
         };
     
         setVariants(prev => [...prev, newVariant]);
