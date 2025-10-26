@@ -17,13 +17,16 @@ import { Product, ShopData } from '@/types/seller/shop';
 
 
 
-export const fetchProductData =  async (productId: string) => { 
-  const productRef = doc(db, 'products', productId);
+export const fetchProductData = async (productId: string) => { 
+  const productRef = doc(db, "products", productId);
   const productSnap = await getDoc(productRef);
 
   if (productSnap.exists()) {
-    return productSnap.data() as Product;
+    return {
+      id: productSnap.id,      
+      ...productSnap.data(),   
+    } as Product & { id: string };
   } else {
-    throw new Error('Product not found');
+    throw new Error("Product not found");
   }
-}
+};

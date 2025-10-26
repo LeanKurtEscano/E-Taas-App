@@ -3,7 +3,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/config/firebaseConfig';
 
-interface UserData {
+export interface UserData {
   uid: string;
   email: string;
   username: string;

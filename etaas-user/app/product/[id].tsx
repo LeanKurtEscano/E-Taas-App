@@ -10,12 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { 
-  ArrowLeft, 
-  Check, 
-  RefreshCw, 
-  Truck, 
-  Star, 
+import {
+  ArrowLeft,
+  Check,
+  RefreshCw,
+  Truck,
+  Star,
   ChevronRight,
   ShoppingCart,
   CreditCard,
@@ -37,14 +37,24 @@ import { Product, UserData } from '@/types/seller/shop';
 import { getInitials } from '@/utils/general/initials';
 import { fetchShopBySellerId } from '@/services/general/getShop';
 import ProductDetailsModal from '@/components/user/browseProduct/VariantModal';
+import { useCart } from '@/hooks/general/useCart';
+import CartToast from '@/components/general/CartToast';
 const ViewProductScreen = () => {
 
   const router = useRouter();
   const { userData } = useCurrentUser();
-  const {id} = useLocalSearchParams();
-
+  const { id } = useLocalSearchParams();
   const productId = id as string | undefined;
 
+
+  const { 
+    loading: cartLoading, 
+    cartError, 
+    showCartToast,        // Add this
+    setShowCartToast,     // Add this
+    handleAddToCartDirect, 
+    handleAddToCartVariant 
+  } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [shopData, setShopData] = useState<UserData | null>(null);
@@ -52,10 +62,10 @@ const ViewProductScreen = () => {
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
- 
+
+
+  const totalStocks = product?.hasVariants ? product?.variants?.reduce((sum, variant) => sum + variant.stock, 0) : product?.quantity || 0;
   const mockShopData = {
     totalProducts: 127,
     rating: 4.8,
@@ -77,17 +87,17 @@ const ViewProductScreen = () => {
 
       try {
         setLoading(true);
-       
+
         const fetchedProduct = await fetchProductData(productId);
         const shopData = await fetchShopBySellerId(fetchedProduct?.sellerId || '');
         console.log(fetchedProduct);
 
-        if(shopData) {
+        if (shopData) {
           setShopData(shopData);
         } else {
           setError('Unable to load shop details');
         }
-        
+
         if (fetchedProduct) {
           setProduct(fetchedProduct);
           setSelectedImage(fetchedProduct.images?.[0] || '');
@@ -105,23 +115,10 @@ const ViewProductScreen = () => {
     fetchData();
   }, [productId]);
 
-  const handleAddToCart = () => {
-    console.log('Add to cart:', product?.name);
-    // Implement add to cart logic
-  };
-
-  const handleBuyDirectly = () => {
-    console.log('Buy directly:', product?.name);
-    // Navigate to checkout
-  };
-
-
 
   const handleViewOrders = () => {
-  
-  };
 
-  
+  };
 
   const handleShare = () => {
     console.log('Share product');
@@ -130,6 +127,10 @@ const ViewProductScreen = () => {
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
   };
+  
+  const handleBuyDirectly = () => {
+    console.log('Buy directly');
+  }
 
   const handleContactSeller = () => {
     console.log('Contact seller');
@@ -177,14 +178,14 @@ const ViewProductScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <ScrollView className="flex-1">
-       
+
         <View className="bg-gray-100">
           <Image
             source={{ uri: selectedImage }}
             className="w-full h-96"
             resizeMode="cover"
           />
-          
+
           <View className="absolute top-4 left-4 right-4 flex-row justify-between">
             <TouchableOpacity
               onPress={() => router.back()}
@@ -202,24 +203,24 @@ const ViewProductScreen = () => {
               >
                 <Share2 size={20} color="#1F2937" strokeWidth={2.5} />
               </TouchableOpacity>
-              
+
               {!isOwner && (
                 <TouchableOpacity
                   onPress={handleToggleFavorite}
                   className="bg-white w-10 h-10 rounded-full items-center justify-center shadow-lg"
                   style={{ elevation: 5 }}
                 >
-                  <Heart 
-                    size={20} 
-                    color={isFavorite ? "#EC4899" : "#1F2937"} 
+                  <Heart
+                    size={20}
+                    color={isFavorite ? "#EC4899" : "#1F2937"}
                     fill={isFavorite ? "#EC4899" : "none"}
-                    strokeWidth={2.5} 
+                    strokeWidth={2.5}
                   />
                 </TouchableOpacity>
               )}
             </View>
           </View>
-          
+
           {product.availability === 'available' && (
             <View className="absolute bottom-4 right-4 bg-green-500 px-3 py-1.5 rounded-lg flex-row items-center">
               <Check size={14} color="#FFFFFF" strokeWidth={2.5} />
@@ -228,7 +229,7 @@ const ViewProductScreen = () => {
           )}
         </View>
 
-    
+
         {product.images && product.images.length > 1 && (
           <ScrollView
             horizontal
@@ -239,9 +240,8 @@ const ViewProductScreen = () => {
               <TouchableOpacity
                 key={index}
                 onPress={() => setSelectedImage(image)}
-                className={`mr-2 rounded-lg overflow-hidden border-2 ${
-                  selectedImage === image ? 'border-pink-500' : 'border-gray-200'
-                }`}
+                className={`mr-2 rounded-lg overflow-hidden border-2 ${selectedImage === image ? 'border-pink-500' : 'border-gray-200'
+                  }`}
               >
                 <Image
                   source={{ uri: image }}
@@ -258,15 +258,12 @@ const ViewProductScreen = () => {
           <Text className="text-2xl font-bold text-gray-900 mb-2">
             {product.name}
           </Text>
-          
+
           <View className="flex-row items-end mb-4">
             <Text className="text-3xl font-bold text-pink-600">
               ₱{product.price.toLocaleString()}
             </Text>
-            {/* Optional: Show original price if on sale */}
-            {/* <Text className="text-lg text-gray-400 line-through ml-2">
-              ₱{(product.price * 1.2).toLocaleString()}
-            </Text> */}
+
           </View>
 
           <View className="flex-row items-center flex-wrap mb-4">
@@ -275,7 +272,7 @@ const ViewProductScreen = () => {
             </View>
             <View className="bg-blue-50 px-3 py-1.5 rounded-full mb-2">
               <Text className="text-blue-700 text-sm font-medium">
-                {product.quantity} available
+                {totalStocks} available
               </Text>
             </View>
           </View>
@@ -302,7 +299,7 @@ const ViewProductScreen = () => {
                   Fast shipping available
                 </Text>
               </View>
-              
+
               <View className="flex-row items-center bg-pink-50 px-4 py-3 rounded-full mr-2">
                 <Shield size={16} color="#EC4899" strokeWidth={2.5} />
                 <Text className="text-gray-700 text-sm font-medium ml-2">
@@ -338,7 +335,7 @@ const ViewProductScreen = () => {
             )}
           </View>
 
-    
+
           <View className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-4 mb-4 border border-pink-100">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center">
@@ -347,22 +344,22 @@ const ViewProductScreen = () => {
                   Shop Information
                 </Text>
               </View>
-              
-             
-                <TouchableOpacity
-                  onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/shop/${product.sellerId}`)}
-                  className="flex-row items-center border border-pink-500 bg-white px-4 py-2 rounded-lg "
-                  style={{ elevation: 2 }}
-                >
-                  <Store size={14} color="#EC4899" strokeWidth={2.5} />
-                  <Text className="text-pink-500 font-semibold text-sm ml-1.5">
-                    {isOwner ? 'View My Shop' : 'Visit Shop'}
-                  </Text>
-                  <ChevronRight size={14} color="#EC4899" strokeWidth={2.5} />
-                </TouchableOpacity>
-            
+
+
+              <TouchableOpacity
+                onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/shop/${product.sellerId}`)}
+                className="flex-row items-center border border-pink-500 bg-white px-4 py-2 rounded-lg "
+                style={{ elevation: 2 }}
+              >
+                <Store size={14} color="#EC4899" strokeWidth={2.5} />
+                <Text className="text-pink-500 font-semibold text-sm ml-1.5">
+                  {isOwner ? 'View My Shop' : 'Visit Shop'}
+                </Text>
+                <ChevronRight size={14} color="#EC4899" strokeWidth={2.5} />
+              </TouchableOpacity>
+
             </View>
-            
+
             <View className="flex-row items-start mb-4">
               <View className="w-16 h-16 bg-pink-500 rounded-full items-center justify-center mr-3  ">
                 <Text className="text-white font-bold text-xl">
@@ -376,7 +373,7 @@ const ViewProductScreen = () => {
                 {businessName && (
                   <Text className="text-sm text-gray-600 mb-2">{businessName}</Text>
                 )}
-                
+
                 <View className="flex-row items-center flex-wrap">
                   <View className="flex-row items-center mr-4 mb-1.5">
                     <Star size={14} color="#EAB308" fill="#EAB308" strokeWidth={2} />
@@ -387,7 +384,7 @@ const ViewProductScreen = () => {
                       ({mockShopData.reviewCount} reviews)
                     </Text>
                   </View>
-                  
+
                   <View className="flex-row items-center mb-1.5">
                     <Package size={12} color="#6B7280" strokeWidth={2} />
                     <Text className="text-gray-500 text-xs ml-1">
@@ -398,41 +395,6 @@ const ViewProductScreen = () => {
               </View>
             </View>
 
-            {/* Shop Stats 
-               <View className="bg-white rounded-lg p-3">
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center flex-1">
-                  <Clock size={14} color="#6B7280" strokeWidth={2} />
-                  <Text className="text-gray-600 text-xs ml-1.5">Response Time</Text>
-                </View>
-                <Text className="text-gray-900 font-semibold text-xs">
-                  {mockShopData.responseTime}
-                </Text>
-              </View>
-              
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center flex-1">
-                  <Shield size={14} color="#6B7280" strokeWidth={2} />
-                  <Text className="text-gray-600 text-xs ml-1.5">Response Rate</Text>
-                </View>
-                <Text className="text-gray-900 font-semibold text-xs">
-                  {mockShopData.responseRate}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <MapPin size={14} color="#6B7280" strokeWidth={2} />
-                  <Text className="text-gray-600 text-xs ml-1.5">Location</Text>
-                </View>
-                <Text className="text-gray-900 font-semibold text-xs">
-                  {mockShopData.location}
-                </Text>
-              </View>
-            </View>
-            
-            */}
-           
 
             {!isOwner && (
               <TouchableOpacity
@@ -493,7 +455,7 @@ const ViewProductScreen = () => {
                   Edit Product
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 onPress={handleViewOrders}
                 className="flex-1 bg-pink-500 border-2 border-pink-500 py-4 rounded-xl flex-row items-center justify-center"
@@ -507,7 +469,7 @@ const ViewProductScreen = () => {
           ) : (
             <View className="flex-row gap-2">
               <TouchableOpacity
-                onPress={() => setShowVariantModal(true)}
+                onPress={() => product.hasVariants ? setShowVariantModal(true) : handleAddToCartDirect({ userId: userData?.uid, productId: product.id, sellerId: product.sellerId })}
                 className="flex-1 bg-white border-2 border-pink-500 py-4 rounded-xl flex-row items-center justify-center"
               >
                 <ShoppingCart size={18} color="#EC4899" strokeWidth={2.5} />
@@ -515,7 +477,7 @@ const ViewProductScreen = () => {
                   Add to Cart
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 onPress={handleBuyDirectly}
                 className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center"
@@ -529,17 +491,19 @@ const ViewProductScreen = () => {
             </View>
           )}
         </View>
-         
-         <ProductDetailsModal
-  isVisible={showVariantModal}
-  onClose={() => setShowVariantModal(false)}
-    product={product}
-   onAddToCart={(product, variant, quantity) => {
-    console.log('Add to cart:', product.name, variant, quantity);
-    // Add your cart logic here
-    setShowVariantModal(false); // Close modal after adding
-  }}
-/>
+
+        <ProductDetailsModal
+          isVisible={showVariantModal}
+          onClose={() => setShowVariantModal(false)}
+          product={product}
+          currentUser={userData}
+          handleAddToCartVariant={handleAddToCartVariant}
+        />
+         <CartToast 
+        visible={showCartToast} 
+        onHide={() => setShowCartToast(false)}
+        message="Product added to cart!"
+      />
       </SafeAreaView>
     </SafeAreaView>
   );

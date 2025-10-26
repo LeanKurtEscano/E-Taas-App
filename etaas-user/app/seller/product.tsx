@@ -194,7 +194,7 @@ const ProductScreen: React.FC = () => {
     try {
       const productData = {
         name: productName.trim(),
-        price: hasVariants ? 0 : Number(productPrice),
+        price:  Number(productPrice),
         description: productDescription.trim(),
         category: productCategory,
         availability: productAvailability,
@@ -251,7 +251,7 @@ const ProductScreen: React.FC = () => {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header */}
+  
       <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6 flex-row items-center shadow-sm">
         <TouchableOpacity 
           onPress={() => router.back()} 
@@ -270,7 +270,7 @@ const ProductScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Image Upload Section */}
+    
         <View className="mt-6">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Product Images *
@@ -331,7 +331,7 @@ const ProductScreen: React.FC = () => {
         </View>
 
         {/* Price - Hide when variants are enabled */}
-        {!hasVariants && (
+     
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Price (₱) *
@@ -346,8 +346,7 @@ const ProductScreen: React.FC = () => {
             />
           </View>
         
-        )}
-
+    
         
 
         {productId && !hasVariants && (
@@ -413,7 +412,7 @@ const ProductScreen: React.FC = () => {
         </View>
 
         {/* Availability - Only in Edit Mode AND when variants are disabled */}
-        {productId && !hasVariants && ( 
+        {productId  && ( 
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Availability

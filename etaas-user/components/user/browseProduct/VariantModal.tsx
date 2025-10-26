@@ -12,12 +12,19 @@ import {
 } from 'react-native';
 import { X, Plus, Minus } from 'lucide-react-native';
 import { Product, Variant } from '@/types/product/product';
-
+import { UserData } from '@/hooks/useCurrentUser';
 interface ProductDetailsModalProps {
   isVisible: boolean;
   onClose: () => void;
   product: Product | null;
-  onAddToCart?: (product: Product, variant: Variant | null, quantity: number) => void;
+  currentUser: UserData;
+  handleAddToCartVariant: (params: {
+    userId: string;
+    productId: string;
+    sellerId: string;
+    variantId?: string;
+    quantity: number;
+  }) => Promise<void>;
 }
 
 
@@ -27,7 +34,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   isVisible,
   onClose,
   product,
-  onAddToCart,
+  handleAddToCartVariant,
+  currentUser
 }) => {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
@@ -52,6 +60,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     }
   }, [isVisible, product]);
 
+  console.log("user ID in modal:", currentUser?.uid);
+  console.log("product ID in modal:", product?.id);
+  console.log("seller ID in modal:", product?.sellerId);
+
   // Get currently selected variant
   const selectedVariant = useMemo(() => {
     if (!product?.hasVariants || !product.variants || !product.variantCategories) {
@@ -72,6 +84,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       variant.combination.every((val, idx) => val === selectedCombination[idx])
     );
   }, [product, selectedOptions]);
+  console.log(currentUser);
 
 
   const isOptionAvailable = (categoryIndex: number, value: string): boolean => {
@@ -135,17 +148,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     }
   };
 
-  const handleAddToCart = () => {
-    if (!product) return;
-
-    if (product.hasVariants && !selectedVariant) {
-      return;
-    }
-
-    onAddToCart?.(product, selectedVariant, quantity);
-    onClose();
-  };
-
 
   const currentPrice = selectedVariant?.price || product?.price || 0;
   const currentStock = selectedVariant?.stock || product?.quantity || 0;
@@ -197,7 +199,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             </View>
 
             <View className="flex-1 ml-4 mt-1 ">
-              <Text className="text-2xl font-bold text-orange-500 mb-2">
+              <Text className="text-2xl font-bold text-pink-500 mb-2">
                 ₱{currentPrice.toFixed(2)}
               </Text>
               <Text className="text-gray-600 text-base mb-2">
@@ -266,7 +268,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                             className={`
                               flex-row items-center px-4 py-3 rounded-lg border-2
                               ${isSelected
-                                ? 'border-orange-500 bg-orange-50'
+                                ? 'border-pink-500 bg-pink-50'
                                 : isAvailable
                                   ? 'border-gray-300 bg-white'
                                   : 'border-gray-200 bg-gray-100'
@@ -285,7 +287,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                               className={`
                                 font-medium
                                 ${isSelected
-                                  ? 'text-orange-500'
+                                  ? 'text-pink-500'
                                   : isAvailable
                                     ? 'text-gray-800'
                                     : 'text-gray-400'
@@ -346,12 +348,28 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
           <View className="p-6 border-t border-gray-200 bg-white">
             <TouchableOpacity
-              onPress={handleAddToCart}
+              onPress={() => {
+                if (!currentUser?.uid || !product?.id || !product?.sellerId) {
+                  // Handle missing data
+                  console.error('Missing required data');
+                  return;
+                }
+
+                handleAddToCartVariant({
+                  userId: currentUser.uid,
+                  productId: product.id,
+                  sellerId: product.sellerId,
+                  variantId: selectedVariant?.id || undefined,
+                  quantity: quantity,
+                });
+
+                onClose();
+              }}
               disabled={!canAddToCart}
               activeOpacity={0.8}
               className={`
                 py-4 rounded-lg items-center
-                ${canAddToCart ? 'bg-orange-500' : 'bg-gray-300'}
+                ${canAddToCart ? 'bg-pink-500' : 'bg-gray-300'}
               `}
             >
               <Text
@@ -361,7 +379,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 `}
               >
                 {product.hasVariants && !selectedVariant
-                  ? 'Select Variant'
+                  ? 'Add to Cart'
                   : !canAddToCart
                     ? 'Out of Stock'
                     : 'Add to Cart'}
