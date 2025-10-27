@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, View, Platform, StatusBar } from 'react-native'
-import { Tabs, Redirect } from 'expo-router'
+import { Tabs, Redirect, router } from 'expo-router'
 import Feather from '@expo/vector-icons/Feather'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/config/firebaseConfig'
@@ -13,8 +13,8 @@ const TabsLayout = () => {
   const [loading, setLoading] = useState(true)
 
   const handleCartPress = (): void => {
-    console.log('Navigate to cart')
-    // Add navigation logic here
+       router.push('/cart/cart');
+     
   }
 
   useEffect(() => {
