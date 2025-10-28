@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/config/firebaseConfig';
-
+import { listenToCartDataLength } from '@/services/user/cart/cart';
 export interface UserData {
   uid: string;
   email: string;
@@ -15,6 +15,8 @@ export const useCurrentUser = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [cartLength, setCartLength] = useState(0);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -54,5 +56,20 @@ export const useCurrentUser = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  return { user, userData, loading, error };
+useEffect(() => {
+  if (!userData?.uid) return;
+
+ 
+  const unsubscribe = listenToCartDataLength(userData.uid, (count) => {
+    setCartLength(count);
+  });
+
+  // cleanup when component unmounts
+  return () => unsubscribe();
+}, [userData]);
+
+
+
+
+  return { user, userData, loading, error, cartLength };
 };

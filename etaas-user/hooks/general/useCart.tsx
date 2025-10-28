@@ -1,10 +1,10 @@
 // hooks/useCart.ts
 import { useState } from "react";
-import { doc, getDoc, setDoc, updateDoc, arrayUnion,runTransaction,serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, runTransaction, serverTimestamp } from "firebase/firestore";
 
 import { db } from "@/config/firebaseConfig";
 
-
+import { Product } from "@/types/product/product";
 
 export interface CartItem {
   productId: string;
@@ -187,6 +187,267 @@ export const useCart = () => {
 
   const clearError = () => setCartError(null);
 
+
+  const getItemStock = async (
+    productId: string,
+    variantId?: string
+  ): Promise<number> => {
+    try {
+      const productDoc = await getDoc(doc(db, 'products', productId));
+
+      if (!productDoc.exists()) {
+        return 0;
+      }
+
+      const product = productDoc.data() as Product;
+
+    
+      if (product.availability !== 'available') {
+        return 0;
+      }
+
+  
+      if (variantId && product.variants) {
+        const variant = product.variants.find(v => v.id === variantId);
+        return variant?.stock || 0;
+      }
+
+
+      return product.quantity || 0;
+    } catch (error) {
+      console.error('Error getting stock:', error);
+      return 0;
+    }
+  };
+
+
+  const updateCartItemQuantity = async (
+    userId: string,
+    productId: string,
+    variantId: string | undefined,
+    newQuantity: number
+  ): Promise<{ success: boolean; message?: string; stock?: number }> => {
+    try {
+    
+      if (newQuantity < 0) {
+        return { success: false, message: 'Invalid quantity' };
+      }
+
+     
+      if (newQuantity === 0) {
+        return await deleteCartItem(userId, productId, variantId);
+      }
+
+      const availableStock = await getItemStock(productId, variantId);
+
+    
+      if (newQuantity > availableStock) {
+        return {
+          success: false,
+          message: `Only ${availableStock} items available in stock`,
+          stock: availableStock
+        };
+      }
+
+     
+      const cartRef = doc(db, 'carts', userId);
+      const cartSnap = await getDoc(cartRef);
+
+      if (!cartSnap.exists()) {
+        return { success: false, message: 'Cart not found' };
+      }
+
+      const cartData = cartSnap.data();
+      const items = cartData.items as CartItem[];
+
+      const updatedItems = items.map((item) => {
+        const isMatch = item.productId === productId &&
+          item.variantId === variantId;
+
+        if (isMatch) {
+          return {
+            ...item,
+            quantity: newQuantity,
+            updatedAt: new Date()
+          };
+        }
+        return item;
+      });
+
+      
+      await updateDoc(cartRef, { items: updatedItems });
+
+      return { success: true, message: 'Quantity updated successfully' };
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      return { success: false, message: 'Failed to update quantity' };
+    }
+  };
+
+ 
+  const incrementCartItemQuantity = async (
+    userId: string,
+    productId: string,
+    variantId: string | undefined,
+    currentQuantity: number
+  ): Promise<{ success: boolean; message?: string; stock?: number }> => {
+    try {
+      const availableStock = await getItemStock(productId, variantId);
+
+    
+      if (currentQuantity >= availableStock) {
+        return {
+          success: false,
+          message: `Maximum stock of ${availableStock} reached`,
+          stock: availableStock
+        };
+      }
+
+      return await updateCartItemQuantity(
+        userId,
+        productId,
+        variantId,
+        currentQuantity + 1
+      );
+    } catch (error) {
+      console.error('Error incrementing quantity:', error);
+      return { success: false, message: 'Failed to increment quantity' };
+    }
+  };
+
+
+  const decrementCartItemQuantity = async (
+    userId: string,
+    productId: string,
+    variantId: string | undefined,
+    currentQuantity: number
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      
+      if (currentQuantity <= 1) {
+        return {
+          success: false,
+          message: 'Use delete button to remove item'
+        };
+      }
+
+      return await updateCartItemQuantity(
+        userId,
+        productId,
+        variantId,
+        currentQuantity - 1
+      );
+    } catch (error) {
+      console.error('Error decrementing quantity:', error);
+      return { success: false, message: 'Failed to decrement quantity' };
+    }
+  };
+
+ 
+  const deleteCartItem = async (
+    userId: string,
+    productId: string,
+    variantId?: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const cartRef = doc(db, 'carts', userId);
+      const cartSnap = await getDoc(cartRef);
+
+      if (!cartSnap.exists()) {
+        return { success: false, message: 'Cart not found' };
+      }
+
+      const cartData = cartSnap.data();
+      const items = cartData.items as CartItem[];
+
+    
+      const updatedItems = items.filter((item) => {
+        const isMatch = item.productId === productId &&
+          item.variantId === variantId;
+        return !isMatch;
+      });
+
+    
+      if (updatedItems.length === 0) {
+        // Option 1: Keep cart with empty items array
+        await updateDoc(cartRef, { items: [] });
+
+        // Option 2: Delete cart document entirely (uncomment if preferred)
+        // await deleteDoc(cartRef);
+      } else {
+        await updateDoc(cartRef, { items: updatedItems });
+      }
+
+      return { success: true, message: 'Item removed from cart' };
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      return { success: false, message: 'Failed to remove item' };
+    }
+  };
+
+ 
+  const deleteMultipleCartItems = async (
+    userId: string,
+    itemsToDelete: Array<{ productId: string; variantId?: string }>
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const cartRef = doc(db, 'carts', userId);
+      const cartSnap = await getDoc(cartRef);
+
+      if (!cartSnap.exists()) {
+        return { success: false, message: 'Cart not found' };
+      }
+
+      const cartData = cartSnap.data();
+      const items = cartData.items as CartItem[];
+
+   
+      const updatedItems = items.filter((item) => {
+        return !itemsToDelete.some(
+          (deleteItem) =>
+            deleteItem.productId === item.productId &&
+            deleteItem.variantId === item.variantId
+        );
+      });
+
+      // Update cart
+      if (updatedItems.length === 0) {
+        await updateDoc(cartRef, { items: [] });
+      } else {
+        await updateDoc(cartRef, { items: updatedItems });
+      }
+
+      return {
+        success: true,
+        message: `${itemsToDelete.length} item(s) removed from cart`
+      };
+    } catch (error) {
+      console.error('Error deleting multiple items:', error);
+      return { success: false, message: 'Failed to remove items' };
+    }
+  };
+
+
+  const clearCart = async (
+    userId: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const cartRef = doc(db, 'carts', userId);
+
+    
+      await updateDoc(cartRef, { items: [] });
+
+     
+      return { success: true, message: 'Cart cleared successfully' };
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      return { success: false, message: 'Failed to clear cart' };
+    }
+  };
+
+
+ 
+
   return {
     loading,
     cartError,
@@ -195,5 +456,12 @@ export const useCart = () => {
     handleAddToCartDirect,
     handleAddToCartVariant,
     clearError,
+    incrementCartItemQuantity,
+    decrementCartItemQuantity,
+    deleteCartItem,
+    deleteMultipleCartItems,
+    clearCart,
+    updateCartItemQuantity,
+    getItemStock,
   };
 };

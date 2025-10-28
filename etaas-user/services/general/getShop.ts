@@ -1,6 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import { UserData } from "@/types/seller/shop";
+
 export const fetchShopBySellerId = async (sellerId: string) => {
   try {
     const sellerRef = doc(db, "users", sellerId); 

@@ -29,3 +29,45 @@ export interface Product {
   sellerId?: string;
   [key: string]: any;
 }
+
+
+
+export interface CartItem {
+  productId: string;
+  hasVariants: boolean;
+  variantId: string | null;
+  quantity: number;
+  sellerId: string;
+  addedAt: any;
+  updatedAt: any;
+}
+
+export interface CartCardProps {
+  sellerId: string;
+  items: CartItem[];
+  userId: string;
+  onUpdate?: () => void;
+}
+
+
+
+export interface ProductData {
+  product: Product;
+  variant: Variant | null;
+  price: number;
+  stock: number;
+  image: string;
+  variantText: string;
+}
+
+export interface CheckoutItem {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  price: number;
+  productName: string;
+  image: string;
+  variantText: string;
+  sellerId: string;
+  shopName: string;
+}

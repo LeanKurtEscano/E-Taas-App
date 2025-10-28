@@ -6,10 +6,11 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/config/firebaseConfig'
 import { AppHeader } from '@/components/general/AppHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [cartCount] = useState<number>(3)
+  const { cartLength } = useCurrentUser();
   const [loading, setLoading] = useState(true)
 
   const handleCartPress = (): void => {
@@ -46,7 +47,7 @@ const TabsLayout = () => {
       <AppHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        cartCount={cartCount}
+        cartCount={cartLength}
         onCartPress={handleCartPress}
         showSearch={true}
       />
