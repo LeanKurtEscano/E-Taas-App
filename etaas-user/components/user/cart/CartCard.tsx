@@ -8,7 +8,6 @@ import { ScrollView } from 'react-native';
 import { CartSkeleton } from '@/components/loader/CartSkeleton';
 import { useCartCard } from '@/hooks/general/useCartCard';
 
-
 export default function CartCard({ sellerId, items, userId, onUpdate }: CartCardProps) {
  const {
   shopName,
