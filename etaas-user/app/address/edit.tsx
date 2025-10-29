@@ -54,11 +54,11 @@ export default function EditAddressScreen() {
   const [originalAddress, setOriginalAddress] = useState<Address | null>(null);
 
   useEffect(() => {
-    // Only fetch when userData and id are available
+  
     if (userData?.uid && id) {
       fetchAddressData();
     }
-  }, [userData?.uid, id]); // Added proper dependencies
+  }, [userData?.uid, id]); 
 
   const fetchAddressData = async () => {
     try {
@@ -67,7 +67,7 @@ export default function EditAddressScreen() {
         return;
       }
 
-      setLoading(true); // Ensure loading is true when fetching
+      setLoading(true);
 
       const userRef = doc(db, 'users', userData.uid);
       const userDoc = await getDoc(userRef);

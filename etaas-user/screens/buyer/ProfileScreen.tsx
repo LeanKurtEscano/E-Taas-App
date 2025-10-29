@@ -17,8 +17,8 @@ const ProfileScreen: React.FC = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-    const handleOptionPress = (optionId: number) => {
-        console.log(`Option ${optionId} pressed`);
+    const handleOptionPress = (route:string) => {
+       router.push(route);
     };
 
 
@@ -116,7 +116,7 @@ const ProfileScreen: React.FC = () => {
                         return (
                             <TouchableOpacity
                                 key={option.id}
-                                onPress={() => handleOptionPress(option.id)}
+                                onPress={() => handleOptionPress(option.route)}
                                 className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
                                 style={{
                                     shadowColor: '#000',
@@ -152,7 +152,7 @@ const ProfileScreen: React.FC = () => {
                         return (
                             <TouchableOpacity
                                 key={option.id}
-                                onPress={() => handleOptionPress(option.id)}
+                                onPress={() => handleOptionPress(option.route)}
                                 className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
                                 style={{
                                     shadowColor: '#000',

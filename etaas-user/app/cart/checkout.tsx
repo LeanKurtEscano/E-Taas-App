@@ -1,6 +1,6 @@
 // app/cart/checkout.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { CheckoutItem } from '@/types/cart/checkout';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { collection, addDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import CheckoutToast from '@/components/general/CheckOutToast';
 
 interface Address {
   id: string;
@@ -26,6 +28,11 @@ export default function CheckoutScreen() {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const { userData } = useCurrentUser();
+  const [checkOutLoading, setCheckOutLoading] = useState(false);
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
   const items: CheckoutItem[] = JSON.parse(params.items as string);
   const sellerId = params.sellerId as string;
@@ -38,7 +45,6 @@ export default function CheckoutScreen() {
 
     const userRef = doc(db, 'users', userData.uid);
 
-    // Listen for real-time updates to the default address
     const unsubscribe = onSnapshot(
       userRef,
       (snapshot) => {
@@ -65,7 +71,6 @@ export default function CheckoutScreen() {
       }
     );
 
-    // Cleanup listener when component unmounts
     return () => unsubscribe();
   }, [userData]);
 
@@ -73,22 +78,104 @@ export default function CheckoutScreen() {
     return items.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const shippingFee = 50;
-  const serviceFee = 10;
-  const totalPrice = calculateSubtotal() + shippingFee + serviceFee;
+  const shippingFee = 70;
+  const totalPrice = calculateSubtotal() + shippingFee;
 
-  const handlePlaceOrder = () => {
-    if (!selectedAddress) {
-      Alert.alert(
-        'No Shipping Address',
-        'Please add a shipping address before placing your order.',
-        [{ text: 'Add Address', onPress: () => router.push('/address/new') }]
-      );
-      return;
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  const handlePlaceOrder = async () => {
+    try {
+      if (!selectedAddress) {
+        showToast('Please add a shipping address before placing your order', 'error');
+        setTimeout(() => {
+          router.push('/address/new');
+        }, 3000);
+        return;
+      }
+
+      if (!userData) {
+        showToast('You must be logged in to place an order', 'error');
+        return;
+      }
+      setCheckOutLoading(true);
+
+      // --- 1️⃣ Create Order Data ---
+      const orderData = {
+        userId: userData.uid,
+        sellerId,
+        shopName,
+        items,
+        shippingAddress: selectedAddress,
+        shippingFee,
+        totalAmount: calculateSubtotal(),
+        totalPayment: totalPrice,
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        createdAt: serverTimestamp(),
+      };
+
+      // --- 2️⃣ Add Order to Firestore ---
+      const orderDocRef = await addDoc(collection(db, 'orders'), orderData);
+
+      // --- 3️⃣ Remove Checked-out Items from Cart ---
+      const cartRef = doc(db, 'carts', userData.uid);
+      const cartSnap = await getDoc(cartRef);
+
+      if (cartSnap.exists()) {
+        const cartData = cartSnap.data();
+        const currentItems = cartData.items || [];
+
+        // Filter out items that were just checked out
+        const updatedItems = currentItems.filter((cartItem: any) => {
+          return !items.some(
+            (checkedItem) =>
+              checkedItem.productId === cartItem.productId &&
+              checkedItem.variantId === cartItem.variantId
+          );
+        });
+
+        await updateDoc(cartRef, { items: updatedItems });
+      }
+
+      // --- 4️⃣ Add Notifications for Buyer and Seller ---
+      const buyerNotifRef = collection(db, 'notifications', userData.uid, 'notifications');
+      const sellerNotifRef = collection(db, 'notifications', sellerId, 'notifications');
+
+      // Notify Buyer
+      await addDoc(buyerNotifRef, {
+        type: 'buyer',
+        title: 'Order Placed Successfully',
+        message: `Your order to ${shopName} has been placed successfully!`,
+        orderId: orderDocRef.id,
+        status: 'unread',
+        createdAt: serverTimestamp(),
+      });
+
+      // Notify Seller
+      await addDoc(sellerNotifRef, {
+        type: 'seller',
+        title: 'New Order Received',
+        message: `You have received a new order from ${userData.displayName || 'a buyer'}.`,
+        orderId: orderDocRef.id,
+        status: 'unread',
+        createdAt: serverTimestamp(),
+      });
+
+      // --- 5️⃣ Success Message ---
+      showToast('Order placed successfully!', 'success');
+      setTimeout(() => {
+        router.push('/orders/order');
+      }, 2000);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      showToast('Failed to place order. Please try again.', 'error');
+    } finally {
+      setCheckOutLoading(false);
     }
-
-    // TODO: Implement order placement logic
-    Alert.alert('Success', 'Order placed successfully!');
   };
 
   const handleAddressPress = () => {
@@ -224,13 +311,6 @@ export default function CheckoutScreen() {
               </Text>
             </View>
             
-            <View className="flex-row justify-between py-1.5">
-              <Text className="text-sm text-gray-600">Service Fee</Text>
-              <Text className="text-sm text-gray-900">
-                ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            
             <View className="h-px bg-gray-200 my-2" />
             
             <View className="flex-row justify-between items-center py-1">
@@ -253,8 +333,11 @@ export default function CheckoutScreen() {
             </Text>
           </View>
           <TouchableOpacity
+            disabled={checkOutLoading}
             onPress={handlePlaceOrder}
-            className="bg-pink-500 px-8 py-3.5 rounded-xl shadow-sm"
+ className={`px-8 py-3.5 rounded-xl shadow-sm ${
+    checkOutLoading ? 'bg-gray-400' : 'bg-pink-500'
+  }`}
             activeOpacity={0.8}
           >
             <Text className="text-white font-bold text-base">
@@ -263,6 +346,14 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Toast Notification */}
+      <CheckoutToast
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </SafeAreaView>
   );
 }

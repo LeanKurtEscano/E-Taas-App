@@ -14,6 +14,7 @@ interface ProfileOption {
     id: number;
     title: string;
     icon: any;
+    route: string;
 }
 export const MOCK_CATEGORIES: Category[] = [
   { id: 1, title: 'Produce', emoji: '🥗', color: '#10B981' },
@@ -49,11 +50,11 @@ export const FEATURES: Feature[] = [
 
 
 export const profileOptions: ProfileOption[] = [
-        { id: 1, title: 'My Orders', icon: ShoppingBag },
-        { id: 2, title: 'To Ship', icon: Package },
-        { id: 3, title: 'To Receive', icon: Truck },
-        { id: 4, title: 'To Pay', icon: Wallet },
-        { id: 5, title: 'My Purchase History', icon: Clock },
-        { id: 6, title: 'Help & Support', icon: HelpCircle },
-        { id: 7, title: 'Settings', icon: Settings },
+        { id: 1, title: 'My Orders', icon: ShoppingBag,route:'/orders/order' },
+        { id: 2, title: 'To Ship', icon: Package, route:'/orders/to-ship' },
+        { id: 3, title: 'To Receive', icon: Truck ,route:'/orders/to-receive'},
+        { id: 4, title: 'To Pay', icon: Wallet,route:'/orders/to-pay' },
+        { id: 5, title: 'My Purchase History', icon: Clock, route:'/orders/purchase-history' },
+        { id: 6, title: 'Help & Support', icon: HelpCircle,route:'/support/help' },
+        { id: 7, title: 'Settings', icon: Settings, route:'/settings' },
     ];
