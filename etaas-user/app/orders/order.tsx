@@ -7,39 +7,21 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestam
 import { db } from '@/config/firebaseConfig';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import CheckoutToast from '@/components/general/CheckOutToast';
-
-interface OrderItem {
-  productId: string;
-  productName: string;
-  variantText?: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
-
-interface Order {
-  id: string;
-  shopName: string;
-  items: OrderItem[];
-  totalPayment: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus: 'unpaid' | 'paid';
-  createdAt: Timestamp;
-  shippingAddress: any;
-}
-
+import { getStatusColor } from '@/utils/general/getStatus';
+import { formatDate } from '@/utils/general/formatDate';
+import { Order } from '@/types/order/userOrder';
+import { getStatusIcon } from '@/utils/general/getStatus';
+import { useNotification } from '@/hooks/general/useNotification';
 export default function MyOrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'>('all');
   const { userData } = useCurrentUser();
-
-  // Toast state
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-
+  const { sendNotification } = useNotification();
   useEffect(() => {
     if (!userData) return;
 
@@ -82,40 +64,30 @@ export default function MyOrdersScreen() {
     setToastVisible(true);
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    try {
-      const orderRef = doc(db, 'orders', orderId);
-      await updateDoc(orderRef, {
-        status: 'cancelled'
-      });
-      showToast('Order cancelled successfully', 'success');
-    } catch (error) {
-      console.error('Error cancelling order:', error);
-      showToast('Failed to cancel order. Please try again.', 'error');
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-700';
-      case 'confirmed': return 'bg-blue-100 text-blue-700';
-      case 'shipped': return 'bg-indigo-100 text-indigo-700';
-      case 'delivered': return 'bg-emerald-100 text-emerald-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const handleCancelOrder = async (orderId: string, sellerId: string) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, {
+      status: 'cancelled'
+    });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return 'time-outline';
-      case 'confirmed': return 'checkmark-circle-outline';
-      case 'shipped': return 'bicycle-outline';
-      case 'delivered': return 'checkmark-done-circle';
-      case 'cancelled': return 'close-circle-outline';
-      default: return 'help-circle-outline';
-    }
-  };
+
+    await sendNotification(
+      sellerId,
+      'seller',
+      'Order Cancelled',
+      'An order from a buyer has been cancelled.',
+      orderId
+    );
+
+    showToast('Order cancelled successfully', 'success');
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    showToast('Failed to cancel order. Please try again.', 'error');
+  }
+};
+ 
 
   const getTabIcon = (key: string) => {
     switch (key) {
@@ -129,21 +101,11 @@ export default function MyOrdersScreen() {
     }
   };
 
-  const formatDate = (timestamp: Timestamp) => {
-    if (!timestamp) return 'N/A';
-    const date = timestamp.toDate();
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const filteredOrders = selectedTab === 'all' 
     ? orders 
-    : orders.filter(order => order.status === selectedTab);
+    : orders.filter(order => order.status === selectedTab); 
+
+    console.log('Filtered Orders:', filteredOrders);
 
   const tabs = [
     { key: 'all', label: 'All', count: orders.length },
@@ -408,7 +370,7 @@ export default function MyOrdersScreen() {
                     
                     {order.status === 'pending' && (
                       <TouchableOpacity
-                        onPress={() => handleCancelOrder(order.id)}
+                        onPress={() => handleCancelOrder(order.id, order.sellerId)}
                         className="flex-1 bg-red-500 py-3 rounded-xl"
                         activeOpacity={0.7}
                         style={{

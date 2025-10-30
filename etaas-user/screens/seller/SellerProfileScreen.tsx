@@ -17,9 +17,8 @@ const SellerProfileScreen: React.FC = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-    const handleOptionPress = (optionId: number) => {
-        console.log(`Seller Option ${optionId} pressed`);
-
+    const handleOptionPress = (route:string) => {
+        router.push(route);
     };
 
   
@@ -139,15 +138,9 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    onPress={() => handleOptionPress(option.id)}
+                                    onPress={() => handleOptionPress(option.route)}
                                     className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
-                                    style={{
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: 0.08,
-                                        shadowRadius: 4,
-                                        elevation: 3,
-                                    }}
+                               
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -175,15 +168,9 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    onPress={() => handleOptionPress(option.id)}
+                                    onPress={() => handleOptionPress(option.route)}
                                     className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
-                                    style={{
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: 0.08,
-                                        shadowRadius: 4,
-                                        elevation: 3,
-                                    }}
+                                 
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -211,15 +198,9 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    onPress={() => handleOptionPress(option.id)}
+                                    onPress={() => handleOptionPress(option.route)}
                                     className="bg-white rounded-2xl border border-gray-300 p-4 flex-row items-center justify-between mb-3"
-                                    style={{
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: 0.08,
-                                        shadowRadius: 4,
-                                        elevation: 3,
-                                    }}
+                               
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -239,14 +220,8 @@ const SellerProfileScreen: React.FC = () => {
                     {/* Logout Button */}
                     <TouchableOpacity
                         onPress={() => setShowLogoutModal(true)}
-                        className="bg-white rounded-2xl p-4 border border-gray-200  flex-row items-center justify-center mb-2"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 4,
-                            elevation: 3,
-                        }}
+                        className="bg-white rounded-2xl p-4 border border-gray-300  flex-row items-center justify-center mb-2"
+                    
                         activeOpacity={0.7}
                     >
                         <LogOut size={20} color="#ef4444" />

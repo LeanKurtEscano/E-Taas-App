@@ -117,14 +117,8 @@ const ProfileScreen: React.FC = () => {
                             <TouchableOpacity
                                 key={option.id}
                                 onPress={() => handleOptionPress(option.route)}
-                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
-                                style={{
-                                    shadowColor: '#000',
-                                    shadowOffset: { width: 0, height: 1 },
-                                    shadowOpacity: 0.1,
-                                    shadowRadius: 3,
-                                    elevation: 2,
-                                }}
+                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3 "
+                                
                                 activeOpacity={0.7}
                             >
                                 <View className="flex-row items-center flex-1">
@@ -153,14 +147,8 @@ const ProfileScreen: React.FC = () => {
                             <TouchableOpacity
                                 key={option.id}
                                 onPress={() => handleOptionPress(option.route)}
-                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-200 justify-between mb-3 shadow-sm"
-                                style={{
-                                    shadowColor: '#000',
-                                    shadowOffset: { width: 0, height: 1 },
-                                    shadowOpacity: 0.1,
-                                    shadowRadius: 3,
-                                    elevation: 2,
-                                }}
+                                className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3 "
+                              
                                 activeOpacity={0.7}
                             >
                                 <View className="flex-row items-center flex-1">
@@ -180,14 +168,8 @@ const ProfileScreen: React.FC = () => {
                 {/* Logout Button */}
                 <TouchableOpacity
                     onPress={() => setShowLogoutModal(true)}
-                    className="bg-white rounded-2xl p-4 flex-row items-center justify-center mt-2 shadow-sm"
-                    style={{
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 3,
-                        elevation: 2,
-                    }}
+                    className="bg-white rounded-2xl p-4 flex-row border border-gray-300 items-center justify-center mt-2 "
+                  
                     activeOpacity={0.7}
                 >
                     <LogOut size={20} color="#374151" />

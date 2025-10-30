@@ -4,14 +4,57 @@ interface SellerOption {
     id: number;
     title: string;
     icon: any;
+    route?: string;
 }
+
+
 export const sellerOptions: SellerOption[] = [
-        { id: 1, title: 'My Products', icon: Package },
-        { id: 2, title: 'Orders Management', icon: Store },
-        { id: 3, title: 'Sales Analytics', icon: TrendingUp },
-        { id: 4, title: 'Revenue Report', icon: DollarSign },
-        { id: 5, title: 'Customer Reviews', icon: Users },
-        { id: 6, title: 'Shop Statistics', icon: BarChart3 },
-        { id: 7, title: 'Seller Settings', icon: Settings },
-        { id: 8, title: 'Help & Support', icon: HelpCircle },
-    ];
+    { 
+        id: 1, 
+        title: 'My Products', 
+        icon: Package,
+        route: '/seller/products' 
+    },
+    { 
+        id: 2, 
+        title: 'Orders Management', 
+        icon: Store,
+        route: '/seller/orders' 
+    },
+    { 
+        id: 3, 
+        title: 'Sales Analytics', 
+        icon: TrendingUp,
+        route: '/seller/analytics' 
+    },
+    { 
+        id: 4, 
+        title: 'Revenue Report', 
+        icon: DollarSign,
+        route: '/seller/revenue' 
+    },
+    { 
+        id: 5, 
+        title: 'Customer Reviews', 
+        icon: Users,
+        route: '/seller/reviews' 
+    },
+    { 
+        id: 6, 
+        title: 'Shop Statistics', 
+        icon: BarChart3,
+        route: '/seller/statistics' 
+    },
+    { 
+        id: 7, 
+        title: 'Seller Settings', 
+        icon: Settings,
+        route: '/seller/settings' 
+    },
+    { 
+        id: 8, 
+        title: 'Help & Support', 
+        icon: HelpCircle,
+        route: '/seller/support' 
+    },
+];
