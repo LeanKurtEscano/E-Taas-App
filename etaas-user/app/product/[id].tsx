@@ -40,6 +40,7 @@ import ProductDetailsModal from '@/components/user/browseProduct/VariantModal';
 import { useCart } from '@/hooks/general/useCart';
 import CartToast from '@/components/general/CartToast';
 import { ConversationModal } from '@/components/general/ConversationModal';
+import { CheckoutItem } from '@/types/product/product';
 const ViewProductScreen = () => {
 
   const router = useRouter();
@@ -47,14 +48,14 @@ const ViewProductScreen = () => {
   const { id } = useLocalSearchParams();
   const productId = id as string | undefined;
 
-   const [showConversationModal, setShowConversationModal] = useState(false);
-  const { 
-    loading: cartLoading, 
-    cartError, 
-    showCartToast,        // Add this
-    setShowCartToast,     // Add this
-    handleAddToCartDirect, 
-    handleAddToCartVariant 
+  const [showConversationModal, setShowConversationModal] = useState(false);
+  const {
+    loading: cartLoading,
+    cartError,
+    showCartToast,
+    setShowCartToast,
+    handleAddToCartDirect,
+    handleAddToCartVariant
   } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,8 +65,8 @@ const ViewProductScreen = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showVariantModal, setShowVariantModal] = useState(false);
-
-
+  const [isBuyingDirectly, setIsBuyingDirectly] = useState(false);
+  console.log(isBuyingDirectly);
   const totalStocks = product?.hasVariants ? product?.variants?.reduce((sum, variant) => sum + variant.stock, 0) : product?.quantity || 0;
   const mockShopData = {
     totalProducts: 127,
@@ -128,10 +129,66 @@ const ViewProductScreen = () => {
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
   };
-  
+
   const handleBuyDirectly = () => {
-    console.log('Buy directly');
+    const checkOutData: CheckoutItem[] = [];
+    checkOutData.push({
+      productId: product?.id,
+      variantId: null,
+      quantity: 1,
+      price: product?.price,
+      productName: product?.name,
+      image: product?.images?.[0] || '',
+      variantText: product?.variantText || '',
+      sellerId: product?.sellerId || '',
+      shopName: shopData?.sellerInfo?.shopName || 'Shop',
+    })
+
+    router.push({
+      pathname: '/cart/checkout',
+      params: {
+        items: JSON.stringify(checkOutData),
+        sellerId: product?.sellerId || '',
+        shopName,
+        totalAmount: (product?.price || 0).toString(),
+        itemCount: '1'
+      }
+    });
   }
+
+
+  const handleBuyNowWithVariant = (params: {
+    variantId?: string;
+    quantity: number;
+    price: number;
+  }) => {
+    const checkOutData: CheckoutItem[] = [];
+    checkOutData.push({
+      productId: product?.id,
+      variantId: params.variantId || null,
+      quantity: params.quantity,
+      price: params.price,
+      productName: product?.name,
+      image: product?.variants?.find((v) => v.id === params.variantId)?.image || '',
+      variantText: product?.variants?.
+      find((v) => v.id === params.variantId)?.combination.map((value,index ) => `${product?.variantCategories[index].name}: ${value}`).join(', ') || '',
+      sellerId: product?.sellerId || '',
+      shopName: shopData?.sellerInfo?.shopName || 'Shop',
+    });
+
+    setIsBuyingDirectly(false); // Reset the state
+
+    router.push({
+      pathname: '/cart/checkout',
+      params: {
+        items: JSON.stringify(checkOutData),
+        sellerId: product?.sellerId || '',
+        shopName,
+        totalAmount: (params.price * params.quantity).toString(),
+        itemCount: params.quantity.toString()
+      }
+    });
+  };
 
 
   if (loading) {
@@ -477,7 +534,15 @@ const ViewProductScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleBuyDirectly}
+                onPress={() => {
+                  if (product.hasVariants) {
+                    setIsBuyingDirectly(true);
+                    setShowVariantModal(true);
+                  } else {
+                    handleBuyDirectly();
+                  }
+                }}
+
                 className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center"
                 style={{ elevation: 3 }}
               >
@@ -490,21 +555,27 @@ const ViewProductScreen = () => {
           )}
         </View>
 
+
         <ProductDetailsModal
           isVisible={showVariantModal}
-          onClose={() => setShowVariantModal(false)}
+          onClose={() => {
+            setShowVariantModal(false);
+            setIsBuyingDirectly(false); // Reset when modal closes
+          }}
           product={product}
           currentUser={userData}
+          isBuyingDirectly={isBuyingDirectly}
+          onBuyNow={handleBuyNowWithVariant}
           handleAddToCartVariant={handleAddToCartVariant}
         />
-         <CartToast 
-        visible={showCartToast} 
-        onHide={() => setShowCartToast(false)}
-        message="Product added to cart!"
-      />
+        <CartToast
+          visible={showCartToast}
+          onHide={() => setShowCartToast(false)}
+          message="Product added to cart!"
+        />
       </SafeAreaView>
 
-      <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData}/>
+      <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData} />
     </SafeAreaView>
   );
 };

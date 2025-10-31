@@ -18,6 +18,12 @@ interface ProductDetailsModalProps {
   onClose: () => void;
   product: Product | null;
   currentUser: UserData;
+  isBuyingDirectly?: boolean; // Add this
+  onBuyNow?: (params: {      // Add this
+    variantId?: string;
+    quantity: number;
+    price: number;
+  }) => void;
   handleAddToCartVariant: (params: {
     userId: string;
     productId: string;
@@ -35,7 +41,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   onClose,
   product,
   handleAddToCartVariant,
-  currentUser
+  currentUser,
+  isBuyingDirectly = false,
+  onBuyNow,
 }) => {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
@@ -350,41 +358,46 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             <TouchableOpacity
               onPress={() => {
                 if (!currentUser?.uid || !product?.id || !product?.sellerId) {
-                  // Handle missing data
                   console.error('Missing required data');
                   return;
                 }
 
-                handleAddToCartVariant({
-                  userId: currentUser.uid,
-                  productId: product.id,
-                  sellerId: product.sellerId,
-                  variantId: selectedVariant?.id || undefined,
-                  quantity: quantity,
-                });
+                // Check if this is a "Buy Now" action
+                if (isBuyingDirectly && onBuyNow) {
+                  onBuyNow({
+                    variantId: selectedVariant?.id,
+                    quantity: quantity,
+                    price: currentPrice,
+                  });
+                } else {
+                  // Regular "Add to Cart"
+                  handleAddToCartVariant({
+                    userId: currentUser.uid,
+                    productId: product.id,
+                    sellerId: product.sellerId,
+                    variantId: selectedVariant?.id || undefined,
+                    quantity: quantity,
+                  });
+                }
 
                 onClose();
               }}
               disabled={!canAddToCart}
               activeOpacity={0.8}
               className={`
-                py-4 rounded-lg items-center
-                ${canAddToCart ? 'bg-pink-500' : 'bg-gray-300'}
-              `}
+    py-4 rounded-lg items-center
+    ${canAddToCart ? 'bg-pink-500' : 'bg-gray-300'}
+  `}
             >
-              <Text
-                className={`
-                  text-lg font-bold
-                  ${canAddToCart ? 'text-white' : 'text-gray-500'}
-                `}
-              >
+              <Text className={`text-lg font-bold ${canAddToCart ? 'text-white' : 'text-gray-500'}`}>
                 {product.hasVariants && !selectedVariant
-                  ? 'Add to Cart'
+                  ? isBuyingDirectly ? 'Select Variant' : 'Add to Cart'
                   : !canAddToCart
                     ? 'Out of Stock'
-                    : 'Add to Cart'}
+                    : isBuyingDirectly ? 'Buy Now' : 'Add to Cart'}
               </Text>
             </TouchableOpacity>
+
           </View>
         </Animated.View>
       </View>
