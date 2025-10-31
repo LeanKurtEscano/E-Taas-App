@@ -10,6 +10,7 @@ import { switchToRole } from '@/utils/general/switch';
 import { sellerOptions } from '@/constants/sellerHomeScreen';
 import { getInitials } from '@/utils/general/initials';
 import ReusableModal from '@/components/general/Modal';
+import { Plus } from 'lucide-react-native';
 const SellerProfileScreen: React.FC = () => {
     const { userData, loading } = useCurrentUser();
     const router = useRouter();
@@ -20,6 +21,11 @@ const SellerProfileScreen: React.FC = () => {
     const handleOptionPress = (route:string) => {
         router.push(route);
     };
+
+    const handleAddService = () => {
+        router.push('/seller/services');
+    };
+
 
   
 
@@ -101,6 +107,20 @@ const SellerProfileScreen: React.FC = () => {
                             <Store size={20} color="#ffffff" />
                             <Text className="ml-2 text-white  font-semibold text-base">
                                 View My Shop
+                            </Text>
+                        </TouchableOpacity>
+
+                 
+
+                          <TouchableOpacity
+                            onPress={handleAddService}
+                            className="flex-row items-center justify-center mb-3 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl"
+                            style={{ backgroundColor: '#a855f7' }}
+                            activeOpacity={0.7}
+                        >
+                            <Plus size={20} color="#ffffff" />
+                            <Text className="ml-2 text-white font-semibold text-base">
+                                Add Service
                             </Text>
                         </TouchableOpacity>
 

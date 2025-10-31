@@ -40,6 +40,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     uploadingImage,
     sendMessage,
     uploadImage,
+    
   } = useConversation(userData?.uid || '', sellerData.uid || sellerData.id || '');
 
   // Determine if the other person is a seller or regular user
@@ -86,6 +87,8 @@ const handleSendMessage = async () => {
   const handleRemoveImage = () => {
     setSelectedImage(null);
   };
+
+ 
 
 
   const renderDateSeparator = (currentMessage: any, previousMessage: any) => {

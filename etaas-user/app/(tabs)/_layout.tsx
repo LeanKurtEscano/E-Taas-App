@@ -12,7 +12,7 @@ import { doc, onSnapshot } from 'firebase/firestore'
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const { cartLength,userData } = useCurrentUser();
+  const { cartLength,totalUnreadCount } = useCurrentUser();
   const [loading, setLoading] = useState(true)
   
   const [unreadNotifications, setUnreadNotifications] = useState(0)
@@ -78,6 +78,7 @@ useEffect(() => {
         onSearchChange={setSearchQuery}
         cartCount={cartLength}
         onCartPress={handleCartPress}
+        totalUnreadCount={totalUnreadCount}
         showSearch={true}
       />
       

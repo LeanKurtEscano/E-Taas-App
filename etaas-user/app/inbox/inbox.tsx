@@ -12,10 +12,11 @@ import { MessageCircle, Store, User, Clock, ArrowLeft } from 'lucide-react-nativ
 import { useRouter } from 'expo-router';
 import { useInbox } from '@/hooks/general/useInbox';
 import { ConversationModal } from '@/components/general/ConversationModal';
-import { UserData } from '@/hooks/useCurrentUser';
+import { UserData, useCurrentUser } from '@/hooks/useCurrentUser';
 
 const InboxScreen = () => {
   const router = useRouter();
+  const { userData } = useCurrentUser(); // Add this
   const { conversations, loading, error } = useInbox();
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showChatModal, setShowChatModal] = useState(false);
@@ -56,6 +57,13 @@ const InboxScreen = () => {
   const truncateMessage = (message: string, maxLength: number = 50) => {
     if (message.length <= maxLength) return message;
     return message.substring(0, maxLength) + '...';
+  };
+
+  // Add this helper function
+  const formatLastMessage = (conversation: any) => {
+    const isCurrentUser = conversation.lastMessageSender === userData?.uid;
+    const prefix = isCurrentUser ? 'You: ' : '';
+    return prefix + conversation.lastMessage;
   };
 
   if (loading && conversations.length === 0) {
@@ -151,8 +159,8 @@ const InboxScreen = () => {
                           <Store size={24} color="#fff" />
                         </View>
                       ) : (
-                        <View className="bg-gray-200 w-14 h-14 rounded-full items-center justify-center">
-                          <User size={24} color="#6b7280" />
+                        <View className="bg-pink-500 w-14 h-14 rounded-full items-center justify-center">
+                          <User size={24} color="#fff" />
                         </View>
                       )}
                       {hasUnread && (
@@ -199,7 +207,7 @@ const InboxScreen = () => {
                         }`}
                         numberOfLines={2}
                       >
-                        {truncateMessage(conversation.lastMessage)}
+                        {truncateMessage(formatLastMessage(conversation))}
                       </Text>
 
                       {/* Labels */}

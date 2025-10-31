@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { auth, db } from '@/config/firebaseConfig';
 import { listenToCartDataLength } from '@/services/user/cart/cart';
+
 export interface UserData {
   uid: string;
   email: string;
@@ -15,8 +16,8 @@ export const useCurrentUser = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [cartLength, setCartLength] = useState(0);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -44,7 +45,6 @@ export const useCurrentUser = () => {
           }
         );
 
-
         return unsubscribeDoc;
       } else {
         setUser(null);
@@ -56,20 +56,47 @@ export const useCurrentUser = () => {
     return () => unsubscribeAuth();
   }, []);
 
-useEffect(() => {
-  if (!userData?.uid) return;
+  useEffect(() => {
+    if (!userData?.uid) return;
+
+    const unsubscribe = listenToCartDataLength(userData.uid, (count) => {
+      setCartLength(count);
+    });
+
+    return () => unsubscribe();
+  }, [userData]);
 
  
-  const unsubscribe = listenToCartDataLength(userData.uid, (count) => {
-    setCartLength(count);
-  });
+  useEffect(() => {
+    if (!userData?.uid) {
+      setTotalUnreadCount(0);
+      return;
+    }
 
-  // cleanup when component unmounts
-  return () => unsubscribe();
-}, [userData]);
+    const conversationsRef = collection(db, 'conversations');
+    const q = query(
+      conversationsRef,
+      where('participants', 'array-contains', userData.uid)
+    );
 
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        let total = 0;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const unreadCount = data[`unreadCount_${userData.uid}`] || 0;
+          total += unreadCount;
+        });
+        setTotalUnreadCount(total);
+      },
+      (err) => {
+        console.error('Error listening to unread counts:', err);
+      }
+    );
 
+    return () => unsubscribe();
+  }, [userData?.uid]);
 
-
-  return { user, userData, loading, error, cartLength };
+  return { user, userData, loading, error, cartLength, totalUnreadCount };
 };

@@ -7,6 +7,7 @@ import { SearchBar } from '../user/userHomeScreen/SearchBar';
 interface AppHeaderProps {
   searchQuery: string;
   cartCount: number;
+  totalUnreadCount: number;
   onCartPress: () => void;
   showSearch?: boolean;
 }
@@ -15,9 +16,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   cartCount,
   onCartPress,
   showSearch = true,
+  totalUnreadCount
 }) => {
   // Mock unread message count (replace with actual logic later)
-  const unreadMessageCount = 3;
+
 
   const handleInboxPress = () => {
     router.push('/inbox/inbox' as any);
@@ -49,10 +51,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onPress={handleInboxPress}
           >
             <MessageCircle size={26} color="#EC4899" strokeWidth={2} />
-            {unreadMessageCount > 0 && (
+            {totalUnreadCount > 0 && (
               <View className="absolute -top-2 -right-2 bg-pink-500 rounded-full w-5 h-5 items-center justify-center">
                 <Text className="text-white text-xs font-bold">
-                  {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                  {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                 </Text>
               </View>
             )}

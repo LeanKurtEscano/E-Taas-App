@@ -18,6 +18,7 @@ export interface ConversationPreview {
   participants: string[];
   lastMessage: string;
   lastMessageAt: Timestamp;
+  lastMessageSender: string;
   otherParticipant?: UserData;
   unreadCount?: number;
 }
@@ -76,6 +77,7 @@ export const useInbox = () => {
               lastMessageAt: data.lastMessageAt,
               otherParticipant: otherParticipantData,
               unreadCount: data[`unreadCount_${userData?.uid}`] || 0,
+              lastMessageSender: data.lastMessageSender || '',
             });
           }
 

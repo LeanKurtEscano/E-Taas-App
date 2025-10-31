@@ -8,6 +8,8 @@ import {
   Timestamp,
   doc,
   setDoc,
+  getDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import * as ImagePicker from 'expo-image-picker';
@@ -63,22 +65,39 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
     return () => unsubscribe();
   }, [currentUserId, sellerId, conversationId]);
 
+  // Add effect to mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!currentUserId || !sellerId) return;
+
+    const markAsRead = async () => {
+      try {
+        const conversationRef = doc(db, 'conversations', conversationId);
+        await updateDoc(conversationRef, {
+          [`unreadCount_${currentUserId}`]: 0,
+        });
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+    markAsRead();
+  }, [currentUserId, sellerId]);
+
   const uploadToCloudinary = async (imageUri: string): Promise<string | null> => {
     try {
       // Create form data
       const formData = new FormData();
-      
+
       // Get file extension
       const fileExtension = imageUri.split('.').pop() || 'jpg';
       const fileName = `chat_${Date.now()}.${fileExtension}`;
-      
+
       // Append image file
       formData.append('file', {
         uri: imageUri,
         type: `image/${fileExtension}`,
         name: fileName,
       } as any);
-      
+
       formData.append('upload_preset', uploadPreset || '');
       formData.append('folder', 'conversations');
 
@@ -106,88 +125,98 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
     }
   };
 
- 
-  // Modified sendMessage to handle image upload
-const sendMessage = async (text?: string, imageUri?: string) => {
-  if ((!text?.trim() && !imageUri) || sendingMessage) return;
+  const sendMessage = async (text?: string, imageUri?: string) => {
+    if ((!text?.trim() && !imageUri) || sendingMessage) return;
 
-  setSendingMessage(true);
-  try {
-    let cloudinaryUrl = '';
-    
-    // Upload image to Cloudinary only if imageUri is provided
-    if (imageUri) {
-      cloudinaryUrl = await uploadToCloudinary(imageUri) || '';
+    setSendingMessage(true);
+    try {
+      let cloudinaryUrl = '';
+
+      // Upload image to Cloudinary only if imageUri is provided
+      if (imageUri) {
+        cloudinaryUrl = await uploadToCloudinary(imageUri) || '';
+      }
+
+      const messagesRef = collection(
+        db,
+        'conversations',
+        conversationId,
+        'messages'
+      );
+
+      const messageData = {
+        senderId: currentUserId,
+        receiverId: sellerId,
+        text: text?.trim() || '',
+        imageUrl: cloudinaryUrl,
+        isRead: false,
+        createdAt: Timestamp.now(),
+      };
+
+      await addDoc(messagesRef, messageData);
+
+      // Update conversation metadata at the root level
+      const conversationRef = doc(db, 'conversations', conversationId);
+      const conversationSnap = await getDoc(conversationRef);
+
+      let receiverUnreadCount = 1;
+      if (conversationSnap.exists()) {
+        const convoData = conversationSnap.data();
+        receiverUnreadCount = (convoData[`unreadCount_${sellerId}`] || 0) + 1;
+      }
+
+      await setDoc(
+        conversationRef,
+        {
+          participants: [currentUserId, sellerId],
+          lastMessage: text?.trim() || 'Sent an image',
+          lastMessageSender: currentUserId,
+          lastMessageAt: Timestamp.now(),
+          // Increment receiver's unread count
+          [`unreadCount_${sellerId}`]: receiverUnreadCount,
+          // Reset sender's unread count to 0
+          [`unreadCount_${currentUserId}`]: 0,
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    } finally {
+      setSendingMessage(false);
     }
+  };
 
-    const messagesRef = collection(
-      db,
-      'conversations',
-      conversationId,
-      'messages'
-    );
+  const uploadImage = async (): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
 
-    const messageData = {
-      senderId: currentUserId,
-      receiverId: sellerId,
-      text: text?.trim() || '',
-      imageUrl: cloudinaryUrl,
-      createdAt: Timestamp.now(),
-    };
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to upload images.');
+        return null;
+      }
 
-    await addDoc(messagesRef, messageData);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
 
-    // Update conversation metadata at the root level
-    const conversationRef = doc(db, 'conversations', conversationId);
-    await setDoc(
-      conversationRef,
-      {
-        participants: [currentUserId, sellerId],
-        lastMessage: text?.trim() || 'Sent an image',
-        lastMessageAt: Timestamp.now(),
-      },
-      { merge: true }
-    );
-  } catch (error) {
-    console.error('Error sending message:', error);
-    throw error;
-  } finally {
-    setSendingMessage(false);
-  }
-};
+      if (result.canceled) {
+        return null;
+      }
 
-// Simplified uploadImage - only picks image, doesn't upload
-const uploadImage = async (): Promise<string | null> => {
-  try {
-    setUploadingImage(true);
-
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to upload images.');
+      return result.assets[0].uri;
+    } catch (error) {
+      console.error('Error picking image:', error);
+      alert('Failed to pick image. Please try again.');
       return null;
+    } finally {
+      setUploadingImage(false);
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (result.canceled) {
-      return null;
-    }
-
-    // Return the local URI only - don't upload yet
-    return result.assets[0].uri;
-  } catch (error) {
-    console.error('Error picking image:', error);
-    alert('Failed to pick image. Please try again.');
-    return null;
-  } finally {
-    setUploadingImage(false);
-  }
-};
+  };
 
   return {
     messages,
