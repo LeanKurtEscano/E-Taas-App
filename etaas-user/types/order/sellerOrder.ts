@@ -44,4 +44,5 @@ export interface Order {
   createdAt?: Timestamp;
   confirmedAt?: Timestamp;
   shippedAt?: Timestamp;
+  orderReceivedAt?: Timestamp;
 }

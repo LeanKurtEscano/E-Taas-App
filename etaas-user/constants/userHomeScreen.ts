@@ -52,9 +52,9 @@ export const FEATURES: Feature[] = [
 export const profileOptions: ProfileOption[] = [
         { id: 1, title: 'My Orders', icon: ShoppingBag,route:'/orders/order' },
         { id: 2, title: 'To Ship', icon: Package, route:'/orders/toship' },
-        { id: 3, title: 'To Receive', icon: Truck ,route:'/orders/to-receive'},
-        { id: 4, title: 'To Pay', icon: Wallet,route:'/orders/to-pay' },
-        { id: 5, title: 'My Purchase History', icon: Clock, route:'/orders/purchase-history' },
-        { id: 6, title: 'Help & Support', icon: HelpCircle,route:'/support/help' },
-        { id: 7, title: 'Settings', icon: Settings, route:'/settings' },
+        { id: 3, title: 'To Receive', icon: Truck ,route:'/orders/toreceive'},
+       // { id: 4, title: 'To Pay', icon: Wallet,route:'/orders/to-pay' },
+        { id: 4, title: 'My Purchase History', icon: Clock, route:'/orders/purchase-history' },
+        { id: 5, title: 'Help & Support', icon: HelpCircle,route:'/support/help' },
+        { id: 6, title: 'Settings', icon: Settings, route:'/settings' },
     ];

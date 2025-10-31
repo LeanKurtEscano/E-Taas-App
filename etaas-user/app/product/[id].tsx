@@ -39,6 +39,7 @@ import { fetchShopBySellerId } from '@/services/general/getShop';
 import ProductDetailsModal from '@/components/user/browseProduct/VariantModal';
 import { useCart } from '@/hooks/general/useCart';
 import CartToast from '@/components/general/CartToast';
+import { ConversationModal } from '@/components/general/ConversationModal';
 const ViewProductScreen = () => {
 
   const router = useRouter();
@@ -46,7 +47,7 @@ const ViewProductScreen = () => {
   const { id } = useLocalSearchParams();
   const productId = id as string | undefined;
 
-
+   const [showConversationModal, setShowConversationModal] = useState(false);
   const { 
     loading: cartLoading, 
     cartError, 
@@ -132,9 +133,6 @@ const ViewProductScreen = () => {
     console.log('Buy directly');
   }
 
-  const handleContactSeller = () => {
-    console.log('Contact seller');
-  };
 
   if (loading) {
     return (
@@ -398,7 +396,7 @@ const ViewProductScreen = () => {
 
             {!isOwner && (
               <TouchableOpacity
-                onPress={handleContactSeller}
+                onPress={() => setShowConversationModal(true)}
                 className="bg-white border border-pink-500 rounded-lg py-3 mt-3 flex-row items-center justify-center"
               >
                 <MessageCircle size={16} color="#EC4899" strokeWidth={2.5} />
@@ -505,6 +503,8 @@ const ViewProductScreen = () => {
         message="Product added to cart!"
       />
       </SafeAreaView>
+
+      <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData}/>
     </SafeAreaView>
   );
 };
