@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { db } from '@/config/firebaseConfig';
 import { useCart } from './useCart';
 import { CartItem,Product,ProductData,CheckoutItem } from '@/types/product/product';
-
+import { useMemo } from 'react';
 export const useCartCard = (
   userId: string,
   sellerId: string,
@@ -21,9 +21,7 @@ export const useCartCard = (
 
   const { incrementCartItemQuantity, decrementCartItemQuantity, deleteCartItem } = useCart();
 
-  /** ───────────────────────────────
-   *  Fetch seller and product data
-   *  ─────────────────────────────── */
+
   useEffect(() => {
     fetchData();
   }, [sellerId, items]);
@@ -39,14 +37,14 @@ export const useCartCard = (
 
   const fetchData = async () => {
     try {
-      // Get shop name
+     
       const sellerDoc = await getDoc(doc(db, 'users', sellerId));
       if (sellerDoc.exists()) {
         const sellerData = sellerDoc.data() as { sellerInfo?: { shopName: string } };
         setShopName(sellerData.sellerInfo?.shopName || 'Unknown Shop');
       }
 
-      // Fetch product data
+    
       const productsMap = new Map<string, ProductData>();
       for (const item of items) {
         const productDoc = await getDoc(doc(db, 'products', item.productId));
@@ -101,9 +99,7 @@ export const useCartCard = (
     }
   };
 
-  /** ───────────────────────────────
-   *  Quantity Handlers
-   *  ─────────────────────────────── */
+
   const handleIncrement = async (item: CartItem) => {
     const key = item.productId + (item.variantId || '');
     const currentLocalQty = localQuantities.get(key) || item.quantity;
@@ -175,9 +171,7 @@ export const useCartCard = (
     ]);
   };
 
-  /** ───────────────────────────────
-   *  Selection & Checkout Logic
-   *  ─────────────────────────────── */
+
   const toggleItemSelection = (key: string) => {
     setSelectedItems(prev => {
       const newSet = new Set(prev);
@@ -253,8 +247,17 @@ export const useCartCard = (
   const shopTotal = calculateShopTotal();
   const allSelected = selectedItems.size === items.length && items.length > 0;
 
+   const isStockLow = useMemo(() => {
+    return [...productsData].some(([key, data]) => {
+      const localQty = localQuantities.get(key) || 0;
+      return data.stock < localQty;
+    });
+  }, [productsData, localQuantities]);
+
+
   return {
     shopName,
+    isStockLow,
     productsData,
     selectedItems,
     loading,

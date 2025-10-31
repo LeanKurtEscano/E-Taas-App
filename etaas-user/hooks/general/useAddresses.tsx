@@ -15,7 +15,6 @@ export const useAddresses = (userData: any) => {
 
     const userRef = doc(db, 'users', userData.uid);
 
-    // Listen for real-time updates
     const unsubscribe = onSnapshot(
       userRef,
       (snapshot) => {
@@ -39,7 +38,6 @@ export const useAddresses = (userData: any) => {
       }
     );
 
-    // Cleanup listener when component unmounts
     return () => unsubscribe();
   }, [userData]);
 
@@ -49,7 +47,7 @@ export const useAddresses = (userData: any) => {
           try {
               if (!userData) return;
   
-              // Update all addresses to set only the selected one as default
+          
               const updatedAddresses = addresses.map(addr => ({
                   ...addr,
                   isDefault: addr.id === addressId,
@@ -79,16 +77,16 @@ export const useAddresses = (userData: any) => {
   
               const userRef = doc(db, 'users', userData.uid);
               
-              // Remove the address from the array
+           
               await updateDoc(userRef, {
                   addressesList: arrayRemove(addressToDelete)
               });
   
-              // Update local state
+            
               const updatedAddresses = addresses.filter(addr => addr.id !== addressToDelete.id);
               setAddresses(updatedAddresses);
   
-              // Clear selection if deleted address was selected
+             
               if (selectedId === addressToDelete.id) {
                   setSelectedId(null);
               }

@@ -9,23 +9,24 @@ import { CartSkeleton } from '@/components/loader/CartSkeleton';
 import { useCartCard } from '@/hooks/general/useCartCard';
 
 export default function CartCard({ sellerId, items, userId, onUpdate }: CartCardProps) {
- const {
-  shopName,
-  productsData,
-  selectedItems,
-  hasSelectedItems,
-  loading,
-  handleCheckout,
-  handleIncrement,
-  handleDecrement,
-  handleDeleteItem,
-  toggleItemSelection,
-  toggleSelectAll,
-  localQuantities,
-  allSelected,
-  updatingQuantity,
-  shopTotal
-} = useCartCard(userId, sellerId, items, onUpdate);
+  const {
+    shopName,
+    productsData,
+    selectedItems,
+    hasSelectedItems,
+    loading,
+    handleCheckout,
+    handleIncrement,
+    handleDecrement,
+    handleDeleteItem,
+    toggleItemSelection,
+    toggleSelectAll,
+    localQuantities,
+    allSelected,
+    updatingQuantity,
+    shopTotal,
+    isStockLow
+  } = useCartCard(userId, sellerId, items, onUpdate);
 
 
   if (loading) {
@@ -262,15 +263,23 @@ export default function CartCard({ sellerId, items, userId, onUpdate }: CartCard
             {/* Checkout Button */}
             <TouchableOpacity
               onPress={handleCheckout}
-              className="bg-pink-500 py-4 rounded-xl shadow-sm"
+              className={`py-4 rounded-xl shadow-sm ${isStockLow ? 'bg-gray-400' : 'bg-pink-500'
+                }`}
+              disabled={isStockLow}
               activeOpacity={0.8}
             >
               <Text className="text-white font-bold text-center text-base">
-                Checkout ({selectedItems.size} {selectedItems.size === 1 ? 'item' : 'items'})
+                {isStockLow
+                  ? 'Cart exceeds stock — deduct quantities'
+                  : `Checkout (${selectedItems.size} ${selectedItems.size === 1 ? 'item' : 'items'
+                  })`}
               </Text>
-              <Text className="text-white text-center text-sm mt-1">
-                Total: ₱{shopTotal.toLocaleString()}
-              </Text>
+
+              {!isStockLow && (
+                <Text className="text-white text-center text-sm mt-1">
+                  Total: ₱{shopTotal.toLocaleString()}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         )}

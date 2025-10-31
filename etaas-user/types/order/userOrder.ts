@@ -18,4 +18,5 @@ export interface Order {
   paymentStatus: 'unpaid' | 'paid';
   createdAt: Timestamp;
   shippingAddress: any;
+  sellerId: string;
 }

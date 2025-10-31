@@ -5,7 +5,7 @@ import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@/config/firebaseConfig'
 import Feather from '@expo/vector-icons/Feather'
 import { router } from 'expo-router'
-
+import { formatNotificationTime } from '@/utils/general/formatDate'
 interface Notification {
   createdAt: string
   id: string
@@ -35,7 +35,7 @@ const NotificationScreen = () => {
           const data = docSnap.data()
           const notifs = data.notifications || []
           
-          // Sort by createdAt (newest first)
+         
           const sortedNotifs = notifs.sort((a: Notification, b: Notification) => 
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
@@ -83,25 +83,30 @@ const NotificationScreen = () => {
     setRefreshing(true)
   }
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInMs = now.getTime() - date.getTime()
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
 
-    if (diffInMinutes < 1) return 'Just now'
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`
-    if (diffInHours < 24) return `${diffInHours}h ago`
-    if (diffInDays < 7) return `${diffInDays}d ago`
-    
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+ const handleNotificationPress = (notification: Notification) => {
+  const title = notification.title.toLowerCase();
+
+  const routeMap: { [key: string]: string } = {
+    shipped: '/orders/toship',
+    confirmed: '/orders/toship',
+    'placed successfully': '/orders/order',
+    'order received': '/seller/orders',
+    'order delivered': '/seller/orders',
+    cancelled: '/seller/orders',
+  };
+
+  for (const key in routeMap) {
+    if (title.includes(key)) {
+      router.push(routeMap[key]);
+      return;
+    }
   }
 
-  const handleNotificationPress = (notification: Notification) => {
-   
-  }
+  console.warn('No matching route for notification:', notification.title);
+};
+
 
   if (loading) {
     return (
@@ -197,7 +202,7 @@ const NotificationScreen = () => {
                         )}
                       </View>
                       <Text className="text-xs text-gray-400">
-                        {formatTime(notification.createdAt)}
+                        {formatNotificationTime(notification.createdAt)}
                       </Text>
                     </View>
                     
