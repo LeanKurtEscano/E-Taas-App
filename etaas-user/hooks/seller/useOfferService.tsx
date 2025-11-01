@@ -1,32 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { db } from '@/config/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import useCloudinary from '../image-upload/useCloudinary';
+import { ServiceFormData } from '@/types/seller/services';
 
-interface ServiceFormData {
-  serviceName: string;
-  businessName: string;
-  ownerName: string;
-  contactNumber: string;
-  address: string;
-  serviceDescription: string;
-  category: string;
-  priceRange: string;
-  facebookLink: string;
-  availability: boolean;
-  bannerImage: string;
-  images: string[];
-}
-
-const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 interface UseOfferServiceProps {
   userId: string;
+  serviceId?: string; // Optional serviceId for edit mode
   showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => {
+export const useOfferService = ({ userId, serviceId, showToast }: UseOfferServiceProps) => {
   const [formData, setFormData] = useState<ServiceFormData>({
     serviceName: '',
     businessName: '',
@@ -41,9 +27,13 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     bannerImage: '',
     images: [],
   });
+  
+  const { uploadImageToCloudinary } = useCloudinary();
 
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [fetchingService, setFetchingService] = useState(false);
+  const isEditMode = !!serviceId;
 
   const categories = [
     'Food',
@@ -54,6 +44,47 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     'Clothing',
     'Others',
   ];
+
+  // Fetch service data if in edit mode
+  useEffect(() => {
+    if (serviceId) {
+      fetchServiceData();
+    }
+  }, [serviceId]);
+
+  const fetchServiceData = async () => {
+    if (!serviceId) return;
+    
+    setFetchingService(true);
+    try {
+      const serviceDoc = await getDoc(doc(db, 'services', serviceId));
+      
+      if (serviceDoc.exists()) {
+        const data = serviceDoc.data() as ServiceFormData;
+        setFormData({
+          serviceName: data.serviceName || '',
+          businessName: data.businessName || '',
+          ownerName: data.ownerName || '',
+          contactNumber: data.contactNumber || '',
+          address: data.address || '',
+          serviceDescription: data.serviceDescription || '',
+          category: data.category || '',
+          priceRange: data.priceRange || '',
+          facebookLink: data.facebookLink || '',
+          availability: data.availability ?? true,
+          bannerImage: data.bannerImage || '',
+          images: data.images || [],
+        });
+      } else {
+        showToast('Service not found', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      showToast('Failed to load service data', 'error');
+    } finally {
+      setFetchingService(false);
+    }
+  };
 
   const updateField = (field: keyof ServiceFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -128,24 +159,6 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     showToast('Image removed', 'success');
   };
 
-  const uploadImageToCloudinary = async (uri: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', {
-      uri,
-      type: 'image/jpeg',
-      name: 'upload.jpg',
-    } as any);
-    formData.append('upload_preset', uploadPreset);
-
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-    return data.secure_url;
-  };
-
   const validateForm = (): boolean => {
     if (!formData.serviceName.trim()) {
       showToast('Please enter a service name', 'error');
@@ -178,6 +191,10 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     return true;
   };
 
+  const isImageUrl = (uri: string): boolean => {
+    return uri.startsWith('http://') || uri.startsWith('https://');
+  };
+
   const submitService = async () => {
     if (!validateForm()) return;
 
@@ -185,36 +202,55 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     try {
       setUploadingImages(true);
       
-      // Upload banner image
-      const uploadedBannerUrl = await uploadImageToCloudinary(formData.bannerImage);
+      // Upload banner image only if it's a new local image
+      let uploadedBannerUrl = formData.bannerImage;
+      if (!isImageUrl(formData.bannerImage)) {
+        uploadedBannerUrl = await uploadImageToCloudinary(formData.bannerImage);
+      }
 
-      // Upload service images to Cloudinary
+      // Upload service images only if they're new local images
       let uploadedImageUrls: string[] = [];
       if (formData.images.length > 0) {
         uploadedImageUrls = await Promise.all(
-          formData.images.map((uri) => uploadImageToCloudinary(uri))
+          formData.images.map(async (uri) => {
+            if (isImageUrl(uri)) {
+              return uri; // Already uploaded, keep the URL
+            }
+            return await uploadImageToCloudinary(uri);
+          })
         );
       }
       
       setUploadingImages(false);
 
-      // Save to Firestore
+      // Prepare service data
       const serviceData = {
         ...formData,
         bannerImage: uploadedBannerUrl,
         images: uploadedImageUrls,
         userId,
-        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      await addDoc(collection(db, 'services'), serviceData);
-
-      showToast('Service added successfully!', 'success');
-      resetForm();
+      if (isEditMode && serviceId) {
+        // Update existing service
+        await updateDoc(doc(db, 'services', serviceId), serviceData);
+        showToast('Service updated successfully!', 'success');
+      } else {
+        // Create new service
+        await addDoc(collection(db, 'services'), {
+          ...serviceData,
+          createdAt: new Date().toISOString(),
+        });
+        showToast('Service added successfully!', 'success');
+        resetForm();
+      }
     } catch (error) {
-      console.error('Error adding service:', error);
-      showToast('Failed to add service. Please try again.', 'error');
+      console.error('Error saving service:', error);
+      showToast(
+        isEditMode ? 'Failed to update service. Please try again.' : 'Failed to add service. Please try again.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -241,6 +277,8 @@ export const useOfferService = ({ userId, showToast }: UseOfferServiceProps) => 
     formData,
     loading,
     uploadingImages,
+    fetchingService,
+    isEditMode,
     categories,
     updateField,
     selectCategory,

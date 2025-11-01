@@ -1,43 +1,33 @@
 
 const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+;
+
 const useCloudinary = () => {
-
-
-    const uploadToCloudinary = async (imageUri: string): Promise<string | null> => {
+  const uploadImageToCloudinary = async (uri: string, folder: string = 'uploads'): Promise<string> => {
     try {
-      // Create form data
       const formData = new FormData();
+      const fileExtension = uri.split('.').pop() || 'jpg';
+      const fileName = `upload_${Date.now()}.${fileExtension}`;
 
-      // Get file extension
-      const fileExtension = imageUri.split('.').pop() || 'jpg';
-      const fileName = `chat_${Date.now()}.${fileExtension}`;
-
-      // Append image file
       formData.append('file', {
-        uri: imageUri,
+        uri,
         type: `image/${fileExtension}`,
         name: fileName,
       } as any);
 
       formData.append('upload_preset', uploadPreset || '');
-      formData.append('folder', 'conversations');
+      formData.append('folder', folder);
 
-      // Upload to Cloudinary
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-          },
-        }
-      );
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to upload image to Cloudinary');
-      }
+      if (!response.ok) throw new Error('Failed to upload image');
 
       const data = await response.json();
       return data.secure_url;
@@ -47,10 +37,10 @@ const useCloudinary = () => {
     }
   };
 
-  return {
-    uploadToCloudinary
-  }
-  
-}
+  return { uploadImageToCloudinary };
+};
 
-export default useCloudinary
+export default useCloudinary;
+
+
+

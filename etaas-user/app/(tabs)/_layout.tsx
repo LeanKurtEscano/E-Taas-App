@@ -12,9 +12,9 @@ import { doc, onSnapshot } from 'firebase/firestore'
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const { cartLength,totalUnreadCount } = useCurrentUser();
+  const { cartLength, totalUnreadCount } = useCurrentUser();
   const [loading, setLoading] = useState(true)
-  
+
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   const handleCartPress = (): void => {
@@ -29,32 +29,32 @@ const TabsLayout = () => {
 
     return () => unsubscribe()
   }, [])
-  
 
 
-useEffect(() => {
-  if (!user) return
 
-  const notifRef = doc(db, 'notifications', user.uid)
+  useEffect(() => {
+    if (!user) return
 
-  const unsubscribe = onSnapshot(notifRef, (docSnap) => {
-    if (docSnap.exists()) {
-      const data = docSnap.data()
-      const notifications = data.notifications || []
-      
-      // Count only unread notifications
-      const unreadCount = notifications.filter(
-        (notif: any) => notif.status === 'unread'
-      ).length
+    const notifRef = doc(db, 'notifications', user.uid)
 
-      setUnreadNotifications(unreadCount)
-    } else {
-      setUnreadNotifications(0)
-    }
-  })
+    const unsubscribe = onSnapshot(notifRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        const notifications = data.notifications || []
 
-  return () => unsubscribe()
-}, [user])
+        // Count only unread notifications
+        const unreadCount = notifications.filter(
+          (notif: any) => notif.status === 'unread'
+        ).length
+
+        setUnreadNotifications(unreadCount)
+      } else {
+        setUnreadNotifications(0)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [user])
 
 
   if (loading) {
@@ -72,7 +72,7 @@ useEffect(() => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       <AppHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -81,7 +81,7 @@ useEffect(() => {
         totalUnreadCount={totalUnreadCount}
         showSearch={true}
       />
-      
+
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -126,10 +126,10 @@ useEffect(() => {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, size, focused }) => (
-              <Feather 
-                name="home" 
-                size={focused ? 26 : 24} 
-                color={color} 
+              <Feather
+                name="home"
+                size={focused ? 26 : 24}
+                color={color}
               />
             ),
           }}
@@ -139,41 +139,56 @@ useEffect(() => {
           options={{
             title: 'Products',
             tabBarIcon: ({ color, size, focused }) => (
-              <Feather 
-                name="shopping-bag" 
-                size={focused ? 26 : 24} 
-                color={color} 
+              <Feather
+                name="shopping-bag"
+                size={focused ? 26 : 24}
+                color={color}
               />
             ),
           }}
         />
-        
+
+        <Tabs.Screen
+          name="services"
+          options={{
+            title: 'Services',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Feather
+                name="briefcase"
+                size={focused ? 26 : 24}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+
         {/* Add Notifications Tab */}
         <Tabs.Screen
           name="notification"
           options={{
             title: 'Notifications',
             tabBarIcon: ({ color, size, focused }) => (
-              <Feather 
-                name="bell" 
-                size={focused ? 26 : 24} 
-                color={color} 
+              <Feather
+                name="bell"
+                size={focused ? 26 : 24}
+                color={color}
               />
             ),
             // Show badge only when there are unread notifications
             tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined,
           }}
         />
-        
+
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, size, focused }) => (
-              <Feather 
-                name="user" 
-                size={focused ? 26 : 24} 
-                color={color} 
+              <Feather
+                name="user"
+                size={focused ? 26 : 24}
+                color={color}
               />
             ),
           }}

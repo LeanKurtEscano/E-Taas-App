@@ -9,6 +9,7 @@ import {
   Switch,
   ActivityIndicator,
 } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useOfferService } from '@/hooks/seller/useOfferService';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useToast from '@/hooks/general/useToast';
@@ -16,6 +17,10 @@ import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
 
 const OfferServiceScreen = () => {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const serviceId = params.serviceId as string | undefined;
+  
   const { userData } = useCurrentUser();
   const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
   
@@ -23,25 +28,111 @@ const OfferServiceScreen = () => {
     formData,
     loading,
     uploadingImages,
+    fetchingService,
+    isEditMode,
     categories,
     updateField,
     selectCategory,
+    pickBannerImage,
+    removeBannerImage,
     pickImages,
     removeImage,
     submitService,
-  } = useOfferService({ userId: userData?.uid || '', showToast });
+  } = useOfferService({ 
+    userId: userData?.uid || '', 
+    serviceId,
+    showToast 
+  });
+
+  const handleSubmit = async () => {
+    await submitService();
+    if (isEditMode) {
+      router.back();
+    }
+  };
+
+  if (fetchingService) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#ec4899" />
+        <Text className="text-gray-600 mt-4">Loading service data...</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="p-6">
-          {/* Header */}
-          <Text className="text-3xl font-bold text-gray-800 mb-2">
-            Offer a Service
+      {/* Header with Back Button */}
+      <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="mr-4 p-2 rounded-full bg-gray-100"
+        >
+          <Ionicons name="arrow-back" size={24} color="#374151" />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <Text className="text-2xl font-bold text-gray-800">
+            {isEditMode ? 'Edit Service' : 'Offer a Service'}
           </Text>
-          <Text className="text-gray-500 mb-6">
-            Fill in the details to list your service
+          <Text className="text-sm text-gray-500 mt-1">
+            {isEditMode 
+              ? 'Update your service details' 
+              : 'Fill in the details to list your service'}
           </Text>
+        </View>
+      </View>
+
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        <View className="px-6 pt-6">
+          {/* Banner Image Section */}
+          <View className="mb-6">
+            <Text className="text-sm font-semibold text-gray-700 mb-2">
+              Banner Image * <Text className="text-gray-500 font-normal">(1 image)</Text>
+            </Text>
+            <Text className="text-xs text-gray-500 mb-3">
+              Upload a high-quality banner image to showcase your service
+            </Text>
+            
+            {formData.bannerImage ? (
+              <View className="relative">
+                <Image
+                  source={{ uri: formData.bannerImage }}
+                  className="w-full h-48 rounded-2xl"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                  resizeMode="cover"
+                />
+                <TouchableOpacity
+                  onPress={removeBannerImage}
+                  className="absolute top-3 right-3 bg-red-500 rounded-full p-2"
+                >
+                  <Ionicons name="close" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={pickBannerImage}
+                className="w-full h-48 rounded-2xl border-2 border-dashed border-pink-300 bg-pink-50 items-center justify-center"
+              >
+                <Ionicons name="image-outline" size={48} color="#ec4899" />
+                <Text className="text-pink-500 font-semibold mt-3">
+                  Upload Banner Image
+                </Text>
+                <Text className="text-gray-400 text-xs mt-1">
+                  Recommended: 16:9 aspect ratio
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Service Name */}
           <View className="mb-4">
@@ -161,7 +252,7 @@ const OfferServiceScreen = () => {
           {/* Price Range */}
           <View className="mb-4">
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              Price Range (Optional)
+              Price Range <Text className="text-gray-400 font-normal">(Optional)</Text>
             </Text>
             <TextInput
               className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
@@ -174,7 +265,7 @@ const OfferServiceScreen = () => {
           {/* Facebook Link */}
           <View className="mb-4">
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              Facebook Page / Link
+              Facebook Page / Link <Text className="text-gray-400 font-normal">(Optional)</Text>
             </Text>
             <TextInput
               className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
@@ -187,10 +278,15 @@ const OfferServiceScreen = () => {
           </View>
 
           {/* Availability Toggle */}
-          <View className="mb-6 flex-row items-center justify-between bg-gray-50 rounded-2xl px-4 py-4">
-            <Text className="text-sm font-semibold text-gray-700">
-              Currently Available
-            </Text>
+          <View className="mb-6 flex-row items-center justify-between bg-gray-50 rounded-2xl px-4 py-4 border border-gray-200">
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-gray-700">
+                Currently Available
+              </Text>
+              <Text className="text-xs text-gray-500 mt-1">
+                Toggle to show if you're accepting orders
+              </Text>
+            </View>
             <Switch
               value={formData.availability}
               onValueChange={(value) => updateField('availability', value)}
@@ -199,12 +295,15 @@ const OfferServiceScreen = () => {
             />
           </View>
 
-          {/* Upload Images */}
+          {/* Upload Service Images */}
           <View className="mb-6">
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              Service Images (Up to 3)
+              Service Images <Text className="text-gray-500 font-normal">(Up to 3)</Text>
             </Text>
-            <View className="flex-row gap-3">
+            <Text className="text-xs text-gray-500 mb-3">
+              Add additional photos to showcase your service details
+            </Text>
+            <View className="flex-row flex-wrap gap-3">
               {formData.images.map((uri, index) => (
                 <View key={index} className="relative">
                   <Image
@@ -224,22 +323,15 @@ const OfferServiceScreen = () => {
                   >
                     <Ionicons name="close" size={16} color="white" />
                   </TouchableOpacity>
-                  {index === 2 && formData.images.length > 3 && (
-                    <View className="absolute inset-0 bg-black/50 rounded-2xl items-center justify-center">
-                      <Text className="text-white font-bold text-lg">
-                        3+
-                      </Text>
-                    </View>
-                  )}
                 </View>
               ))}
               {formData.images.length < 3 && (
                 <TouchableOpacity
                   onPress={pickImages}
-                  className="w-24 h-24 rounded-2xl border-2 border-dashed border-pink-300 bg-pink-50 items-center justify-center"
+                  className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 items-center justify-center"
                 >
-                  <Ionicons name="camera" size={32} color="#ec4899" />
-                  <Text className="text-xs text-pink-500 mt-1">Add Photo</Text>
+                  <Ionicons name="camera" size={28} color="#9ca3af" />
+                  <Text className="text-xs text-gray-500 mt-1">Add Photo</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -247,9 +339,9 @@ const OfferServiceScreen = () => {
 
           {/* Submit Button */}
           <TouchableOpacity
-            onPress={submitService}
+            onPress={handleSubmit}
             disabled={loading || uploadingImages}
-            className={`rounded-2xl py-4 items-center ${
+            className={`rounded-2xl py-4 items-center mb-6 ${
               loading || uploadingImages ? 'bg-pink-300' : 'bg-pink-500'
             }`}
             style={{
@@ -264,12 +356,12 @@ const OfferServiceScreen = () => {
               <View className="flex-row items-center">
                 <ActivityIndicator color="white" />
                 <Text className="text-white font-bold text-lg ml-2">
-                  {uploadingImages ? 'Uploading Images...' : 'Submitting...'}
+                  {uploadingImages ? 'Uploading Images...' : isEditMode ? 'Updating...' : 'Submitting...'}
                 </Text>
               </View>
             ) : (
               <Text className="text-white font-bold text-lg">
-                Submit Service
+                {isEditMode ? 'Update Service' : 'Submit Service'}
               </Text>
             )}
           </TouchableOpacity>
