@@ -3,7 +3,7 @@ import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useToast from '@/hooks/general/useToast';
-
+import { useNotification } from './useNotification';
 interface Service {
   id: string;
   serviceName: string;
@@ -33,7 +33,7 @@ interface InquiryData {
 export const useInquiries = (serviceId: string) => {
   const { userData } = useCurrentUser();
   const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
-
+  const {sendNotification} = useNotification();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +108,7 @@ export const useInquiries = (serviceId: string) => {
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
+      sendNotification(service?.userId,'seller','New Inquiry Received',`You have received a new inquiry for your service "${service?.serviceName}" from ${inquiryData.customerName}.`,undefined,serviceId);
 
       showToast('Inquiry submitted successfully!', 'success');
       return true;

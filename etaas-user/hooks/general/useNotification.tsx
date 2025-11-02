@@ -10,11 +10,12 @@ export const useNotification = () => {
     type: 'buyer' | 'seller',
     title: string,
     message: string,
-    orderId?: string
+    orderId?: string,
+    directId?: string
   ) => {
     try {
       const notifRef = doc(db, 'notifications', userId);
-
+      
       const notification = {
         id: generateRandomId(),
         type,
@@ -23,6 +24,7 @@ export const useNotification = () => {
         orderId: orderId || null,
         status: 'unread',
         createdAt: new Date().toISOString(),
+        directId: directId || null,
       };
 
       await setDoc(
@@ -40,3 +42,4 @@ export const useNotification = () => {
 
   return { sendNotification };
 };
+ 

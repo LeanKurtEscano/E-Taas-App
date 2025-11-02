@@ -7,6 +7,9 @@ import EmptyState from '@/components/user/browseProduct/EmptyState';
 import FilterChip from '@/components/user/browseProduct/FilterChip';
 import SortButton from '@/components/user/browseProduct/SortButton';
 import { SearchX } from 'lucide-react-native';
+
+
+
 const categories = ['All', 'Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
 
 const BrowseProductsScreen = () => {

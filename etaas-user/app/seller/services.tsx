@@ -66,7 +66,7 @@ const OfferServiceScreen = () => {
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
         <TouchableOpacity 
           onPress={() => router.back()}
-          className="mr-4 p-2 rounded-full bg-gray-100"
+          className="mr-4 p-2 rounded-full "
         >
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>

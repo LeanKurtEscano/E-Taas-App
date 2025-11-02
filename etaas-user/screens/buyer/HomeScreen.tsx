@@ -1,126 +1,301 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    StatusBar,
+// HomeScreen.tsx
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  Image, 
+  TouchableOpacity,
+  FlatList,
+
+  Dimensions
 } from 'react-native';
-import {
+import { SafeAreaView } from 'react-native-safe-area-context';
+const { width } = Dimensions.get('window');
 
-    ChevronRight
-} from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { FeatureCard } from '@/components/user/userHomeScreen/FeatureCard';
-import { PromoBanner } from '@/components/user/userHomeScreen/PromoBanner';
-import { CategoryCard } from '@/components/user/userHomeScreen/CategoryCard';
+import { productCategories,serviceCategories,heroBanners,featuredProducts,features } from '@/constants/userHomeScreen';
 
 
-import { MOCK_CATEGORIES, MOCK_PROMOS, FEATURES } from '@/constants/userHomeScreen';
-import { Category, Promo } from '@/types/userHome';
-
-const HomeScreen: React.FC = () => {
-
-    const handleCategoryPress = (category: Category): void => {
-        console.log('Navigate to:', category.title);
-    };
-
-    const handlePromoPress = (promo: Promo): void => {
-        console.log('Promo pressed:', promo.title);
-    };
-
-    const handleViewAllCategories = (): void => {
-        console.log('View all categories');
-    };
-
-    const handleNavigationPress = (route: string): void => {
-        console.log('Navigate to:', route);
-    };
-
+const HomeScreen = () => {
+  const renderProductCategory = ({ item }: { item: typeof productCategories[0] }) => {
+    const IconComponent = item.icon;
+    
     return (
-        <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 24 }}
-                bounces={true}
-            >
-                {/* Promo Banners */}
-                <View className="mt-4 mb-6">
-                    {MOCK_PROMOS.map((promo) => (
-                        <PromoBanner
-                            key={promo.id}
-                            title={promo.title}
-                            subtitle={promo.subtitle}
-                            bgClass={promo.bgClass}
-                            emoji={promo.emoji}
-                            onPress={() => handlePromoPress(promo)}
-                        />
-                    ))}
-                </View>
-
-                {/* Features Section */}
-                <View className="px-5 mb-6">
-                    <View className="flex-row justify-between">
-                        {FEATURES.map((feature, index) => (
-                            <FeatureCard
-                                key={index}
-                                icon={feature.icon}
-                                title={feature.title}
-                                subtitle={feature.subtitle}
-                            />
-                        ))}
-                    </View>
-                </View>
-
-
-                <View className="mb-6 ">
-                    <View className="flex-row justify-between items-center px-5 mb-3">
-                        <Text className="text-gray-900 text-xl font-bold">
-                            Shop by Category
-                        </Text>
-                        <TouchableOpacity
-                            className="flex-row items-center"
-                            activeOpacity={0.7}
-                            onPress={handleViewAllCategories}
-                        >
-                            <Text className="text-pink-500 font-semibold mr-1">
-                                View All
-                            </Text>
-                            <ChevronRight size={20} color="#EC4899" strokeWidth={2.5} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingLeft: 20, paddingRight: 20, paddingBottom: 10 }}
-                    >
-                        {MOCK_CATEGORIES.map((category) => (
-                            <CategoryCard
-                                key={category.id}
-                                item={category}
-                                onPress={handleCategoryPress}
-                            />
-                        ))}
-                    </ScrollView>
-                </View>
-
-
-
-                <View className="px-5   mb-6">
-                    <Text className="text-gray-900 text-xl font-bold mb-4">
-                        Special Offers
-                    </Text>
-
-                   
-
-                </View>
-
-            </ScrollView>
+      <TouchableOpacity 
+        className="bg-white rounded-3xl border border-gray-300 mr-3 overflow-hidden active:opacity-80"
+        style={{ 
+          width: 130, 
+          height: 150,
+          shadowColor: '#ec4899',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 5,
+        }}
+      >
+        <Image
+          source={{ uri: item.image }}
+          className="w-full h-20"
+          resizeMode="cover"
+        />
+        <View className="flex-1 items-center justify-center p-3 bg-white">
+          <View className="w-11 h-11 bg-pink-50 rounded-2xl items-center justify-center mb-2">
+            <IconComponent size={22} color="#ec4899" strokeWidth={2.5} />
+          </View>
+          <Text className="text-gray-800 font-bold text-center text-xs leading-4">
+            {item.name}
+          </Text>
         </View>
+      </TouchableOpacity>
     );
+  };
+
+  const renderServiceCategory = ({ item }: { item: typeof serviceCategories[0] }) => {
+    const IconComponent = item.icon;
+    
+    return (
+      <TouchableOpacity 
+        className="bg-white border border-gray-300 rounded-3xl mr-3 overflow-hidden active:opacity-80"
+        style={{ 
+          width: 130, 
+          height: 150,
+         
+          elevation: 5,
+        }}
+      >
+        <Image
+          source={{ uri: item.image }}
+          className="w-full h-20"
+          resizeMode="cover"
+        />
+        <View className="flex-1 items-center justify-center p-3 bg-white">
+          <View className="w-11 h-11 bg-pink-50 rounded-2xl items-center justify-center mb-2">
+            <IconComponent size={22} color="#ec4899" strokeWidth={2.5} />
+          </View>
+          <Text className="text-gray-800 font-bold text-center text-xs leading-4">
+            {item.name}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderFeaturedProduct = ({ item }: { item: typeof featuredProducts[0] }) => (
+    <TouchableOpacity 
+      className="bg-white rounded-3xl mr-4 overflow-hidden active:opacity-90"
+      style={{ 
+        width: 170,
+        shadowColor: '#ec4899',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+      }}
+    >
+      <Image
+        source={{ uri: item.image }}
+        className="w-full h-40"
+        resizeMode="cover"
+      />
+      <View className="p-4">
+        <Text className="text-gray-800 font-bold text-sm mb-1" numberOfLines={2}>
+          {item.name}
+        </Text>
+        <View className="flex-row items-center justify-between mt-2">
+          <Text className="text-pink-500 font-bold text-lg">{item.price}</Text>
+          <View className="flex-row items-center bg-pink-50 px-2 py-1 rounded-full">
+            <Text className="text-pink-500 text-xs mr-1">⭐</Text>
+            <Text className="text-pink-500 text-xs font-bold">{item.rating}</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+ 
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50"   edges={['top']}>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {/* Hero Banner Section */}
+        <View className="py-5">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+            snapToInterval={width - 32}
+            decelerationRate="fast"
+          >
+            {heroBanners.map((banner) => (
+              <TouchableOpacity
+                key={banner.id}
+                className="rounded-3xl overflow-hidden mr-4 active:scale-98"
+                style={{ 
+                  width: width - 32, 
+                  height: 180,
+                  shadowColor: '#ec4899',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 15,
+                  elevation: 8,
+                }}
+              >
+                <Image
+                  source={{ uri: banner.image }}
+                  className="w-full h-full absolute"
+                  resizeMode="cover"
+                />
+                <View className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 justify-end p-6">
+                  <Text className="text-white font-bold text-2xl mb-1">
+                    {banner.title}
+                  </Text>
+                  <Text className="text-white/90 text-sm mb-4">
+                    {banner.subtitle}
+                  </Text>
+                  <TouchableOpacity 
+                    className="bg-pink-500 rounded-full px-6 py-3 self-start active:bg-pink-600"
+                    style={{
+                      shadowColor: '#ec4899',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 6,
+                    }}
+                  >
+                    <Text className="text-white font-bold text-sm">
+                      Shop Now
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Product Categories Section */}
+        <View className="py-5">
+          <View className="px-4 mb-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-2xl font-bold text-gray-900">
+                Shop by Category
+              </Text>
+              <Text className="text-gray-500 text-sm mt-0.5">
+                Find what you're looking for
+              </Text>
+            </View>
+            <TouchableOpacity className="bg-pink-50 px-4 py-2 rounded-full">
+              <Text className="text-pink-500 font-bold text-sm">See All</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={productCategories}
+            renderItem={renderProductCategory}
+            keyExtractor={(item) => item.name}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 4 }}
+          />
+        </View>
+
+        {/* Featured Products Section */}
+        <View className="py-5 bg-white">
+          <View className="px-4 mb-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-2xl font-bold text-gray-900">
+                Featured Products
+              </Text>
+              <Text className="text-gray-500 text-sm mt-0.5">
+                Handpicked for you
+              </Text>
+            </View>
+            <TouchableOpacity className="bg-pink-50 px-4 py-2 rounded-full">
+              <Text className="text-pink-500 font-bold text-sm">View All</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={featuredProducts}
+            renderItem={renderFeaturedProduct}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 4 }}
+          />
+        </View>
+
+        {/* Service Categories Section */}
+        <View className="py-5 ">
+          <View className="px-4 mb-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-2xl font-bold text-gray-900">
+                Browse Services
+              </Text>
+              <Text className="text-gray-500 text-sm mt-0.5">
+                Everything you need
+              </Text>
+            </View>
+            <TouchableOpacity className="bg-pink-50 px-4 py-2 rounded-full">
+              <Text className="text-pink-500 font-bold text-sm">See All</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={serviceCategories}
+            renderItem={renderServiceCategory}
+            keyExtractor={(item) => item.name}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 4 }}
+          />
+        </View>
+
+        {/* Why Shop With Us Section - Widget Grid */}
+        <View className="px-4  py-5">
+          <View className="mb-4">
+            <Text className="text-2xl font-bold text-gray-900 mb-1">
+              Why Shop With Us
+            </Text>
+            <Text className="text-gray-500 text-sm">
+              Your satisfaction is our priority
+            </Text>
+          </View>
+          <View className="flex-row flex-wrap justify-between">
+            {features.map((feature) => (
+              <View 
+                key={feature.id}
+                className="bg-white border border-gray-200 rounded-3xl p-5 items-center mb-3"
+                style={{ 
+                  width: (width - 48) / 2 - 6,
+                  shadowColor: feature.color,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 12,
+                  elevation: 5,
+                }}
+              >
+                <View 
+                  className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
+                  style={{ backgroundColor: feature.bgColor }}
+                >
+                  <feature.icon size={28} color={feature.color} strokeWidth={2.5} />
+                </View>
+                <Text className="text-gray-800 font-bold text-base mb-1 text-center">
+                  {feature.title}
+                </Text>
+                <Text className="text-gray-500 text-xs text-center">
+                  {feature.description}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 export default HomeScreen;

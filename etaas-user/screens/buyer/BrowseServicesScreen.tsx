@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,378 +7,392 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Dimensions,
+  RefreshControl,
+  Linking,
+  Alert,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useInquiries } from '@/hooks/general/useInquiries';
-import CheckoutToast from '@/components/general/CheckOutToast';
+import { useRouter } from 'expo-router';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '@/config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+interface Service {
+  id: string;
+  serviceName: string;
+  businessName: string;
+  ownerName: string;
+  contactNumber: string;
+  address: string;
+  serviceDescription: string;
+  category: string;
+  priceRange?: string;
+  facebookLink?: string;
+  availability: boolean;
+  bannerImage: string;
+  images: string[];
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const InquireServiceScreen = () => {
+const BrowseServicesScreen = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const serviceId = params.id as string;
-  
-  const {
-    service,
-    loading,
-    submitting,
-    currentImageIndex,
-    inquiryData,
-    allImages,
-    isOwner,
-    toastVisible,
-    toastMessage,
-    toastType,
-    setToastVisible,
-    setCurrentImageIndex,
-    updateInquiryData,
-    submitInquiry,
-  } = useInquiries(serviceId);
+  const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const handleSubmitInquiry = async () => {
-    const success = await submitInquiry();
-    if (success) {
-      setTimeout(() => {
-        router.back();
-      }, 1500);
+  const categories = [
+    'All',
+    'Food',
+    'Travel & Tours',
+    'Therapy',
+    'School Supplies',
+    'Agricultural',
+    'Clothing',
+    'Others',
+  ];
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  useEffect(() => {
+    filterServices();
+  }, [searchQuery, selectedCategory, services]);
+
+  const fetchServices = async () => {
+    try {
+      const servicesRef = collection(db, 'services');
+      const q = query(servicesRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+
+      const servicesData: Service[] = [];
+      querySnapshot.forEach((doc) => {
+        servicesData.push({
+          id: doc.id,
+          ...doc.data(),
+        } as Service);
+      });
+
+      setServices(servicesData);
+      setFilteredServices(servicesData);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchServices();
+  };
+
+  const filterServices = () => {
+    let filtered = services;
+
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(
+        (service) => service.category === selectedCategory
+      );
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (service) =>
+          service.serviceName.toLowerCase().includes(query) ||
+          service.businessName.toLowerCase().includes(query) || 
+          service.serviceDescription.toLowerCase().includes(query) ||
+          service.category.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredServices(filtered);
+  };
+
+  const handleViewDetails = (serviceId: string) => {
+    router.push(`/service/${serviceId}`);
+  };
+
+  const handleInquireNow = (service: Service) => {
+     router.push(`/service/${service.id}`);
+    
+  };
+
+  const handleFacebookLink = async (facebookLink?: string) => {
+    if (!facebookLink) {
+      Alert.alert('No Facebook Link', 'This service has no Facebook page linked.');
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(facebookLink);
+      if (supported) {
+        await Linking.openURL(facebookLink);
+      } else {
+        Alert.alert('Error', 'Unable to open Facebook link');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open Facebook link');
+    }
+  };
+
+  const ServiceCard = ({ service }: { service: Service }) => (
+    <TouchableOpacity
+      onPress={() => handleViewDetails(service.id)}
+      className="mb-4 bg-white rounded-3xl overflow-hidden"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
+      activeOpacity={0.9}
+    >
+      {/* Banner Image */}
+      <View className="relative">
+        <Image
+          source={{ uri: service.bannerImage }}
+          className="w-full h-48"
+          resizeMode="cover"
+        />
+        
+        {/* Availability Badge */}
+        <View
+          className={`absolute top-3 right-3 px-3 py-1.5 rounded-full ${
+            service.availability ? 'bg-green-500' : 'bg-gray-500'
+          }`}
+        >
+          <Text className="text-white text-xs font-semibold">
+            {service.availability ? 'Available' : 'Unavailable'}
+          </Text>
+        </View>
+
+        {/* Category Badge */}
+        <View className="absolute top-3 left-3 bg-pink-500 px-3 py-1.5 rounded-full">
+          <Text className="text-white text-xs font-semibold">
+            {service.category}
+          </Text>
+        </View>
+      </View>
+
+      {/* Service Details */}
+      <View className="p-4">
+        <Text className="text-xl font-bold text-gray-800 mb-1">
+          {service.serviceName}
+        </Text>
+        
+        <Text className="text-sm text-gray-600 mb-3">
+          {service.businessName}
+        </Text>
+
+        <Text className="text-sm text-gray-500 mb-3" numberOfLines={2}>
+          {service.serviceDescription}
+        </Text>
+
+        {/* Info Row */}
+        <View className="flex-row items-center justify-between mb-2">
+          <View className="flex-row items-center flex-1">
+            <Ionicons name="person-outline" size={16} color="#9ca3af" />
+            <Text className="text-sm text-gray-500 ml-1.5" numberOfLines={1}>
+              {service.ownerName}
+            </Text>
+          </View>
+
+          {service.priceRange && (
+            <View className="flex-row items-center ml-2">
+              <Ionicons name="pricetag-outline" size={16} color="#ec4899" />
+              <Text className="text-sm text-pink-500 font-semibold ml-1.5">
+                {service.priceRange}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Location */}
+        {service.address && (
+          <View className="flex-row items-center mb-2">
+            <Ionicons name="location-outline" size={16} color="#9ca3af" />
+            <Text className="text-sm text-gray-500 ml-1.5 flex-1" numberOfLines={1}>
+              {service.address}
+            </Text>
+          </View>
+        )}
+
+        {/* Contact */}
+        <View className="flex-row items-center mb-4">
+          <Ionicons name="call-outline" size={16} color="#9ca3af" />
+          <Text className="text-sm text-gray-500 ml-1.5">
+            {service.contactNumber}
+          </Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View className="flex-row gap-2">
+          {service.facebookLink && (
+            <TouchableOpacity
+              onPress={() => handleFacebookLink(service.facebookLink)}
+              className="flex-1 bg-blue-500 rounded-xl py-3 flex-row items-center justify-center"
+              style={{
+                shadowColor: '#3b82f6',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="logo-facebook" size={18} color="white" />
+              <Text className="text-white font-semibold text-sm ml-2">
+                Facebook
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          <TouchableOpacity
+            onPress={() => handleInquireNow(service)}
+            className={`${service.facebookLink ? 'flex-1' : 'flex-1'} bg-pink-500 rounded-xl py-3 flex-row items-center justify-center`}
+            style={{
+              shadowColor: '#ec4899',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Ionicons name="chatbubble-ellipses" size={18} color="white" />
+            <Text className="text-white font-semibold text-sm ml-2">
+              Inquire Now
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
+      <View className="flex-1 bg-gray-50 items-center justify-center">
         <ActivityIndicator size="large" color="#ec4899" />
-        <Text className="text-gray-600 mt-4">Loading service details...</Text>
-      </View>
-    );
-  }
-
-  if (!service) {
-    return (
-      <View className="flex-1 bg-white items-center justify-center">
-        <Ionicons name="alert-circle-outline" size={64} color="#d1d5db" />
-        <Text className="text-gray-400 text-lg font-semibold mt-4">
-          Service not found
-        </Text>
+        <Text className="text-gray-600 mt-4">Loading services...</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
-        <TouchableOpacity 
-          onPress={() => router.back()}
-          className="mr-4 p-2 rounded-full bg-gray-100"
-        >
-          <Ionicons name="arrow-back" size={24} color="#374151" />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-2xl font-bold text-gray-800">
-            Inquire Service
-          </Text>
-          <Text className="text-sm text-gray-500 mt-1">
-            Send your inquiry to the service provider
-          </Text>
+      <View className="bg-white pt-12 pb-4 px-6 border-b border-gray-100">
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="text-3xl font-bold text-gray-800">
+              Browse Services
+            </Text>
+            <Text className="text-sm text-gray-500 mt-1">
+              {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''} available
+            </Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            className="p-2 rounded-full bg-gray-100"
+          >
+            <Ionicons name="close" size={24} color="#374151" />
+          </TouchableOpacity>
         </View>
+
+        {/* Search Bar */}
+        <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-3 mb-3">
+          <Ionicons name="search" size={20} color="#9ca3af" />
+          <TextInput
+            className="flex-1 ml-2 text-gray-800"
+            placeholder="Search services..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#9ca3af"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Category Filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 4 }}
+        >
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category}
+              onPress={() => setSelectedCategory(category)}
+              className={`mr-2 px-4 py-2 rounded-full border ${
+                selectedCategory === category
+                  ? 'bg-pink-500 border-pink-500'
+                  : 'bg-white border-gray-300'
+              }`}
+              style={{
+                shadowColor: selectedCategory === category ? '#ec4899' : '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: selectedCategory === category ? 0.2 : 0.05,
+                shadowRadius: 2,
+                elevation: selectedCategory === category ? 2 : 1,
+              }}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  selectedCategory === category
+                    ? 'text-white'
+                    : 'text-gray-700'
+                }`}
+              >
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <ScrollView 
-        className="flex-1" 
+      {/* Services List */}
+      <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#ec4899"
+            colors={['#ec4899']}
+          />
+        }
       >
-        {/* Image Gallery */}
-        <View className="relative">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(e) => {
-              const index = Math.round(e.nativeEvent.contentOffset.x / width);
-              setCurrentImageIndex(index);
-            }}
-            scrollEventThrottle={16}
-          >
-            {allImages.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={{ width, height: 300 }}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-
-          {/* Image Indicators */}
-          {allImages.length > 1 && (
-            <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-2">
-              {allImages.map((_, index) => (
-                <View
-                  key={index}
-                  className={`h-2 rounded-full ${
-                    index === currentImageIndex
-                      ? 'w-6 bg-pink-500'
-                      : 'w-2 bg-white opacity-60'
-                  }`}
-                />
-              ))}
-            </View>
-          )}
-
-          {/* Badges */}
-          <View className="absolute top-4 left-4 right-4 flex-row justify-between">
-            <View className="bg-pink-500 px-3 py-1.5 rounded-full">
-              <Text className="text-white text-xs font-semibold">
-                {service.category}
-              </Text>
-            </View>
-            <View
-              className={`px-3 py-1.5 rounded-full ${
-                service.availability ? 'bg-green-500' : 'bg-gray-500'
-              }`}
-            >
-              <Text className="text-white text-xs font-semibold">
-                {service.availability ? 'Available' : 'Unavailable'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Service Information */}
-        <View className="px-6 pt-6">
-          {/* Title Section */}
-          <View className="mb-6">
-            <Text className="text-3xl font-bold text-gray-800 mb-2">
-              {service.serviceName}
+        {filteredServices.length === 0 ? (
+          <View className="items-center justify-center py-16">
+            <Ionicons name="search-outline" size={64} color="#d1d5db" />
+            <Text className="text-gray-400 text-lg font-semibold mt-4">
+              No services found
             </Text>
-            <Text className="text-lg text-gray-600">
-              {service.businessName}
+            <Text className="text-gray-400 text-sm mt-2 text-center px-8">
+              {searchQuery || selectedCategory !== 'All'
+                ? 'Try adjusting your search or filters'
+                : 'Be the first to offer a service!'}
             </Text>
           </View>
-
-          {/* Info Cards */}
-          <View className="mb-6 space-y-3">
-            <View className="flex-row items-center bg-gray-50 rounded-2xl p-4">
-              <View className="bg-pink-100 p-3 rounded-full mr-4">
-                <Ionicons name="person" size={20} color="#ec4899" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-xs text-gray-500 mb-1">Owner</Text>
-                <Text className="text-base font-semibold text-gray-800">
-                  {service.ownerName}
-                </Text>
-              </View>
-            </View>
-
-            <View className="flex-row items-center bg-gray-50 rounded-2xl p-4">
-              <View className="bg-pink-100 p-3 rounded-full mr-4">
-                <Ionicons name="call" size={20} color="#ec4899" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-xs text-gray-500 mb-1">Contact Number</Text>
-                <Text className="text-base font-semibold text-gray-800">
-                  {service.contactNumber}
-                </Text>
-              </View>
-            </View>
-
-            {service.address && (
-              <View className="flex-row items-center bg-gray-50 rounded-2xl p-4">
-                <View className="bg-pink-100 p-3 rounded-full mr-4">
-                  <Ionicons name="location" size={20} color="#ec4899" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-500 mb-1">Address</Text>
-                  <Text className="text-base font-semibold text-gray-800">
-                    {service.address}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {service.priceRange && (
-              <View className="flex-row items-center bg-pink-50 rounded-2xl p-4 border border-pink-200">
-                <View className="bg-pink-500 p-3 rounded-full mr-4">
-                  <Ionicons name="pricetag" size={20} color="white" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs text-pink-600 mb-1">Price Range</Text>
-                  <Text className="text-base font-bold text-pink-600">
-                    {service.priceRange}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Description */}
-          <View className="mb-6">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              About This Service
-            </Text>
-            <Text className="text-base text-gray-600 leading-6">
-              {service.serviceDescription}
-            </Text>
-          </View>
-
-          {/* Owner Actions or Inquiry Form */}
-          {isOwner ? (
-            <View className="mb-6">
-              <Text className="text-lg font-bold text-gray-800 mb-4">
-                Manage Your Service
-              </Text>
-              
-              <View className="space-y-3">
-                <TouchableOpacity
-                  onPress={() => router.push(`/services/edit/${serviceId}`)}
-                  className="bg-pink-500 rounded-2xl py-4 flex-row items-center justify-center"
-                  style={{
-                    shadowColor: '#ec4899',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                >
-                  <Ionicons name="create-outline" size={20} color="white" />
-                  <Text className="text-white font-bold text-lg ml-2">
-                    Edit Service
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => router.push(`/services/inquiries/${serviceId}`)}
-                  className="bg-blue-500 rounded-2xl py-4 flex-row items-center justify-center"
-                  style={{
-                    shadowColor: '#3b82f6',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                >
-                  <Ionicons name="mail-outline" size={20} color="white" />
-                  <Text className="text-white font-bold text-lg ml-2">
-                    View Inquiries
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <>
-              {/* Inquiry Form */}
-              <View className="mb-6">
-                <Text className="text-lg font-bold text-gray-800 mb-4">
-                  Submit Your Inquiry
-                </Text>
-
-                <View className="space-y-4">
-                  <View>
-                    <Text className="text-sm font-semibold text-gray-700 mb-2">
-                      Your Name *
-                    </Text>
-                    <TextInput
-                      className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
-                      placeholder="Enter your full name"
-                      value={inquiryData.customerName}
-                      onChangeText={(text) => updateInquiryData('customerName', text)}
-                    />
-                  </View>
-
-                  <View>
-                    <Text className="text-sm font-semibold text-gray-700 mb-2">
-                      Email <Text className="text-gray-400 font-normal">(Optional)</Text>
-                    </Text>
-                    <TextInput
-                      className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
-                      placeholder="your.email@example.com"
-                      value={inquiryData.customerEmail}
-                      onChangeText={(text) => updateInquiryData('customerEmail', text)}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-                  </View>
-
-                  <View>
-                    <Text className="text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number *
-                    </Text>
-                    <TextInput
-                      className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
-                      placeholder="0912-345-6789"
-                      value={inquiryData.customerPhone}
-                      onChangeText={(text) => updateInquiryData('customerPhone', text)}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-
-                  <View>
-                    <Text className="text-sm font-semibold text-gray-700 mb-2">
-                      Your Message *
-                    </Text>
-                    <TextInput
-                      className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"
-                      placeholder="Tell us about your inquiry, questions, or requirements..."
-                      value={inquiryData.message}
-                      onChangeText={(text) => updateInquiryData('message', text)}
-                      multiline
-                      numberOfLines={6}
-                      textAlignVertical="top"
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                onPress={handleSubmitInquiry}
-                disabled={submitting}
-                className={`rounded-2xl py-4 items-center mb-6 ${
-                  submitting ? 'bg-pink-300' : 'bg-pink-500'
-                }`}
-                style={{
-                  shadowColor: '#ec4899',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 5,
-                }}
-              >
-                {submitting ? (
-                  <View className="flex-row items-center">
-                    <ActivityIndicator color="white" />
-                    <Text className="text-white font-bold text-lg ml-2">
-                      Submitting...
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center">
-                    <Ionicons name="send" size={20} color="white" />
-                    <Text className="text-white font-bold text-lg ml-2">
-                      Submit Inquiry
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+        ) : (
+          filteredServices.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))
+        )}
       </ScrollView>
-
-      {/* Toast Notification */}
-      <CheckoutToast 
-        visible={toastVisible} 
-        onHide={() => setToastVisible(false)} 
-        message={toastMessage} 
-        type={toastType} 
-      />
     </View>
   );
 };
 
-export default InquireServiceScreen;
+export default BrowseServicesScreen;

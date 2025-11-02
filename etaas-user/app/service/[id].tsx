@@ -13,6 +13,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useInquiries } from '@/hooks/general/useInquiries';
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotification } from '@/hooks/general/useNotification';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +21,7 @@ const InquireServiceScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const serviceId = params.id as string;
-  
+
   const {
     service,
     loading,
@@ -73,7 +74,7 @@ const InquireServiceScreen = () => {
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
         <TouchableOpacity 
           onPress={() => router.back()}
-          className="mr-4 p-2 rounded-full bg-gray-100"
+          className="mr-4 p-2 rounded-full "
         >
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
@@ -265,7 +266,7 @@ const InquireServiceScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => router.push(`/services/inquiries/${serviceId}`)}
+                  onPress={() => router.push(`/seller/inquiries/${serviceId}`)}
                   className="flex-1 bg-blue-500 rounded-2xl py-4 flex-row items-center justify-center"
                   style={{
                     shadowColor: '#3b82f6',

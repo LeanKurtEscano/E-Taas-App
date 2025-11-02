@@ -13,6 +13,7 @@ interface Notification {
   orderId: string
   status: 'unread' | 'read'
   title: string
+  directId?: string
   type: 'seller' | 'buyer'
 }
 
@@ -88,9 +89,10 @@ const NotificationScreen = () => {
  const handleNotificationPress = (notification: Notification) => {
   const title = notification.title.toLowerCase();
 
-  const routeMap: { [key: string]: string } = {
+  const routeMap: {[key: string]: string } = {
     shipped: '/orders/toship',
     confirmed: '/orders/toship',
+    'inquiry': `/seller/inquiries/${notification.directId}`,
     'placed successfully': '/orders/order',
     'order received': '/seller/orders',
     'order delivered': '/seller/orders',
@@ -225,7 +227,7 @@ const NotificationScreen = () => {
                       </View>
                       
                       <View className="flex-row items-center">
-                        <Text className="text-xs text-gray-500 mr-1">View Order</Text>
+                        <Text className="text-xs text-gray-500 mr-1">{notification.title.toLowerCase().includes("inquiry") ? "View Inquiry" : "View Order"}</Text>
                         <Feather name="chevron-right" size={14} color="#9ca3af" />
                       </View>
                     </View>
