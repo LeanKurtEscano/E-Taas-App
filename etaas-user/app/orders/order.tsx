@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/config/firebaseConfig';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { getStatusColor } from '@/utils/general/getStatus';
 import { formatDate } from '@/utils/general/formatDate';
-import { Order } from '@/types/order/userOrder';
+
 import { getStatusIcon } from '@/utils/general/getStatus';
-import { useNotification } from '@/hooks/general/useNotification';
+
 import useOrder from '@/hooks/general/useOrder';
 
 export default function MyOrdersScreen() {
   const {
-    orders, loading, refreshing, onRefresh, 
+    orders, loading,
     selectedTab, setSelectedTab,
-     tabs, getTabIcon, 
+    tabs, getTabIcon, 
     handleCancelOrder, toastVisible, toastMessage, toastType, 
-   setToastVisible
+    setToastVisible
   } = useOrder();
   
   const filteredOrders = selectedTab === 'all' 
@@ -114,14 +112,6 @@ export default function MyOrdersScreen() {
       <ScrollView 
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#EC4899"
-            colors={['#EC4899']}
-          />
-        }
       >
         {filteredOrders.length === 0 ? (
           <View className="flex-1 justify-center items-center py-24 px-6">

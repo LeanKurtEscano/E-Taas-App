@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { 
-  ShoppingBag, 
-  CheckCircle, 
-  DollarSign, 
+import {
+  ShoppingBag,
+  CheckCircle,
+  DollarSign,
   MessageSquare,
   TrendingUp,
   Package,
@@ -32,7 +32,7 @@ export default function SellerDashboard() {
         {/* Header Section */}
         <View className="bg-pink-500 px-6 pt-8 pb-10 rounded-b-[32px] ">
           <Text className="text-white text-2xl font-extrabold mb-2">
-            Welcome back, {userData?.sellerInfo?.name?.split(' ')[0] || ''} 
+            Welcome back, {userData?.sellerInfo?.name?.split(' ')[0] || ''}
           </Text>
           <Text className="text-pink-50 text-base font-semibold">{userData.sellerInfo.businessName}</Text>
           <Text className="text-white text-sm mt-2 ">Here's your business performance overview.</Text>
@@ -58,7 +58,12 @@ export default function SellerDashboard() {
             <View className="flex-row gap-4">
               <MetricCard
                 icon={DollarSign}
-                value={`₱${(metrics.totalRevenue / 1000).toFixed(1)}k`}
+                value={`₱${metrics.totalRevenue >= 1_000_000
+                  ? (metrics.totalRevenue / 1_000_000).toFixed(1) + 'M'
+                  : metrics.totalRevenue >= 1_000
+                    ? (metrics.totalRevenue / 1_000).toFixed(1) + 'K'
+                    : metrics.totalRevenue}`}
+
                 label="Total Revenue"
                 iconBg="bg-purple-100"
               />
@@ -103,7 +108,7 @@ export default function SellerDashboard() {
             {recentInquiriesData.map((inquiry) => (
               <InquiryItem key={inquiry.id} inquiry={inquiry} />
             ))}
-            <TouchableOpacity  className="bg-pink-500 rounded-2xl py-4 items-center  mt-2">
+            <TouchableOpacity className="bg-pink-500 rounded-2xl py-4 items-center  mt-2">
               <Text className="text-white font-bold text-base">View All Inquiries</Text>
             </TouchableOpacity>
           </View>

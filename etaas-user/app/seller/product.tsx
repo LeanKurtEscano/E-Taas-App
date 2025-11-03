@@ -50,10 +50,10 @@ const ProductScreen: React.FC = () => {
   
   console.log(variants)
   const categories = ['Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
-  const availabilityOptions: Array<'available' | 'out of stock' | 'reserved'> = [
+  const availabilityOptions: Array<'available' | 'out of stock' > = [
     'available',
     'out of stock',
-    'reserved',
+ 
   ];
 
  

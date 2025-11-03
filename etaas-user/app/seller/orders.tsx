@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image, 
-  TextInput, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
   Alert,
   ActivityIndicator,
   RefreshControl,
   StatusBar,
   Platform
 } from 'react-native';
-import { 
-  ArrowLeft, 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  Truck, 
-  PackageCheck, 
-  XCircle, 
-  MapPin, 
-  Phone, 
+import {
+  ArrowLeft,
+  Package,
+  Clock,
+  CheckCircle,
+  Truck,
+  PackageCheck,
+  XCircle,
+  MapPin,
+  Phone,
   Link as LinkIcon,
   Calendar
 } from 'lucide-react-native';
 import { db } from '@/config/firebaseConfig';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  doc, 
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
   updateDoc,
   getDoc,
   setDoc,
@@ -44,17 +44,17 @@ import {
 import { router } from 'expo-router';
 import { formatDate } from '@/utils/general/formatDate';
 import { getStatusColor } from '@/utils/general/getStatus';
-import { ShippingAddress,ProductVariant,ProductData, Order } from '@/types/order/sellerOrder';
+import { ShippingAddress, ProductVariant, ProductData, Order } from '@/types/order/sellerOrder';
 import { useNotification } from '@/hooks/general/useNotification';
 const ManageOrders = () => {
-  const { userData } = useCurrentUser() 
+  const { userData } = useCurrentUser()
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
-  const {sendNotification} = useNotification();
+  const { sendNotification } = useNotification();
   useEffect(() => {
     if (!userData?.uid) return;
 
@@ -68,7 +68,7 @@ const ManageOrders = () => {
         id: doc.id,
         ...doc.data()
       } as Order));
-      
+
       ordersData.sort((a, b) => {
         const dateA = a.createdAt?.toMillis?.() || 0;
         const dateB = b.createdAt?.toMillis?.() || 0;
@@ -109,15 +109,15 @@ const ManageOrders = () => {
 
                 if (productData.hasVariants) {
                   const variants = productData.variants || [];
-                 
+
                   const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
-                
+
                   if (variantIndex === -1) {
                     throw new Error(`Variant not found for ${item.productName}`);
                   }
 
                   const currentQuantity = variants[variantIndex].stock || 0;
-                 
+
                   if (currentQuantity < item.quantity) {
                     throw new Error(`Insufficient stock for ${item.productName} - ${item.variantText}`);
                   }
@@ -130,9 +130,22 @@ const ManageOrders = () => {
                     throw new Error(`Insufficient stock for ${item.productName}`);
                   }
 
-                  await updateDoc(productRef, {
-                    quantity: currentQuantity - item.quantity
-                  });
+                  const isOutOfStock = currentQuantity - item.quantity <= 0;
+
+                  if (isOutOfStock) {
+                    await updateDoc(productRef, {
+                      quantity: currentQuantity - item.quantity,
+                      availability: "out of stock"
+                    });
+
+                  } else {
+                    await updateDoc(productRef, {
+                      quantity: currentQuantity - item.quantity
+                    });
+
+                  }
+
+
                 }
               }
 
@@ -141,13 +154,13 @@ const ManageOrders = () => {
                 confirmedAt: serverTimestamp()
               });
 
-                await sendNotification(
-              order.userId,
-              'buyer',
-              'Order Confirmed',
-              `Your order from ${order.shopName} has been confirmed and is being prepared for shipment.`,
-              order.id
-            );
+              await sendNotification(
+                order.userId,
+                'buyer',
+                'Order Confirmed',
+                `Your order from ${order.shopName} has been confirmed and is being prepared for shipment.`,
+                order.id
+              );
               Alert.alert('Success', 'Order confirmed successfully!');
             } catch (error) {
               console.error('Error confirming order:', error);
@@ -181,12 +194,12 @@ const ManageOrders = () => {
       });
 
       await sendNotification(
-      order.userId,
-      'buyer',
-      'Order Shipped',
-      `Your order has been shipped! Track here: ${trackingLink.trim()}`,
-      order.id
-    );
+        order.userId,
+        'buyer',
+        'Order Shipped',
+        `Your order has been shipped! Track here: ${trackingLink.trim()}`,
+        order.id
+      );
       setTrackingLinks(prev => ({ ...prev, [order.id]: '' }));
       Alert.alert('Success', 'Tracking link added and buyer notified!');
     } catch (error) {
@@ -215,8 +228,8 @@ const ManageOrders = () => {
     }
   };
 
-  const filteredOrders = selectedTab === 'all' 
-    ? orders 
+  const filteredOrders = selectedTab === 'all'
+    ? orders
     : orders.filter(order => order.status === selectedTab);
 
   const getOrderCount = (status: string) => {
@@ -239,8 +252,8 @@ const ManageOrders = () => {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-   
-      <View className="bg-white" style={{ 
+
+      <View className="bg-white" style={{
         paddingTop: Platform.OS === 'ios' ? 50 : 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -250,7 +263,7 @@ const ManageOrders = () => {
       }}>
         <View className="px-5 pb-4">
           <View className="flex-row items-center mb-4">
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/(tabs)/profile')}
               className="mr-4 w-10 h-10 rounded-fullitems-center justify-center"
               activeOpacity={0.7}
@@ -266,8 +279,8 @@ const ManageOrders = () => {
           </View>
 
           {/* Status Tabs */}
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             className="flex-row -mx-1"
           >
@@ -275,26 +288,22 @@ const ManageOrders = () => {
               <TouchableOpacity
                 key={tab}
                 onPress={() => setSelectedTab(tab as any)}
-                className={`px-4 py-2.5 rounded-full mx-1 ${
-                  selectedTab === tab
+                className={`px-4 py-2.5 rounded-full mx-1 ${selectedTab === tab
                     ? 'bg-pink-500'
                     : 'bg-gray-100'
-                }`}
+                  }`}
                 activeOpacity={0.7}
               >
                 <View className="flex-row items-center">
-                  <Text className={`text-sm font-semibold capitalize ${
-                    selectedTab === tab ? 'text-white' : 'text-gray-700'
-                  }`}>
+                  <Text className={`text-sm font-semibold capitalize ${selectedTab === tab ? 'text-white' : 'text-gray-700'
+                    }`}>
                     {tab}
                   </Text>
                   {getOrderCount(tab) > 0 && (
-                    <View className={`ml-2 px-2 py-0.5 rounded-full ${
-                      selectedTab === tab ? 'bg-white/20' : 'bg-pink-100'
-                    }`}>
-                      <Text className={`text-xs font-bold ${
-                        selectedTab === tab ? 'text-white' : 'text-pink-600'
+                    <View className={`ml-2 px-2 py-0.5 rounded-full ${selectedTab === tab ? 'bg-white/20' : 'bg-pink-100'
                       }`}>
+                      <Text className={`text-xs font-bold ${selectedTab === tab ? 'text-white' : 'text-pink-600'
+                        }`}>
                         {getOrderCount(tab)}
                       </Text>
                     </View>
@@ -325,7 +334,7 @@ const ManageOrders = () => {
             </View>
             <Text className="text-xl font-bold text-gray-900 mb-2">No Orders Found</Text>
             <Text className="text-gray-500 text-center">
-              {selectedTab === 'all' 
+              {selectedTab === 'all'
                 ? 'Orders will appear here once customers place them'
                 : `No ${selectedTab} orders at the moment`}
             </Text>
@@ -333,8 +342,8 @@ const ManageOrders = () => {
         ) : (
           <View className="px-4 py-4">
             {filteredOrders.map((order) => (
-              <View 
-                key={order.id} 
+              <View
+                key={order.id}
                 className="bg-white rounded-2xl border border-gray-200 mb-4 overflow-hidden"
                 style={{
                   shadowColor: '#000',
@@ -405,11 +414,10 @@ const ManageOrders = () => {
                     ITEMS ({order.items.length})
                   </Text>
                   {order.items.map((item, index) => (
-                    <View 
-                      key={index} 
-                      className={`flex-row items-center ${
-                        index < order.items.length - 1 ? 'mb-4 pb-4 border-b border-gray-100' : ''
-                      }`}
+                    <View
+                      key={index}
+                      className={`flex-row items-center ${index < order.items.length - 1 ? 'mb-4 pb-4 border-b border-gray-100' : ''
+                        }`}
                     >
                       <Image
                         source={{ uri: item.image }}
@@ -473,11 +481,10 @@ const ManageOrders = () => {
                     <TouchableOpacity
                       onPress={() => handleConfirmOrder(order)}
                       disabled={processingOrderId === order.id}
-                      className={`py-4 rounded-xl flex-row items-center justify-center ${
-                        processingOrderId === order.id
+                      className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
                           ? 'bg-gray-300'
                           : 'bg-pink-500'
-                      }`}
+                        }`}
                       activeOpacity={0.8}
                       style={{
                         shadowColor: processingOrderId === order.id ? 'transparent' : '#ec4899',
@@ -529,11 +536,10 @@ const ManageOrders = () => {
                       <TouchableOpacity
                         onPress={() => handleAddTracking(order)}
                         disabled={processingOrderId === order.id}
-                        className={`py-4 rounded-xl flex-row items-center justify-center ${
-                          processingOrderId === order.id
+                        className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
                             ? 'bg-gray-300'
                             : 'bg-pink-500'
-                        }`}
+                          }`}
                         activeOpacity={0.8}
                         style={{
                           shadowColor: processingOrderId === order.id ? 'transparent' : '#ec4899',
