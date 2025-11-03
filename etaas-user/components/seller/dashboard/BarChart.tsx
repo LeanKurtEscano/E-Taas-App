@@ -106,7 +106,7 @@ export const SimpleBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
                 <View key={index} className="flex-1 items-center justify-end" style={{ paddingHorizontal: 4 }}>
                   {/* Revenue label above bar (only show if revenue > 0) */}
                   {item.revenue > 0 && (
-                    <Text className="text-xs font-bold text-pink-600 mb-1">
+                    <Text className="text-[9px] font-bold text-pink-600 mb-1">
                       {formatCurrency(item.revenue)}
                     </Text>
                   )}

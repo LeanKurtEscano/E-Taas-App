@@ -45,7 +45,8 @@ const SellerProductScreen: React.FC = () => {
     const totalProducts = products.length;
     const inStock = products.filter(p => p.availability !== 'out of stock').length;
     const outOfStock = products.filter(p => p.availability === 'out of stock').length;
-    const totalValue = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+    const totalValue = products.reduce((sum, p) => sum + (p.price * p.quantity), 0) + products.reduce((sum, p) => sum 
+    + (p.hasVariants ? p.variants!.reduce((variantSum, v) => variantSum + (v.price * v.stock), 0) : 0), 0);
 
     return { totalProducts, inStock, outOfStock, totalValue };
   }, [products]);

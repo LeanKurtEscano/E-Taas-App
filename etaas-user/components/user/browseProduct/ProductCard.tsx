@@ -13,7 +13,8 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
 
-  const isAvailable = product.availability === 'available';
+  const isAvailable = product.availability === 'available' ;
+  const isOutOfStock = product.hasVariants  ? product.variants!.every(v => v.stock === 0) : product.quantity === 0;
 
   const isNewProduct = (() => {
     if (!product.createdAt) return false;
@@ -53,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         />
 
         {/* Availability Badge */}
-        {!isAvailable && (
+        {isOutOfStock && (
           <View className="absolute inset-0 bg-black/70 justify-center items-center">
             <View className="bg-white/95 px-4 py-2 rounded-full">
               <Text className="text-gray-900 text-xs font-bold">OUT OF STOCK</Text>
