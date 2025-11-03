@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-
+import { useHomeStore } from '@/store/useHomeStore';
 interface Service {
   id: string;
   serviceName: string;
@@ -37,12 +37,12 @@ interface Service {
 
 const BrowseServicesScreen = () => {
   const router = useRouter();
+  const {serviceCategory, setServiceCategory} = useHomeStore();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const categories = [
     'All',
@@ -61,7 +61,7 @@ const BrowseServicesScreen = () => {
 
   useEffect(() => {
     filterServices();
-  }, [searchQuery, selectedCategory, services]);
+  }, [searchQuery, serviceCategory, services]);
 
   const fetchServices = async () => {
     try {
@@ -95,9 +95,9 @@ const BrowseServicesScreen = () => {
   const filterServices = () => {
     let filtered = services;
 
-    if (selectedCategory !== 'All') {
+    if (serviceCategory !== 'All') {
       filtered = filtered.filter(
-        (service) => service.category === selectedCategory
+        (service) => service.category === serviceCategory
       );
     }
 
@@ -331,23 +331,23 @@ const BrowseServicesScreen = () => {
           {categories.map((category) => (
             <TouchableOpacity
               key={category}
-              onPress={() => setSelectedCategory(category)}
+              onPress={() => setServiceCategory(category)}
               className={`mr-2 px-4 py-2 rounded-full border ${
-                selectedCategory === category
+                serviceCategory === category
                   ? 'bg-pink-500 border-pink-500'
                   : 'bg-white border-gray-300'
               }`}
               style={{
-                shadowColor: selectedCategory === category ? '#ec4899' : '#000',
+                shadowColor: serviceCategory === category ? '#ec4899' : '#000',
                 shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: selectedCategory === category ? 0.2 : 0.05,
+                shadowOpacity: serviceCategory === category ? 0.2 : 0.05,
                 shadowRadius: 2,
-                elevation: selectedCategory === category ? 2 : 1,
+                elevation: serviceCategory === category ? 2 : 1,
               }}
             >
               <Text
                 className={`text-sm font-medium ${
-                  selectedCategory === category
+                  serviceCategory === category
                     ? 'text-white'
                     : 'text-gray-700'
                 }`}
@@ -380,7 +380,7 @@ const BrowseServicesScreen = () => {
               No services found
             </Text>
             <Text className="text-gray-400 text-sm mt-2 text-center px-8">
-              {searchQuery || selectedCategory !== 'All'
+              {searchQuery || serviceCategory !== 'All'
                 ? 'Try adjusting your search or filters'
                 : 'Be the first to offer a service!'}
             </Text>

@@ -12,73 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
-
+import { router } from 'expo-router';
 import { productCategories,serviceCategories,heroBanners,featuredProducts,features } from '@/constants/userHomeScreen';
-
-
+import { ProductCategory } from '@/components/user/userHomeScreen/ProductCategory';
+import { ServiceCategory } from '@/components/user/userHomeScreen/ServiceCategory';
 const HomeScreen = () => {
-  const renderProductCategory = ({ item }: { item: typeof productCategories[0] }) => {
-    const IconComponent = item.icon;
-    
-    return (
-      <TouchableOpacity 
-        className="bg-white rounded-3xl border border-gray-300 mr-3 overflow-hidden active:opacity-80"
-        style={{ 
-          width: 130, 
-          height: 150,
-          shadowColor: '#ec4899',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          elevation: 5,
-        }}
-      >
-        <Image
-          source={{ uri: item.image }}
-          className="w-full h-20"
-          resizeMode="cover"
-        />
-        <View className="flex-1 items-center justify-center p-3 bg-white">
-          <View className="w-11 h-11 bg-pink-50 rounded-2xl items-center justify-center mb-2">
-            <IconComponent size={22} color="#ec4899" strokeWidth={2.5} />
-          </View>
-          <Text className="text-gray-800 font-bold text-center text-xs leading-4">
-            {item.name}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
-  const renderServiceCategory = ({ item }: { item: typeof serviceCategories[0] }) => {
-    const IconComponent = item.icon;
-    
-    return (
-      <TouchableOpacity 
-        className="bg-white border border-gray-300 rounded-3xl mr-3 overflow-hidden active:opacity-80"
-        style={{ 
-          width: 130, 
-          height: 150,
-         
-          elevation: 5,
-        }}
-      >
-        <Image
-          source={{ uri: item.image }}
-          className="w-full h-20"
-          resizeMode="cover"
-        />
-        <View className="flex-1 items-center justify-center p-3 bg-white">
-          <View className="w-11 h-11 bg-pink-50 rounded-2xl items-center justify-center mb-2">
-            <IconComponent size={22} color="#ec4899" strokeWidth={2.5} />
-          </View>
-          <Text className="text-gray-800 font-bold text-center text-xs leading-4">
-            {item.name}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   const renderFeaturedProduct = ({ item }: { item: typeof featuredProducts[0] }) => (
     <TouchableOpacity 
@@ -157,6 +96,7 @@ const HomeScreen = () => {
                     {banner.subtitle}
                   </Text>
                   <TouchableOpacity 
+                  onPress={() => banner.title.toLowerCase().includes('services') ? router.push('/services') : router.push('/products')}
                     className="bg-pink-500 rounded-full px-6 py-3 self-start active:bg-pink-600"
                     style={{
                       shadowColor: '#ec4899',
@@ -167,7 +107,7 @@ const HomeScreen = () => {
                     }}
                   >
                     <Text className="text-white font-bold text-sm">
-                      Shop Now
+                      {banner.title.toLowerCase().includes('services') ? 'Explore Services' : 'Shop Now'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -193,7 +133,7 @@ const HomeScreen = () => {
           </View>
           <FlatList
             data={productCategories}
-            renderItem={renderProductCategory}
+            renderItem={({ item }) => <ProductCategory item={item} />}
             keyExtractor={(item) => item.name}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -243,7 +183,7 @@ const HomeScreen = () => {
           </View>
           <FlatList
             data={serviceCategories}
-            renderItem={renderServiceCategory}
+            renderItem={({ item }) => <ServiceCategory item={item} />}
             keyExtractor={(item) => item.name}
             horizontal
             showsHorizontalScrollIndicator={false}

@@ -7,14 +7,14 @@ import EmptyState from '@/components/user/browseProduct/EmptyState';
 import FilterChip from '@/components/user/browseProduct/FilterChip';
 import SortButton from '@/components/user/browseProduct/SortButton';
 import { SearchX } from 'lucide-react-native';
-
+import { useHomeStore } from '@/store/useHomeStore';
 
 
 const categories = ['All', 'Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
 
 const BrowseProductsScreen = () => {
   const { products, fetchProducts } = useProductStore();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const { productCategory ,setProductCategory } = useHomeStore();
   const [sortBy, setSortBy] = useState<'latest' | 'price-low' | 'price-high'>('latest');
 
   useEffect(() => {
@@ -22,7 +22,7 @@ const BrowseProductsScreen = () => {
   }, []);
 
   const filteredProducts = products
-    .filter(product => selectedCategory === 'All' || product.category === selectedCategory)
+    .filter(product => productCategory === 'All' || product.category === productCategory)
     .sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
@@ -47,8 +47,8 @@ const BrowseProductsScreen = () => {
             <FilterChip
               key={category}
               label={category}
-              selected={selectedCategory === category}
-              onPress={() => setSelectedCategory(category)}
+              selected={productCategory === category}
+              onPress={() => setProductCategory(category)}
             />
           ))}
         </ScrollView>

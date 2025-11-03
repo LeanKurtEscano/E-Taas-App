@@ -65,22 +65,28 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
     return () => unsubscribe();
   }, [currentUserId, sellerId, conversationId]);
 
-  // Add effect to mark messages as read when conversation is opened
-  useEffect(() => {
-    if (!currentUserId || !sellerId) return;
+ useEffect(() => {
+  if (!currentUserId || !sellerId) return;
 
-    const markAsRead = async () => {
-      try {
-        const conversationRef = doc(db, 'conversations', conversationId);
+  const markAsRead = async () => {
+    try {
+      const conversationRef = doc(db, 'conversations', conversationId);
+      const conversationSnap = await getDoc(conversationRef);
+
+      if (conversationSnap.exists()) {
         await updateDoc(conversationRef, {
           [`unreadCount_${currentUserId}`]: 0,
         });
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
-      }
-    };
-    markAsRead();
-  }, [currentUserId, sellerId]);
+      } 
+      
+    } catch (error) {
+      
+    }
+  };
+
+  markAsRead();
+}, [currentUserId, sellerId]);
+
 
   const uploadToCloudinary = async (imageUri: string): Promise<string | null> => {
     try {

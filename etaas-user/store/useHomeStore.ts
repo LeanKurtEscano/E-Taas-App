@@ -7,7 +7,7 @@ interface HomeStore {
     setServiceCategory: (category:string) => void;
 }
 
-export const usehomeStore = create<HomeStore>((set) => ({
+export const useHomeStore = create<HomeStore>((set) => ({
     productCategory: 'All',
     serviceCategory: 'All',
     setProductCategory: (category) => set({ productCategory: category }),

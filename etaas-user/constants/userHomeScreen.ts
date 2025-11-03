@@ -115,18 +115,19 @@ export const serviceCategories = [
 export const heroBanners = [
   {
     id: 1,
-    title: 'New Arrivals',
-    subtitle: 'Fresh styles just landed',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
+    title: 'Discover Quality Products',
+    subtitle: 'Shop from local businesses in your area',
+    image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
+    type: 'products',
   },
   {
     id: 2,
-    title: 'Hot Deals',
-    subtitle: 'Up to 50% off today',
-    image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
+    title: 'Find Local Services',
+    subtitle: 'Connect with trusted businesses near you',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+    type: 'services',
   },
 ];
-
 // Featured products data
 export const featuredProducts = [
   {
