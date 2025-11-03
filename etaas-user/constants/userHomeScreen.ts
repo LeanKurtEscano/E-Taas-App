@@ -167,32 +167,32 @@ export const features = [
     icon: Truck,
     title: 'Fast Delivery',
     description: '2-3 day shipping',
-    color: '#3b82f6', // blue
-    bgColor: '#dbeafe',
+    color: '#fff', // lighter pink (icon/text)
+    bgColor: '#f472b6', // bg-pink-400
   },
   {
     id: 2,
     icon: Shield,
     title: 'Secure Payment',
     description: '100% protected',
-    color: '#10b981', // green
-    bgColor: '#d1fae5',
+    color: '#fff',
+    bgColor: '#f472b6',
   },
   {
     id: 3,
     icon: RefreshCw,
     title: 'Easy Returns',
     description: '30-day policy',
-    color: '#f59e0b', // amber
-    bgColor: '#fef3c7',
+    color: '#fff',
+    bgColor: '#f472b6',
   },
   {
     id: 4,
     icon: Award,
     title: 'Best Quality',
     description: 'Premium products',
-    color: '#8b5cf6', // purple
-    bgColor: '#ede9fe',
+    color: '#fff',
+    bgColor: '#f472b6',
   },
 ];
 

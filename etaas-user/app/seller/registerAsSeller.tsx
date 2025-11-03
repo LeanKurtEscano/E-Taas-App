@@ -11,9 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/config/firebaseConfig'; // Adjust import path as needed
-import { useCurrentUser } from '@/hooks/useCurrentUser'; // Adjust import path as needed
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/config/firebaseConfig';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
   ArrowLeft,
   Store,
@@ -25,8 +25,19 @@ import {
   CheckCircle,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-
+import useToast from '@/hooks/general/useToast';
+import GeneralToast from '@/components/general/GeneralToast';
 interface SellerFormData {
+  name: string;
+  businessName: string;
+  shopName: string;
+  addressLocation: string;
+  addressOfOwner: string;
+  contactNumber: string;
+  email: string;
+}
+
+interface FormErrors {
   name: string;
   businessName: string;
   shopName: string;
@@ -40,6 +51,7 @@ const RegisterAsSeller = () => {
   const navigation = useNavigation();
   const { userData } = useCurrentUser();
   const [loading, setLoading] = useState(false);
+  const { showToast, toastVisible, toastMessage, toastType, setToastMessage, setToastType, setToastVisible } = useToast();
   const [formData, setFormData] = useState<SellerFormData>({
     name: '',
     businessName: '',
@@ -50,69 +62,291 @@ const RegisterAsSeller = () => {
     email: userData?.email || '',
   });
 
+  const [errors, setErrors] = useState<FormErrors>({
+    name: '',
+    businessName: '',
+    shopName: '',
+    addressLocation: '',
+    addressOfOwner: '',
+    contactNumber: '',
+    email: '',
+  });
+
   const handleInputChange = (field: keyof SellerFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
+  };
+
+  const validateName = (name: string): string => {
+    if (!name.trim()) {
+      return 'Full name is required.';
+    }
+    if (name.trim().length < 2) {
+      return 'Name must be at least 2 characters long.';
+    }
+    if (!/^[a-zA-Z\s.'-]+$/.test(name)) {
+      return 'Name can only contain letters, spaces, dots, hyphens, and apostrophes.';
+    }
+    return '';
+  };
+
+  const validateEmail = (email: string): string => {
+    if (!email.trim()) {
+      return 'Email is required.';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address.';
+    }
+    return '';
+  };
+
+  const validatePhilippineNumber = (number: string): string => {
+    if (!number.trim()) {
+      return 'Contact number is required.';
+    }
+
+    // Remove all non-digit characters for validation
+    const cleanNumber = number.replace(/\D/g, '');
+
+    // Check if it starts with 09 (11 digits) or +639/639 (12-13 digits)
+    if (cleanNumber.startsWith('09')) {
+      if (cleanNumber.length !== 11) {
+        return 'Philippine mobile number must be 11 digits (e.g., 09123456789).';
+      }
+    } else if (cleanNumber.startsWith('639')) {
+      if (cleanNumber.length !== 12) {
+        return 'Philippine mobile number must be 12 digits with country code (e.g., 639123456789).';
+      }
+    } else if (cleanNumber.startsWith('63')) {
+      return 'Invalid Philippine number format. Use 09XXXXXXXXX or 639XXXXXXXXX.';
+    } else {
+      return 'Philippine mobile number must start with 09 or country code 639.';
+    }
+
+    return '';
+  };
+
+  const validateBusinessName = (name: string): string => {
+    if (!name.trim()) {
+      return 'Business name is required.';
+    }
+    if (name.trim().length < 2) {
+      return 'Business name must be at least 2 characters long.';
+    }
+    return '';
+  };
+
+  const validateShopName = (name: string): string => {
+    if (!name.trim()) {
+      return 'Shop display name is required.';
+    }
+    if (name.trim().length < 2) {
+      return 'Shop name must be at least 2 characters long.';
+    }
+    return '';
+  };
+
+  const validateAddress = (address: string, fieldName: string): string => {
+    if (!address.trim()) {
+      return `${fieldName} is required.`;
+    }
+    if (address.trim().length < 10) {
+      return `${fieldName} must be at least 10 characters long.`;
+    }
+    return '';
+  };
+
+  // Check if email exists in any seller's info
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('sellerInfo.email', '==', email.trim().toLowerCase())
+      );
+      const querySnapshot = await getDocs(q);
+      
+      // Check if any document exists and it's not the current user
+      return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return false;
+    }
+  };
+
+  // Check if contact number exists in any seller's info
+  const checkContactNumberExists = async (contactNumber: string): Promise<boolean> => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('sellerInfo.contactNumber', '==', contactNumber.trim())
+      );
+      const querySnapshot = await getDocs(q);
+      
+      // Check if any document exists and it's not the current user
+      return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
+    } catch (error) {
+      console.error('Error checking contact number:', error);
+      return false;
+    }
+  };
+
+  // Check if shop name exists (case-insensitive)
+  const checkShopNameExists = async (shopName: string): Promise<boolean> => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('isSeller', '==', true));
+      const querySnapshot = await getDocs(q);
+      
+      const normalizedShopName = shopName.trim().toLowerCase();
+      
+      // Check if any shop name matches (case-insensitive) and it's not the current user
+      return querySnapshot.docs.some(doc => {
+        const sellerInfo = doc.data().sellerInfo;
+        return (
+          doc.id !== userData?.uid &&
+          sellerInfo?.shopName?.toLowerCase() === normalizedShopName
+        );
+      });
+    } catch (error) {
+      console.error('Error checking shop name:', error);
+      return false;
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {
+      name: validateName(formData.name),
+      email: validateEmail(formData.email),
+      contactNumber: validatePhilippineNumber(formData.contactNumber),
+      businessName: validateBusinessName(formData.businessName),
+      shopName: validateShopName(formData.shopName),
+      addressLocation: validateAddress(formData.addressLocation, 'Business address'),
+      addressOfOwner: validateAddress(formData.addressOfOwner, "Owner's address"),
+    };
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    return !Object.values(newErrors).some((error) => error !== '');
+  };
+
+  const handleBlur = (field: keyof SellerFormData) => {
+    let error = '';
+    
+    switch (field) {
+      case 'name':
+        error = validateName(formData.name);
+        break;
+      case 'email':
+        error = validateEmail(formData.email);
+        break;
+      case 'contactNumber':
+        error = validatePhilippineNumber(formData.contactNumber);
+        break;
+      case 'businessName':
+        error = validateBusinessName(formData.businessName);
+        break;
+      case 'shopName':
+        error = validateShopName(formData.shopName);
+        break;
+      case 'addressLocation':
+        error = validateAddress(formData.addressLocation, 'Business address');
+        break;
+      case 'addressOfOwner':
+        error = validateAddress(formData.addressOfOwner, "Owner's address");
+        break;
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: error,
+    }));
   };
 
   const handleSubmit = async () => {
-    // Validation
-    if (
-      !formData.name ||
-      !formData.businessName ||
-      !formData.shopName ||
-      !formData.addressLocation ||
-      !formData.addressOfOwner ||
-      !formData.contactNumber ||
-      !formData.email
-    ) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    // Phone validation
-    if (formData.contactNumber.length < 10) {
-      Alert.alert('Error', 'Please enter a valid contact number');
+    // Validate all fields
+    if (!validateForm()) {
+      showToast('Please fix all errors before submitting.', 'error');
       return;
     }
 
     setLoading(true);
 
     try {
+      // Check for existing email
+      const emailExists = await checkEmailExists(formData.email);
+      if (emailExists) {
+        setErrors((prev) => ({
+          ...prev,
+          email: 'This email is already registered by another seller.',
+        }));
+        showToast('This email is already registered by another seller.', 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Check for existing contact number
+      const contactExists = await checkContactNumberExists(formData.contactNumber);
+      if (contactExists) {
+        setErrors((prev) => ({
+          ...prev,
+          contactNumber: 'This contact number is already registered by another seller.',
+        }));
+        showToast('This contact number is already registered by another seller.', 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Check for existing shop name
+      const shopNameExists = await checkShopNameExists(formData.shopName);
+      if (shopNameExists) {
+        setErrors((prev) => ({
+          ...prev,
+          shopName: 'This shop name is already taken. Please choose a different name.',
+        }));
+        showToast('This shop name is already taken. Please choose a unique name.', 'error');
+        setLoading(false);
+        return;
+      }
+
       // Update user document in Firebase
-      const userRef = doc(db, 'users', userData.uid);
+      const userRef = doc(db, 'users', userData?.uid);
       await updateDoc(userRef, {
         sellerInfo: {
-          name: formData.name,
-          businessName: formData.businessName,
-          shopName: formData.shopName,
-          addressLocation: formData.addressLocation,
-          addressOfOwner: formData.addressOfOwner,
-          contactNumber: formData.contactNumber,
-          email: formData.email,
+          name: formData.name.trim(),
+          businessName: formData.businessName.trim(),
+          shopName: formData.shopName.trim(),
+          addressLocation: formData.addressLocation.trim(),
+          addressOfOwner: formData.addressOfOwner.trim(),
+          contactNumber: formData.contactNumber.trim(),
+          email: formData.email.trim().toLowerCase(),
           registeredAt: new Date().toISOString(),
         },
         isSeller: true,
       });
 
-      Alert.alert('Success', 'Successfully registered as seller!', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)/profile'),
-        },
-      ]);
+      showToast('Successfully registered as seller!', 'success');
+      
+      // Navigate after a brief delay to show the success toast
+      setTimeout(() => {
+        router.replace('/(tabs)/profile');
+      }, 1500);
     } catch (error) {
       console.error('Error registering as seller:', error);
-      Alert.alert('Error', 'Failed to register as seller. Please try again.');
+      showToast('Failed to register as seller. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -149,7 +383,7 @@ const RegisterAsSeller = () => {
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Hero Section */}
-        <View className="bg-pink-400 mx-4 mt-6 rounded-2xl p-6 ">
+        <View className="bg-pink-500 mx-4 mt-6 rounded-2xl p-6 ">
           <View className="flex-row items-center gap-3 mb-3">
             <View className="bg-white/20 p-3 rounded-full">
               <Store size={24} color="white" strokeWidth={2} />
@@ -189,10 +423,16 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.name}
               onChangeText={(value) => handleInputChange('name', value)}
+              onBlur={() => handleBlur('name')}
               placeholder="John Doe"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
+                errors.name ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.name ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.name}</Text>
+            ) : null}
           </View>
 
           {/* Email */}
@@ -208,12 +448,18 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.email}
               onChangeText={(value) => handleInputChange('email', value)}
+              onBlur={() => handleBlur('email')}
               placeholder="john.doe@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
+                errors.email ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.email ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.email}</Text>
+            ) : null}
           </View>
 
           {/* Contact Number */}
@@ -229,11 +475,17 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.contactNumber}
               onChangeText={(value) => handleInputChange('contactNumber', value)}
-              placeholder="+63 912 345 6789"
+              onBlur={() => handleBlur('contactNumber')}
+              placeholder="09123456789"
               keyboardType="phone-pad"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
+                errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.contactNumber ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.contactNumber}</Text>
+            ) : null}
           </View>
 
           <Text className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-2">
@@ -253,10 +505,16 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.businessName}
               onChangeText={(value) => handleInputChange('businessName', value)}
+              onBlur={() => handleBlur('businessName')}
               placeholder="ABC Trading Company"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
+                errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.businessName ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.businessName}</Text>
+            ) : null}
           </View>
 
           {/* Shop Name */}
@@ -277,10 +535,16 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.shopName}
               onChangeText={(value) => handleInputChange('shopName', value)}
+              onBlur={() => handleBlur('shopName')}
               placeholder="John's Amazing Store"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
+                errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.shopName ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.shopName}</Text>
+            ) : null}
           </View>
 
           {/* Business Address */}
@@ -296,13 +560,19 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.addressLocation}
               onChangeText={(value) => handleInputChange('addressLocation', value)}
+              onBlur={() => handleBlur('addressLocation')}
               placeholder="123 Main Street, City, Province"
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg min-h-[60px]"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
+                errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.addressLocation ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressLocation}</Text>
+            ) : null}
           </View>
 
           {/* Owner Address */}
@@ -318,13 +588,19 @@ const RegisterAsSeller = () => {
             <TextInput
               value={formData.addressOfOwner}
               onChangeText={(value) => handleInputChange('addressOfOwner', value)}
+              onBlur={() => handleBlur('addressOfOwner')}
               placeholder="456 Home Street, City, Province"
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="text-base text-gray-900 px-3 py-2 bg-gray-50 rounded-lg min-h-[60px]"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
+                errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+              }`}
               placeholderTextColor="#9CA3AF"
             />
+            {errors.addressOfOwner ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressOfOwner}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -352,6 +628,12 @@ const RegisterAsSeller = () => {
           </Text>
         </View>
       </ScrollView>
+      <GeneralToast
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        message={toastMessage}
+        type={toastType}
+      />
     </KeyboardAvoidingView>
   );
 };

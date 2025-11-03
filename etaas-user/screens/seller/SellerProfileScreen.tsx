@@ -188,7 +188,7 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    onPress={() => handleOptionPress(option.route)}
+                                    
                                     className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
                                  
                                     activeOpacity={0.7}
@@ -218,7 +218,7 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    onPress={() => handleOptionPress(option.route)}
+                                  
                                     className="bg-white rounded-2xl border border-gray-300 p-4 flex-row items-center justify-between mb-3"
                                
                                     activeOpacity={0.7}

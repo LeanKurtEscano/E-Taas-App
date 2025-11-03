@@ -6,7 +6,7 @@ const useToast = () => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
 
-     const showToast = (message: string, type: 'success' | 'error') => {
+    const showToast = (message: string, type: 'success' | 'error') => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);

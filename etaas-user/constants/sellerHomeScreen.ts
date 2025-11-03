@@ -13,7 +13,7 @@ export const sellerOptions: SellerOption[] = [
         id: 1, 
         title: 'My Products', 
         icon: Package,
-        route: '/seller/products' 
+        route: '/products' 
     },
     { 
         id: 2, 
@@ -25,7 +25,7 @@ export const sellerOptions: SellerOption[] = [
         id: 3, 
         title: 'Sales Analytics', 
         icon: TrendingUp,
-        route: '/seller/analytics' 
+        route: '/(tabs)' 
     },
     { 
         id: 4, 

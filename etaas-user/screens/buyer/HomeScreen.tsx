@@ -192,7 +192,7 @@ const HomeScreen = () => {
         </View>
 
         {/* Why Shop With Us Section - Widget Grid */}
-        <View className="px-4  py-5">
+        <View className="px-4 bg-white py-5">
           <View className="mb-4">
             <Text className="text-2xl font-bold text-gray-900 mb-1">
               Why Shop With Us
