@@ -105,7 +105,7 @@ const ManageOrders = () => {
                 }
 
                 const productData = productSnap.data() as ProductData;
-                console.log('Product Data:', productData);
+
 
                 if (productData.hasVariants) {
                   const variants = productData.variants || [];
@@ -129,20 +129,41 @@ const ManageOrders = () => {
                   if (currentQuantity < item.quantity) {
                     throw new Error(`Insufficient stock for ${item.productName}`);
                   }
-
-                  const isOutOfStock = currentQuantity - item.quantity <= 0;
+                  const newQuantity = currentQuantity - item.quantity;
+                  const isOutOfStock = newQuantity <= 0;
+                  const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
 
                   if (isOutOfStock) {
                     await updateDoc(productRef, {
-                      quantity: currentQuantity - item.quantity,
+                      quantity: newQuantity,
                       availability: "out of stock"
                     });
 
+                    await sendNotification(
+                      userData!.uid,
+                      'seller',
+                      'Product Out of Stock',
+                      `Your product "${item.productName}" is now out of stock after confirming an order.`,
+                      undefined,
+                      item.productId
+                    );
+
+                  } else if (isProductLowOnStock) {
+                    await sendNotification(
+                      userData!.uid,
+                      'seller',
+                      'Product Low on Stock',
+                      `Your product "${item.productName}" is low on stock after confirming an order.`,
+                      undefined,
+                      item.productId
+                    );
+                    await updateDoc(productRef, {
+                      quantity: newQuantity
+                    });
                   } else {
                     await updateDoc(productRef, {
-                      quantity: currentQuantity - item.quantity
+                      quantity: newQuantity
                     });
-
                   }
 
 
@@ -289,8 +310,8 @@ const ManageOrders = () => {
                 key={tab}
                 onPress={() => setSelectedTab(tab as any)}
                 className={`px-4 py-2.5 rounded-full mx-1 ${selectedTab === tab
-                    ? 'bg-pink-500'
-                    : 'bg-gray-100'
+                  ? 'bg-pink-500'
+                  : 'bg-gray-100'
                   }`}
                 activeOpacity={0.7}
               >
@@ -482,8 +503,8 @@ const ManageOrders = () => {
                       onPress={() => handleConfirmOrder(order)}
                       disabled={processingOrderId === order.id}
                       className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
-                          ? 'bg-gray-300'
-                          : 'bg-pink-500'
+                        ? 'bg-gray-300'
+                        : 'bg-pink-500'
                         }`}
                       activeOpacity={0.8}
                       style={{
@@ -537,8 +558,8 @@ const ManageOrders = () => {
                         onPress={() => handleAddTracking(order)}
                         disabled={processingOrderId === order.id}
                         className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
-                            ? 'bg-gray-300'
-                            : 'bg-pink-500'
+                          ? 'bg-gray-300'
+                          : 'bg-pink-500'
                           }`}
                         activeOpacity={0.8}
                         style={{

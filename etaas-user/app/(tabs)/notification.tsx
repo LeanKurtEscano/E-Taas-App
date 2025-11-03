@@ -35,12 +35,12 @@ const NotificationScreen = () => {
         if (docSnap.exists()) {
           const data = docSnap.data()
           const notifs = data.notifications || []
-          
-         
-          const sortedNotifs = notifs.sort((a: Notification, b: Notification) => 
+
+
+          const sortedNotifs = notifs.sort((a: Notification, b: Notification) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
-          
+
           setNotifications(sortedNotifs)
           setLoading(false)
           setRefreshing(false)
@@ -54,7 +54,7 @@ const NotificationScreen = () => {
                   ...n,
                   status: 'read'
                 }))
-                
+
                 await updateDoc(notificationRef, {
                   notifications: updatedNotifs
                 })
@@ -86,28 +86,29 @@ const NotificationScreen = () => {
 
 
 
- const handleNotificationPress = (notification: Notification) => {
-  const title = notification.title.toLowerCase();
+  const handleNotificationPress = (notification: Notification) => {
+    const title = notification.title.toLowerCase();
 
-  const routeMap: {[key: string]: string } = {
-    shipped: '/orders/toship',
-    confirmed: '/orders/toship',
-    'inquiry': `/seller/inquiries/${notification.directId}`,
-    'placed successfully': '/orders/order',
-    'order received': '/seller/orders',
-    'order delivered': '/seller/orders',
-    cancelled: '/seller/orders',
-  };
+    const routeMap: { [key: string]: string } = {
+      shipped: '/orders/toship',
+      confirmed: '/orders/toship',
+      'out of stock': `/seller/product/?productId=${notification.directId}`,
+      'inquiry': `/seller/inquiries/${notification.directId}`,
+      'placed successfully': '/orders/order',
+      'order received': '/seller/orders',
+      'order delivered': '/seller/orders',
+      cancelled: '/seller/orders',
+    };
 
-  for (const key in routeMap) {
-    if (title.includes(key)) {
-      router.push(routeMap[key]);
-      return;
+    for (const key in routeMap) {
+      if (title.includes(key)) {
+        router.push(routeMap[key]);
+        return;
+      }
     }
-  }
 
-  console.warn('No matching route for notification:', notification.title);
-};
+    console.warn('No matching route for notification:', notification.title);
+  };
 
 
   if (loading) {
@@ -136,8 +137,8 @@ const NotificationScreen = () => {
         <View className="bg-white px-6 py-6 border-b border-gray-100">
           <Text className="text-3xl font-bold text-gray-800">Notifications</Text>
           <Text className="text-gray-500 mt-1">
-            {notifications.length === 0 
-              ? 'No notifications yet' 
+            {notifications.length === 0
+              ? 'No notifications yet'
               : `${notifications.length} notification${notifications.length !== 1 ? 's' : ''}`
             }
           </Text>
@@ -162,11 +163,10 @@ const NotificationScreen = () => {
               <TouchableOpacity
                 key={notification.id}
                 onPress={() => handleNotificationPress(notification)}
-                className={`rounded-2xl p-4 mb-3 shadow-sm border ${
-                  notification.status === 'unread' 
-                    ? 'bg-pink-50 border-pink-200' 
+                className={`rounded-2xl p-4 mb-3 shadow-sm border ${notification.status === 'unread'
+                    ? 'bg-pink-50 border-pink-200'
                     : 'bg-white border-gray-100'
-                }`}
+                  }`}
                 activeOpacity={0.7}
               >
                 <View className="flex-row">
@@ -178,13 +178,12 @@ const NotificationScreen = () => {
                   )}
 
                   {/* Icon */}
-                  <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${
-                    notification.type === 'seller' ? 'bg-pink-100' : 'bg-blue-100'
-                  }`}>
-                    <Feather 
-                      name={notification.type === 'seller' ? 'shopping-bag' : 'check-circle'} 
-                      size={24} 
-                      color={notification.type === 'seller' ? '#ec4899' : '#3b82f6'} 
+                  <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${notification.type === 'seller' ? 'bg-pink-100' : 'bg-blue-100'
+                    }`}>
+                    <Feather
+                      name={notification.type === 'seller' ? 'shopping-bag' : 'check-circle'}
+                      size={24}
+                      color={notification.type === 'seller' ? '#ec4899' : '#3b82f6'}
                     />
                   </View>
 
@@ -192,9 +191,8 @@ const NotificationScreen = () => {
                   <View className="flex-1">
                     <View className="flex-row items-start justify-between mb-1">
                       <View className="flex-row items-center flex-1 pr-2">
-                        <Text className={`text-base font-bold flex-1 ${
-                          notification.status === 'unread' ? 'text-gray-900' : 'text-gray-800'
-                        }`}>
+                        <Text className={`text-base font-bold flex-1 ${notification.status === 'unread' ? 'text-gray-900' : 'text-gray-800'
+                          }`}>
                           {notification.title}
                         </Text>
                         {notification.status === 'unread' && (
@@ -207,27 +205,29 @@ const NotificationScreen = () => {
                         {formatNotificationTime(notification.createdAt)}
                       </Text>
                     </View>
-                    
-                    <Text className={`text-sm mb-3 leading-5 ${
-                      notification.status === 'unread' ? 'text-gray-700' : 'text-gray-600'
-                    }`}>
+
+                    <Text className={`text-sm mb-3 leading-5 ${notification.status === 'unread' ? 'text-gray-700' : 'text-gray-600'
+                      }`}>
                       {notification.message}
                     </Text>
 
                     {/* Footer */}
                     <View className="flex-row items-center justify-between">
-                      <View className={`px-3 py-1 rounded-full ${
-                        notification.type === 'seller' ? 'bg-pink-50' : 'bg-blue-50'
-                      }`}>
-                        <Text className={`text-xs font-semibold ${
-                          notification.type === 'seller' ? 'text-pink-600' : 'text-blue-600'
+                      <View className={`px-3 py-1 rounded-full ${notification.type === 'seller' ? 'bg-pink-50' : 'bg-blue-50'
                         }`}>
+                        <Text className={`text-xs font-semibold ${notification.type === 'seller' ? 'text-pink-600' : 'text-blue-600'
+                          }`}>
                           {notification.type === 'seller' ? 'Seller' : 'Buyer'}
                         </Text>
                       </View>
-                      
+
                       <View className="flex-row items-center">
-                        <Text className="text-xs text-gray-500 mr-1">{notification.title.toLowerCase().includes("inquiry") ? "View Inquiry" : "View Order"}</Text>
+                        <Text className="text-xs text-gray-500 mr-1">{notification.title.toLowerCase().includes("out of stock")
+                          ? "View Product"
+                          : notification.title.toLowerCase().includes("inquiry")
+                            ? "View Inquiry"
+                            : "View Order"}
+                        </Text>
                         <Feather name="chevron-right" size={14} color="#9ca3af" />
                       </View>
                     </View>
