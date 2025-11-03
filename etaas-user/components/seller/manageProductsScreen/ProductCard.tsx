@@ -9,7 +9,9 @@ import {
 } from 'lucide-react-native';
 import { router } from "expo-router";
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteModal }) => (
+export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteModal }) => {
+   const productStock  = product.hasVariants ? product.variants.reduce((acc, variant) => acc + (variant.stock || 0), 0) : product.quantity;
+  return (
     <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-300">
       <View className="flex-row">
      
@@ -36,7 +38,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
             ₱{product.price.toLocaleString()}
           </Text>
           <Text className="text-xs text-gray-400">
-            Quantity: {product.quantity} • {product.availability === 'out of stock' ? 'Out of Stock' : 'In Stock'}
+            Quantity: {productStock} • {product.availability === 'out of stock' ? 'Out of Stock' : 'In Stock'}
           </Text>
         </View>
       </View>
@@ -70,4 +72,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
         </TouchableOpacity>
       </View>
     </View>
-  );
+  )
+}
