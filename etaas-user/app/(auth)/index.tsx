@@ -134,7 +134,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-pink-400"
+      className="flex-1 bg-pink-500"
     >
       <StatusBar barStyle="light-content" />
       <ScrollView
@@ -158,7 +158,7 @@ export default function LoginScreen() {
         </View>
 
         <View className="flex-1 bg-white rounded-t-[40px] px-9 pt-8">
-          {/* Email Input */}
+         
           <View className="mb-4">
             <Text className="text-gray-700 text-sm font-medium mb-2">Email</Text>
             <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -177,7 +177,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Password Input */}
+      
           <View className="mb-2">
             <Text className="text-gray-700 text-sm font-medium mb-2">Password</Text>
             <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -208,16 +208,16 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Forgot Password */}
+     
           <TouchableOpacity onPress={() => router.push('/(auth)/forgotPassword')} className="self-end mb-6">
-            <Text className="text-pink-400 text-sm">Forgot password?</Text>
+            <Text className="text-pink-400 font-semibold text-sm">Forgot password?</Text>
           </TouchableOpacity>
 
-          {/* Sign In Button */}
+        
           <TouchableOpacity
             onPress={handleEmailSignIn}
             disabled={loading}
-            className={`bg-pink-400 rounded-xl py-4 items-center mb-6 ${loading ? 'opacity-50' : ''}`}
+            className={`bg-pink-500 rounded-xl py-4 items-center mb-6 ${loading ? 'opacity-50' : ''}`}
             activeOpacity={0.8}
           >
             {loading ? (
@@ -227,34 +227,42 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
+    
           <View className="flex-row items-center mb-6">
             <View className="flex-1 h-px bg-gray-300" />
             <Text className="mx-4 text-gray-400 text-sm">OR</Text>
             <View className="flex-1 h-px bg-gray-300" />
           </View>
 
-          {/* Google Sign In */}
+        
           <TouchableOpacity
-            onPress={handleGoogleSignIn}
+           
             disabled={loading || !googleRequest}
-            className="flex-row items-center justify-center bg-white border border-gray-300 rounded-xl py-3 mb-3"
+            className="flex-row items-center justify-center pr-5 bg-white border border-gray-300 rounded-xl py-3 mb-3"
             activeOpacity={0.8}
           >
-            <Text className="text-lg mr-3">G</Text>
+            <Image
+              source={require('../../assets/images/google.png')}
+              className="w-6 h-6 mr-3"
+              resizeMode="contain"
+            />
             <Text className="text-gray-700 text-base font-medium">
               Continue with Google
             </Text>
           </TouchableOpacity>
 
-          {/* Facebook Sign In */}
+       
           <TouchableOpacity
-            onPress={handleFacebookSignIn}
+          
             disabled={loading || !fbRequest}
             className="flex-row items-center justify-center bg-white border border-gray-300 rounded-xl py-3 mb-6"
             activeOpacity={0.8}
           >
-            <Text className="text-lg text-blue-600 mr-3">f</Text>
+                      <Image
+              source={require('../../assets/images/facebook.png')}
+              className="w-6 h-6 mr-3"
+              resizeMode="contain"
+            />
             <Text className="text-gray-700 text-base font-medium">
               Continue with Facebook
             </Text>

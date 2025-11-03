@@ -54,6 +54,58 @@ export const validateFullName = (fullName: string) => {
 };
 
 
+export const validateUsername = (username: string) => {
+    const minLen = 4;
+    const maxLen = 20;
+
+    const invalidCharsRegex = /[^a-zA-Z0-9._]/; // Only letters, numbers, dots, underscores
+    const consecutiveSymbolsRegex = /[._]{2,}/; // No consecutive dots or underscores
+    const startsOrEndsWithSymbol = /^[._]|[._]$/; // Can't start or end with dot or underscore
+    const onlyNumbersRegex = /^\d+$/; // Prevent all numbers
+    const repeatedCharRegex = /(.)\1{3,}/; // Prevent 4+ same consecutive characters
+    const spaceRegex = /\s/; // No spaces allowed
+
+    if (!username || !username.trim()) 
+        return "Username is required.";
+
+    const trimmed = username.trim();
+
+    // Length check
+    if (trimmed.length < minLen)
+        return `Username must be at least ${minLen} characters long.`;
+
+    if (trimmed.length > maxLen)
+        return `Username must be at most ${maxLen} characters long.`;
+
+    // Spaces
+    if (spaceRegex.test(trimmed))
+        return "Username must not contain spaces.";
+
+    // Invalid characters
+    if (invalidCharsRegex.test(trimmed))
+        return "Username can only contain letters, numbers, dots, or underscores.";
+
+    // Consecutive symbols
+    if (consecutiveSymbolsRegex.test(trimmed))
+        return "Username cannot contain consecutive dots or underscores.";
+
+    // Start or end with symbol
+    if (startsOrEndsWithSymbol.test(trimmed))
+        return "Username cannot start or end with a dot or underscore.";
+
+    // Repeated characters (e.g., aaaaa)
+    if (repeatedCharRegex.test(trimmed))
+        return "Username must not contain long sequences of the same character.";
+
+    // Only numbers
+    if (onlyNumbersRegex.test(trimmed))
+        return "Username cannot contain only numbers.";
+
+   
+};
+
+
+
 
 export const validateEmail = (email: string) => {
     const validProviders = [

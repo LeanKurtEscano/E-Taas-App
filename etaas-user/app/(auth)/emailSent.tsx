@@ -57,7 +57,7 @@ const CheckEmailScreen = () => {
 
   return (
     <ScrollView 
-      className="flex-1 bg-pink-400"
+      className="flex-1 bg-pink-500"
       contentContainerStyle={{ flexGrow: 1 }}
     >
       {/* Top Section - Pink Background */}
@@ -147,7 +147,7 @@ const CheckEmailScreen = () => {
           className="py-4"
           activeOpacity={0.6}
         >
-          <Text className="text-pink-400 text-center text-base font-semibold">
+          <Text className="text-pink-500 text-center text-base font-semibold">
             Back to Login
           </Text>
         </TouchableOpacity>

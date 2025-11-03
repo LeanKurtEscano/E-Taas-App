@@ -349,7 +349,7 @@ const ProductScreen: React.FC = () => {
     
         
 
-        {productId && !hasVariants && (
+        { !hasVariants && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Quantity

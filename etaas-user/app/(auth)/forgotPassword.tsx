@@ -17,7 +17,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../config/firebaseConfig';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
-import { validateEmail } from '@/utils/validation/validation';
+import { validateEmail } from '@/utils/validation/authValidation';
 import { router } from 'expo-router';
 
 export default function ForgotPasswordScreen() {
@@ -104,7 +104,7 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-pink-400"
+      className="flex-1 bg-pink-500"
     >
       <StatusBar barStyle="light-content" backgroundColor="#ec4899" />
       <ScrollView
@@ -112,7 +112,7 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header Section */}
-        <View className="bg-pink-400 rounded-b-3xl pt-36 pb-10  items-center px-6">
+        <View className="bg-pink-500 rounded-b-3xl pt-36 pb-10  items-center px-6">
           <View className="w-16 h-16 bg-white rounded-full items-center justify-center mb-4">
             <Lock size={32} color="#ec4899" strokeWidth={2.5} />
           </View>
@@ -154,7 +154,7 @@ export default function ForgotPasswordScreen() {
           <TouchableOpacity
             onPress={handleResetPassword}
             disabled={loading || emailSent}
-            className={`bg-pink-400 rounded-3xl py-4 items-center mb-12 ${loading ? 'opacity-70' : ''
+            className={`bg-pink-500 rounded-3xl py-4 items-center mb-12 ${loading ? 'opacity-70' : ''
               }`}
             activeOpacity={0.8}
           >
@@ -168,7 +168,7 @@ export default function ForgotPasswordScreen() {
           {/* Back to Login Link */}
           <View className="flex-row justify-center items-center">
             <TouchableOpacity onPress={() => router.push('/(auth)')} >
-              <Text className="text-pink-400 text-base font-semibold ">
+              <Text className="text-pink-500 text-base font-semibold ">
                 Back to Login
               </Text>
             </TouchableOpacity>

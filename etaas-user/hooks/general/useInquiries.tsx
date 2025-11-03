@@ -23,7 +23,7 @@ interface Service {
   updatedAt: string;
 }
 
-interface InquiryData {
+export interface InquiryData {
   customerName: string;
   customerEmail: string;
   customerPhone: string;

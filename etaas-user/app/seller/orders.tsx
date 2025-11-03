@@ -42,8 +42,6 @@ import {
   QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { router } from 'expo-router';
-import generateRandomId from '@/utils/general/generateId';
-import { CheckoutItem } from '@/types/cart/checkout';
 import { formatDate } from '@/utils/general/formatDate';
 import { getStatusColor } from '@/utils/general/getStatus';
 import { ShippingAddress,ProductVariant,ProductData, Order } from '@/types/order/sellerOrder';
