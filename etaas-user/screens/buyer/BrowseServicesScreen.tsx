@@ -16,6 +16,7 @@ import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useHomeStore } from '@/store/useHomeStore';
+
 interface Service {
   id: string;
   serviceName: string;
@@ -81,15 +82,22 @@ const BrowseServicesScreen = () => {
       setFilteredServices(servicesData);
     } catch (error) {
       console.error('Error fetching services:', error);
+      Alert.alert('Error', 'Failed to load services. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchServices();
+    try {
+      await fetchServices();
+    } catch (error) {
+      console.error('Error refreshing services:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filterServices = () => {
@@ -288,21 +296,13 @@ const BrowseServicesScreen = () => {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="bg-white pt-12 pb-4 px-6 border-b border-gray-100">
-        <View className="flex-row items-center justify-between mb-4">
-          <View>
-            <Text className="text-3xl font-bold text-gray-800">
-              Browse Services
-            </Text>
-            <Text className="text-sm text-gray-500 mt-1">
-              {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''} available
-            </Text>
-          </View>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            className="p-2 rounded-full bg-gray-100"
-          >
-            <Ionicons name="close" size={24} color="#374151" />
-          </TouchableOpacity>
+        <View className="mb-4">
+          <Text className="text-3xl font-bold text-gray-800">
+            Browse Services
+          </Text>
+          <Text className="text-sm text-gray-500 mt-1">
+            {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''} available
+          </Text>
         </View>
 
         {/* Search Bar */}

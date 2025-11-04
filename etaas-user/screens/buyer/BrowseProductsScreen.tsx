@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from 'react';
-import { View, FlatList, Text, ScrollView } from 'react-native';
+import { View, FlatList, Text, ScrollView, RefreshControl } from 'react-native';
 import { useProductStore } from '@/store/useProductStore';
 import ProductCard from '@/components/user/browseProduct/ProductCard';
 import EmptyState from '@/components/user/browseProduct/EmptyState';
@@ -9,17 +8,28 @@ import SortButton from '@/components/user/browseProduct/SortButton';
 import { SearchX } from 'lucide-react-native';
 import { useHomeStore } from '@/store/useHomeStore';
 
-
 const categories = ['All', 'Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
 
 const BrowseProductsScreen = () => {
   const { products, fetchProducts } = useProductStore();
-  const { productCategory ,setProductCategory } = useHomeStore();
+  const { productCategory, setProductCategory } = useHomeStore();
   const [sortBy, setSortBy] = useState<'latest' | 'price-low' | 'price-high'>('latest');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error refreshing products:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filteredProducts = products
     .filter(product => productCategory === 'All' || product.category === productCategory)
@@ -35,7 +45,6 @@ const BrowseProductsScreen = () => {
 
   const renderHeader = () => (
     <View className="bg-white">
-
       <View className="px-4 pt-4 pb-3">
         <Text className="text-base font-bold text-gray-900 mb-3">Categories</Text>
         <ScrollView
@@ -54,7 +63,6 @@ const BrowseProductsScreen = () => {
         </ScrollView>
       </View>
 
-
       <View className="flex-row items-center justify-between px-4 py-3 border-t border-gray-100">
         <Text className="text-sm text-gray-600">
           {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'}
@@ -64,7 +72,7 @@ const BrowseProductsScreen = () => {
     </View>
   );
 
-  if (products.length === 0) {
+  if (products.length === 0 && !refreshing) {
     return <EmptyState />;
   }
 
@@ -80,6 +88,14 @@ const BrowseProductsScreen = () => {
         contentContainerClassName="pb-6"
         columnWrapperClassName="px-4 gap-3 mb-3"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3B82F6']} // Android
+            tintColor="#3B82F6" // iOS
+          />
+        }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-16 px-6">
             <View className="bg-gray-100 rounded-full w-20 h-20 items-center justify-center mb-4">
@@ -92,7 +108,8 @@ const BrowseProductsScreen = () => {
           </View>
         }
       />
-    </View>);
+    </View>
+  );
 };
 
 export default BrowseProductsScreen;

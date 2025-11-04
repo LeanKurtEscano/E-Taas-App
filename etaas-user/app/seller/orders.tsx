@@ -50,7 +50,6 @@ const ManageOrders = () => {
   const { userData } = useCurrentUser()
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
@@ -77,7 +76,7 @@ const ManageOrders = () => {
 
       setOrders(ordersData);
       setLoading(false);
-      setRefreshing(false);
+
     });
 
     return () => unsubscribe();
@@ -231,10 +230,6 @@ const ManageOrders = () => {
     }
   };
 
-  const onRefresh = (): void => {
-    setRefreshing(true);
-  };
-
 
 
   const getStatusIcon = (status: Order['status']) => {
@@ -339,14 +334,7 @@ const ManageOrders = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#ec4899']}
-            tintColor="#ec4899"
-          />
-        }
+       
       >
         {filteredOrders.length === 0 ? (
           <View className="flex-1 justify-center items-center py-20 px-6">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import {
   ShoppingBag,
   CheckCircle,
@@ -14,19 +14,47 @@ import { SimpleBarChart } from '@/components/seller/dashboard/BarChart';
 import { OrderItem } from '@/components/seller/dashboard/RecentOrderItem';
 import { MetricCard } from '@/components/seller/dashboard/MetricCard';
 import { SellerDashboardSkeleton } from '@/components/loader/seller/SellerDashBoardSkeleton';
-
 import { EmptyState } from '@/components/seller/dashboard/EmptyState';
 
 export default function SellerDashboard() {
-  const { userData, metrics, chartData, recentOrders, recentInquiriesData } = useSellerDashboard();
+  const {
+    userData,
+    metrics,
+    chartData,
+    recentOrders,
+    recentInquiriesData,
+    refreshing,
+    refreshDashboard
+  } = useSellerDashboard();
 
   if (!userData || !metrics || !chartData || !recentOrders || !recentInquiriesData) {
     return <SellerDashboardSkeleton />;
   }
 
+  const formatRevenue = (revenue: number) => {
+    if (revenue >= 1_000_000) {
+      return (revenue / 1_000_000).toFixed(1) + 'M';
+    } else if (revenue >= 1_000) {
+      return (revenue / 1_000).toFixed(1) + 'K';
+    } else {
+      return revenue.toString();
+    }
+  };
+
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshDashboard}
+            colors={['#ec4899']} // Pink color for Android
+            tintColor="#ec4899" // Pink color for iOS
+          />
+        }
+      >
         {/* Header Section */}
         <View className="bg-pink-500 px-6 pt-8 pb-10 rounded-b-[32px]">
           <Text className="text-white text-2xl font-extrabold mb-2">
@@ -54,27 +82,21 @@ export default function SellerDashboard() {
                 icon={CheckCircle}
                 value={metrics.deliveredOrders}
                 label="Delivered"
-                iconBg="bg-emerald-100"
+                iconBg="bg-pink-100"
               />
             </View>
             <View className="flex-row gap-4">
               <MetricCard
                 icon={DollarSign}
-                value={`₱${
-                  metrics.totalRevenue >= 1_000_000
-                    ? (metrics.totalRevenue / 1_000_000).toFixed(1) + 'M'
-                    : metrics.totalRevenue >= 1_000
-                    ? (metrics.totalRevenue / 1_000).toFixed(1) + 'K'
-                    : metrics.totalRevenue
-                }`}
+                value={`₱${formatRevenue(metrics.totalRevenue)}`}
                 label="Total Revenue"
-                iconBg="bg-purple-100"
+                iconBg="bg-pink-100"
               />
               <MetricCard
                 icon={MessageSquare}
                 value={metrics.totalInquiries}
                 label="Total Inquiries"
-                iconBg="bg-blue-100"
+                iconBg="bg-pink-100"
               />
             </View>
           </View>
@@ -92,7 +114,7 @@ export default function SellerDashboard() {
               </View>
               <Text className="text-2xl font-extrabold text-gray-900">Recent Orders</Text>
             </View>
-            
+
             {recentOrders.length === 0 ? (
               <EmptyState
                 icon={Package}
@@ -104,8 +126,8 @@ export default function SellerDashboard() {
                 {recentOrders.map((order) => (
                   <OrderItem key={order.id} order={order} />
                 ))}
-                <TouchableOpacity 
-                  onPress={() => router.push('/seller/orders')} 
+                <TouchableOpacity
+                  onPress={() => router.push('/seller/orders')}
                   className="bg-pink-500 rounded-2xl py-4 items-center mt-2"
                 >
                   <Text className="text-white font-bold text-base">View All Orders</Text>
@@ -122,7 +144,7 @@ export default function SellerDashboard() {
               </View>
               <Text className="text-2xl font-extrabold text-gray-900">Recent Inquiries</Text>
             </View>
-            
+
             {recentInquiriesData.length === 0 ? (
               <EmptyState
                 icon={MessageSquare}
