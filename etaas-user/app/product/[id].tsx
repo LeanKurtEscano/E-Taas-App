@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -41,8 +42,8 @@ import { useCart } from '@/hooks/general/useCart';
 import CartToast from '@/components/general/CartToast';
 import { ConversationModal } from '@/components/general/ConversationModal';
 import { CheckoutItem } from '@/types/product/product';
-const ViewProductScreen = () => {
 
+const ViewProductScreen = () => {
   const router = useRouter();
   const { userData } = useCurrentUser();
   const { id } = useLocalSearchParams();
@@ -59,6 +60,7 @@ const ViewProductScreen = () => {
   } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [shopData, setShopData] = useState<UserData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>('');
@@ -66,7 +68,7 @@ const ViewProductScreen = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [isBuyingDirectly, setIsBuyingDirectly] = useState(false);
-  console.log(isBuyingDirectly);
+
   const totalStocks = product?.hasVariants ? product?.variants?.reduce((sum, variant) => sum + variant.stock, 0) : product?.quantity || 0;
   const mockShopData = {
     totalProducts: 127,
@@ -78,48 +80,54 @@ const ViewProductScreen = () => {
     location: 'Naic, Cavite',
   };
 
+  const fetchData = async () => {
+    if (!productId) {
+      setError('Product not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const fetchedProduct = await fetchProductData(productId);
+      const shopData = await fetchShopBySellerId(fetchedProduct?.sellerId || '');
+
+      if (shopData) {
+        setShopData(shopData);
+      } else {
+        setError('Unable to load shop details');
+      }
+
+      if (fetchedProduct) {
+        setProduct(fetchedProduct);
+        setSelectedImage(fetchedProduct.images?.[0] || '');
+        setError(null); // Clear any previous errors
+      } else {
+        setError('Product not found');
+      }
+    } catch (err) {
+      setError('Unable to load product details');
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!productId) {
-        setError('Product not found');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const fetchedProduct = await fetchProductData(productId);
-        const shopData = await fetchShopBySellerId(fetchedProduct?.sellerId || '');
-        console.log(fetchedProduct);
-
-        if (shopData) {
-          setShopData(shopData);
-        } else {
-          setError('Unable to load shop details');
-        }
-
-        if (fetchedProduct) {
-          setProduct(fetchedProduct);
-          setSelectedImage(fetchedProduct.images?.[0] || '');
-        } else {
-          setError('Product not found');
-        }
-      } catch (err) {
-        setError('Unable to load product details');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    const loadInitialData = async () => {
+      setLoading(true);
+      await fetchData();
+      setLoading(false);
     };
 
-    fetchData();
+    loadInitialData();
   }, [productId]);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const handleViewOrders = () => {
-
+    
   };
 
   const handleShare = () => {
@@ -142,7 +150,7 @@ const ViewProductScreen = () => {
       variantText: product?.variantText || '',
       sellerId: product?.sellerId || '',
       shopName: shopData?.sellerInfo?.shopName || 'Shop',
-    })
+    });
 
     router.push({
       pathname: '/cart/checkout',
@@ -154,8 +162,7 @@ const ViewProductScreen = () => {
         itemCount: '1'
       }
     });
-  }
-
+  };
 
   const handleBuyNowWithVariant = (params: {
     variantId?: string;
@@ -171,12 +178,12 @@ const ViewProductScreen = () => {
       productName: product?.name,
       image: product?.variants?.find((v) => v.id === params.variantId)?.image || '',
       variantText: product?.variants?.
-      find((v) => v.id === params.variantId)?.combination.map((value,index ) => `${product?.variantCategories[index].name}: ${value}`).join(', ') || '',
+      find((v) => v.id === params.variantId)?.combination.map((value, index) => `${product?.variantCategories[index].name}: ${value}`).join(', ') || '',
       sellerId: product?.sellerId || '',
       shopName: shopData?.sellerInfo?.shopName || 'Shop',
     });
 
-    setIsBuyingDirectly(false); // Reset the state
+    setIsBuyingDirectly(false);
 
     router.push({
       pathname: '/cart/checkout',
@@ -189,7 +196,6 @@ const ViewProductScreen = () => {
       }
     });
   };
-
 
   if (loading) {
     return (
@@ -232,8 +238,19 @@ const ViewProductScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <ScrollView className="flex-1">
-
+      <ScrollView 
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#EC4899']}
+            tintColor="#EC4899"
+            title="Pull to refresh"
+            titleColor="#6B7280"
+          />
+        }
+      >
         <View className="bg-gray-100">
           <Image
             source={{ uri: selectedImage }}
@@ -284,7 +301,6 @@ const ViewProductScreen = () => {
           )}
         </View>
 
-
         {product.images && product.images.length > 1 && (
           <ScrollView
             horizontal
@@ -308,7 +324,6 @@ const ViewProductScreen = () => {
           </ScrollView>
         )}
 
-        {/* Product Info */}
         <View className="px-4 py-4">
           <Text className="text-2xl font-bold text-gray-900 mb-2">
             {product.name}
@@ -318,7 +333,6 @@ const ViewProductScreen = () => {
             <Text className="text-3xl font-bold text-pink-600">
               ₱{product.price.toLocaleString()}
             </Text>
-
           </View>
 
           <View className="flex-row items-center flex-wrap mb-4">
@@ -332,7 +346,6 @@ const ViewProductScreen = () => {
             </View>
           </View>
 
-          {/* Product Highlights */}
           <View className="mb-6">
             <Text className="text-base font-semibold text-gray-800 mb-3">
               Product Highlights
@@ -354,7 +367,6 @@ const ViewProductScreen = () => {
                   Fast shipping available
                 </Text>
               </View>
-
               <View className="flex-row items-center bg-pink-50 px-4 py-3 rounded-full mr-2">
                 <Shield size={16} color="#EC4899" strokeWidth={2.5} />
                 <Text className="text-gray-700 text-sm font-medium ml-2">
@@ -370,7 +382,6 @@ const ViewProductScreen = () => {
             </ScrollView>
           </View>
 
-          {/* Description */}
           <View className="mb-6">
             <Text className="text-lg font-semibold text-gray-800 mb-2">
               Description
@@ -390,7 +401,6 @@ const ViewProductScreen = () => {
             )}
           </View>
 
-
           <View className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-4 mb-4 border border-pink-100">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center">
@@ -399,7 +409,6 @@ const ViewProductScreen = () => {
                   Shop Information
                 </Text>
               </View>
-
 
               <TouchableOpacity
                 onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/shop/${product.sellerId}`)}
@@ -412,7 +421,6 @@ const ViewProductScreen = () => {
                 </Text>
                 <ChevronRight size={14} color="#EC4899" strokeWidth={2.5} />
               </TouchableOpacity>
-
             </View>
 
             <View className="flex-row items-start mb-4">
@@ -450,7 +458,6 @@ const ViewProductScreen = () => {
               </View>
             </View>
 
-
             {!isOwner && (
               <TouchableOpacity
                 onPress={() => setShowConversationModal(true)}
@@ -464,7 +471,6 @@ const ViewProductScreen = () => {
             )}
           </View>
 
-          {/* Additional Information */}
           <View className="bg-blue-50 rounded-xl p-4 mb-4">
             <View className="flex-row items-center mb-3">
               <Info size={16} color="#3B82F6" strokeWidth={2.5} />
@@ -542,7 +548,6 @@ const ViewProductScreen = () => {
                     handleBuyDirectly();
                   }
                 }}
-
                 className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center"
                 style={{ elevation: 3 }}
               >
@@ -555,12 +560,11 @@ const ViewProductScreen = () => {
           )}
         </View>
 
-
         <ProductDetailsModal
           isVisible={showVariantModal}
           onClose={() => {
             setShowVariantModal(false);
-            setIsBuyingDirectly(false); // Reset when modal closes
+            setIsBuyingDirectly(false);
           }}
           product={product}
           currentUser={userData}

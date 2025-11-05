@@ -9,6 +9,7 @@ const storageBucket = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
 const messagingSenderId = process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
 const appId = process.env.EXPO_PUBLIC_FIREBASE_APP_ID;
 const measurementId = process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID;
+
 const firebaseConfig = {
   apiKey: apiKey,
   authDomain: authDomain,

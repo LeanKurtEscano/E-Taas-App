@@ -68,11 +68,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     }
   }, [isVisible, product]);
 
-  console.log("user ID in modal:", currentUser?.uid);
-  console.log("product ID in modal:", product?.id);
-  console.log("seller ID in modal:", product?.sellerId);
 
-  // Get currently selected variant
   const selectedVariant = useMemo(() => {
     if (!product?.hasVariants || !product.variants || !product.variantCategories) {
       return null;
@@ -158,7 +154,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
 
   const currentPrice = selectedVariant?.price || product?.price || 0;
-  const currentStock = selectedVariant?.stock || product?.quantity || 0;
+  const currentStock = product?.hasVariants
+  ? selectedVariant
+    ? selectedVariant.stock
+    : product.variants.reduce((acc, variant) => acc + variant.stock, 0)
+  : product?.quantity || 0;
+
   const currentImage = selectedVariant?.image || product?.images?.[0] || '';
 
   const canAddToCart = product?.hasVariants

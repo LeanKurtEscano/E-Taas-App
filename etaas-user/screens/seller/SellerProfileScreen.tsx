@@ -153,7 +153,7 @@ const SellerProfileScreen: React.FC = () => {
                     </Text>
 
                     <View className="mb-6">
-                        {sellerOptions.slice(0, 3).map((option) => {
+                        {sellerOptions.slice(0, 4).map((option) => {
                             const IconComponent = option.icon;
                             return (
                                 <TouchableOpacity
@@ -183,7 +183,7 @@ const SellerProfileScreen: React.FC = () => {
                     </Text>
 
                     <View className="mb-6">
-                        {sellerOptions.slice(3, 6).map((option) => {
+                        {sellerOptions.slice(4, 7).map((option) => {
                             const IconComponent = option.icon;
                             return (
                                 <TouchableOpacity

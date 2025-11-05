@@ -153,7 +153,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Text className="text-white text-3xl font-bold mb-2">E-Taas</Text>
+          <Text className="text-white text-3xl font-bold mb-2">E-TAAS</Text>
           <Text className="text-white text-md opacity-90">Sign in to continue</Text>
         </View>
 

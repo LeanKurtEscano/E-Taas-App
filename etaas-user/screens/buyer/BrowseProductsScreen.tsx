@@ -84,7 +84,6 @@ const BrowseProductsScreen = () => {
         keyExtractor={(item) => item.id}
         numColumns={2}
         ListHeaderComponent={renderHeader}
-        stickyHeaderIndices={[0]}
         contentContainerClassName="pb-6"
         columnWrapperClassName="px-4 gap-3 mb-3"
         showsVerticalScrollIndicator={false}
@@ -92,8 +91,9 @@ const BrowseProductsScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#3B82F6']} // Android
-            tintColor="#3B82F6" // iOS
+            colors={['#ec4899']} // Android
+            tintColor="#ec4899" // iOS
+            progressViewOffset={0} // Ensures spinner is visible on iOS
           />
         }
         ListEmptyComponent={

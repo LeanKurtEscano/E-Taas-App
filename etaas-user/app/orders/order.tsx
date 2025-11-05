@@ -261,7 +261,7 @@ export default function MyOrdersScreen() {
                   {/* Action Buttons */}
                   <View className="flex-row gap-3">
                     <TouchableOpacity
-                      onPress={() => router.push('/(tabs)')}
+                      onPress={() => router.push(`/orders/${order.id}`)}
                       className="flex-1 bg-white border-2 border-gray-200 py-3 rounded-xl"
                       activeOpacity={0.7}
                     >

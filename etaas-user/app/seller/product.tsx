@@ -1,5 +1,5 @@
 // screens/ProductScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,236 +9,98 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ArrowLeft, Upload, Trash2, Plus, Minus } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import useSellerStore from '@/hooks/seller/useSellerStore';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { db } from '@/config/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
-
 import VariantModal from '@/components/seller/manageProductsScreen/ProductVariant';
-import { VariantCategory, Variant } from '@/types/product/product';
-
+import GeneralToast from '@/components/general/GeneralToast';
+import useToast from '@/hooks/general/useToast';
+import { useProductCrud } from '@/hooks/seller/useProductCrud';
+import { useState } from 'react';
 
 const ProductScreen: React.FC = () => {
-  const {userData} = useCurrentUser();
+  const { userData } = useCurrentUser();
   const params = useLocalSearchParams();
   const sellerId = userData?.uid;
   const productId = params.productId as string | undefined;
   const router = useRouter();
-  const sellerStore = useSellerStore();
-  
-  const [productName, setProductName] = useState('');
-  const [productPrice, setProductPrice] = useState('');
-  const [productDescription, setProductDescription] = useState('');
-  const [productCategory, setProductCategory] = useState('Clothing');
-  const [productAvailability, setProductAvailability] = useState<'available' | 'sold' | 'reserved'>('available');
-  const [productQuantity, setProductQuantity] = useState(0);
-  const [imageUris, setImageUris] = useState<string[]>([]);
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]); 
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); 
-  const [loading, setLoading] = useState(false);
-  const [fetchingProduct, setFetchingProduct] = useState(false);
-  const [imageError, setImageError] = useState('');
 
-  const [variantModalVisible, setVariantModalVisible] = useState(false);
-  const [hasVariants, setHasVariants] = useState(false);
-  const [variantCategories, setVariantCategories] = useState<VariantCategory[]>([]);
-  const [variants, setVariants] = useState<Variant[]>([]);
-  
-  console.log(variants)
-  const categories = ['Clothing', 'Accessories', 'Electronics', 'Home', 'Food & Beverages', 'Others'];
-  const availabilityOptions: Array<'available' | 'out of stock' > = [
-    'available',
-    'out of stock',
- 
-  ];
+  const [fieldErrors, setFieldErrors] = useState({
+    productName: false,
+    productPrice: false,
+    productDescription: false,
+  });
 
- 
-  useEffect(() => {
-    const fetchProductData = async () => {
-      if (!productId) return;
+  const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
 
-      setFetchingProduct(true);
-      try {
-        const productRef = doc(db, 'products', productId);
-        const productSnap = await getDoc(productRef);
+  const {
+    // State
+    productName,
+    productPrice,
+    productDescription,
+    productCategory,
+    productAvailability,
+    productQuantity,
+    imageUris,
+    imageError,
+    variantModalVisible,
+    hasVariants,
+    variantCategories,
+    variants,
+    loading,
+    fetchingProduct,
 
-        if (productSnap.exists()) {
-          const data = productSnap.data();
-          setProductName(data.name || '');
-          setProductPrice(data.price?.toString() || '');
-          setProductDescription(data.description || '');
-          setProductCategory(data.category || 'Clothing');
-          setProductAvailability(data.availability || 'available');
-          setProductQuantity(data.quantity || 0);
-          
-          // Variant data
-          setHasVariants(data.hasVariants || false);
-          setVariantCategories(data.variantCategories || []);
-          setVariants(data.variants || []);
-        
-          const existingImages = data.images || [];
-          setImageUris(existingImages);
-          setExistingImageUrls(existingImages);
-        } else {
-          Alert.alert('Error', 'Product not found');
-          router.back();
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        Alert.alert('Error', 'Failed to load product data');
-        router.back();
-      } finally {
-        setFetchingProduct(false);
-      }
-    };
+    // Setters
+    setProductName,
+    setProductPrice,
+    setProductDescription,
+    setProductCategory,
+    setProductAvailability,
+    setVariantModalVisible,
 
-    fetchProductData();
-  }, [productId]);
+    // Functions
+    pickImages,
+    removeImage,
+    incrementQuantity,
+    decrementQuantity,
+    handleSaveVariants,
+    toggleVariants,
+    disableVariants,
+    handleSubmit,
 
-  const pickImages = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera roll permissions');
-        return;
-      }
+    // Constants
+    categories,
+    availabilityOptions,
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
-        quality: 0.8,
-        aspect: [1, 1],
-      });
+    // Computed
+    visibleImages,
+    remainingCount,
 
-      if (!result.canceled && result.assets) {
-        const newUris = result.assets.map(asset => asset.uri);
-        setImageUris(prev => [...prev, ...newUris]);
-        setImageError(''); 
-      }
-    } catch (error) {
-      console.error('Error picking images:', error);
-      Alert.alert('Error', 'Failed to pick images');
+    productNameRef,
+    productPriceRef,
+    productDescriptionRef,
+  } = useProductCrud({ sellerId, productId, showToast, setFieldErrors });
+
+  const handleToggleVariants = () => {
+    const result = toggleVariants();
+    if (result === 'confirm') {
+      Alert.alert(
+        'Disable Variants',
+        'Are you sure you want to disable variants? This will remove all variant data.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Disable',
+            style: 'destructive',
+            onPress: disableVariants,
+          },
+        ]
+      );
     }
   };
-
-  const removeImage = (index: number) => {
-    const imageToRemove = imageUris[index];
-    
-  
-    if (existingImageUrls.includes(imageToRemove)) {
-      setImagesToDelete(prev => [...prev, imageToRemove]);
-    }
-    
-    // Remove from display
-    setImageUris(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const incrementQuantity = () => {
-    setProductQuantity(prev => prev + 1);
-  };
-
-  const decrementQuantity = () => {
-    setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
-  };
-
-  const handleSaveVariants = (categories: VariantCategory[], variantsList: Variant[]) => {
-    setVariantCategories(categories);
-    setVariants(variantsList);
-    setHasVariants(true);
-    Alert.alert('Success', 'Variants saved successfully!');
-  };
-
-  const handleSubmit = async () => {
-    if (!sellerId) {
-      Alert.alert('Error', 'Seller ID is required');
-      return;
-    }
-
-    if (!productName.trim()) {
-      Alert.alert('Error', 'Please enter product name');
-      return;
-    }
-
-    if (!hasVariants && (!productPrice.trim() || isNaN(Number(productPrice)))) {
-      Alert.alert('Error', 'Please enter valid price');
-      return;
-    }
-
-    if (imageUris.length === 0) {
-      setImageError('Please add at least one image');
-      Alert.alert('Please Select an Image', 'Please add at least one image');
-      return;
-    }
-
-  
-    if (hasVariants) {
-      if (variantCategories.length === 0 || variants.length === 0) {
-        Alert.alert('Error', 'Please configure variants or disable variants');
-        return;
-      }
-      
-      const invalidVariants = variants.filter(v => v.price <= 0 );
-      if (invalidVariants.length > 0) {
-        Alert.alert('Error', 'All variants must have valid price and stock');
-        return;
-      }
-    }
-
-    setLoading(true);
-
-    try {
-      const productData = {
-        name: productName.trim(),
-        price:  Number(productPrice),
-        description: productDescription.trim(),
-        category: productCategory,
-        availability: productAvailability,
-        quantity: hasVariants ? 0 : productQuantity,
-        sellerId,
-        hasVariants,
-        ...(hasVariants && {
-          variantCategories,
-          variants,
-        }),
-      };
-
-      console.log(productData);
-
-      if (productId) {
-        // Separate existing images from new ones
-        const existingImages = imageUris.filter(uri => existingImageUrls.includes(uri));
-        const newImages = imageUris.filter(uri => !existingImageUrls.includes(uri));
-        
-        await sellerStore.updateProduct(
-          productId, 
-          productData, 
-          newImages, // Only new images to upload
-          existingImages, // Existing images to keep
-          imagesToDelete // Images to delete from Storage
-        );
-        Alert.alert('Success', 'Product updated successfully!');
-      } else {
-        await sellerStore.addProduct(productData, imageUris);
-        Alert.alert('Success', 'Product added successfully!');
-      }
-      
-      router.back();
-      
-    } catch (error) {
-      console.error('Error saving product:', error);
-      Alert.alert('Error', 'Failed to save product. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const visibleImages = imageUris.slice(0, 2);
-  const remainingCount = imageUris.length - 2;
 
   if (fetchingProduct) {
     return (
@@ -250,11 +112,15 @@ const ProductScreen: React.FC = () => {
   }
 
   return (
-    <View className="flex-1 bg-white">
-  
+    <KeyboardAvoidingView 
+      className="flex-1 bg-white"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
+      {/* Header */}
       <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6 flex-row items-center shadow-sm">
-        <TouchableOpacity 
-          onPress={() => router.back()} 
+        <TouchableOpacity
+          onPress={() => router.back()}
           disabled={loading}
           className="p-2 rounded-full active:bg-gray-200 mr-4"
         >
@@ -265,12 +131,13 @@ const ProductScreen: React.FC = () => {
         </Text>
       </View>
 
-      <ScrollView 
-        className="flex-1 px-6" 
+      <ScrollView
+        className="flex-1 px-6"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
-    
+        {/* Product Images */}
         <View className="mt-6">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Product Images *
@@ -322,34 +189,41 @@ const ProductScreen: React.FC = () => {
             Product Name *
           </Text>
           <TextInput
-            className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
+            ref={productNameRef}
+            className={`bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border ${fieldErrors.productName ? 'border-red-500' : 'border-gray-200'
+              }`}
             placeholder="Enter product name"
             value={productName}
-            onChangeText={setProductName}
+            onChangeText={(text) => {
+              setProductName(text);
+              setFieldErrors(prev => ({ ...prev, productName: false }));
+            }}
             placeholderTextColor="#9CA3AF"
           />
         </View>
 
-        {/* Price - Hide when variants are enabled */}
-     
-          <View className="mt-5">
-            <Text className="text-base font-semibold text-gray-900 mb-3">
-              Price (₱) *
-            </Text>
-            <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
-              placeholder="0.00"
-              value={productPrice}
-              onChangeText={setProductPrice}
-              keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-        
-    
-        
+        {/* Price */}
+        <View className="mt-5">
+          <Text className="text-base font-semibold text-gray-900 mb-3">
+            Price (₱) *
+          </Text>
+          <TextInput
+            ref={productPriceRef}
+            className={`bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border ${fieldErrors.productPrice ? 'border-red-500' : 'border-gray-200'
+              }`}
+            placeholder="0.00"
+            value={productPrice}
+            onChangeText={(text) => {
+              setProductPrice(text);
+              setFieldErrors(prev => ({ ...prev, productPrice: false }));
+            }}
+            keyboardType="numeric"
+            placeholderTextColor="#9CA3AF"
+          />
+        </View>
 
-        { !hasVariants && (
+        {/* Quantity - Hide when variants are enabled */}
+        {!hasVariants && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Quantity
@@ -362,13 +236,13 @@ const ProductScreen: React.FC = () => {
               >
                 <Minus size={20} color="#374151" />
               </TouchableOpacity>
-              
+
               <View className="mx-6 min-w-[60px] items-center">
                 <Text className="text-2xl font-bold text-gray-900">
                   {productQuantity}
                 </Text>
               </View>
-              
+
               <TouchableOpacity
                 onPress={incrementQuantity}
                 className="w-12 h-12 bg-pink-500 rounded-xl items-center justify-center"
@@ -392,17 +266,15 @@ const ProductScreen: React.FC = () => {
               <TouchableOpacity
                 key={category}
                 onPress={() => setProductCategory(category)}
-                className={`px-5 py-3 rounded-full mr-2 ${
-                  productCategory === category
+                className={`px-5 py-3 rounded-full mr-2 ${productCategory === category
                     ? 'bg-pink-500'
                     : 'bg-gray-50 border border-gray-200'
-                }`}
+                  }`}
                 activeOpacity={0.7}
               >
                 <Text
-                  className={`font-semibold text-sm ${
-                    productCategory === category ? 'text-white' : 'text-gray-700'
-                  }`}
+                  className={`font-semibold text-sm ${productCategory === category ? 'text-white' : 'text-gray-700'
+                    }`}
                 >
                   {category}
                 </Text>
@@ -411,8 +283,8 @@ const ProductScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* Availability - Only in Edit Mode AND when variants are disabled */}
-        {productId  && ( 
+        {/* Availability - Only in Edit Mode */}
+        {productId && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Availability
@@ -422,17 +294,15 @@ const ProductScreen: React.FC = () => {
                 <TouchableOpacity
                   key={option}
                   onPress={() => setProductAvailability(option)}
-                  className={`px-5 py-3 rounded-full mr-2 mb-2 ${
-                    productAvailability === option
+                  className={`px-5 py-3 rounded-full mr-2 mb-2 ${productAvailability === option
                       ? 'bg-pink-500'
                       : 'bg-gray-50 border border-gray-200'
-                  }`}
+                    }`}
                   activeOpacity={0.7}
                 >
                   <Text
-                    className={`font-semibold text-sm capitalize ${
-                      productAvailability === option ? 'text-white' : 'text-gray-700'
-                    }`}
+                    className={`font-semibold text-sm capitalize ${productAvailability === option ? 'text-white' : 'text-gray-700'
+                      }`}
                   >
                     {option.charAt(0).toUpperCase() + option.slice(1)}
                   </Text>
@@ -449,46 +319,23 @@ const ProductScreen: React.FC = () => {
               Product Variants
             </Text>
             <TouchableOpacity
-              onPress={() => {
-                if (hasVariants) {
-                  Alert.alert(
-                    'Disable Variants',
-                    'Are you sure you want to disable variants? This will remove all variant data.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Disable',
-                        style: 'destructive',
-                        onPress: () => {
-                          setHasVariants(false);
-                          setVariantCategories([]);
-                          setVariants([]);
-                        },
-                      },
-                    ]
-                  );
-                } else {
-                  setHasVariants(true);
-                }
-              }}
-              className={`px-4 py-2 rounded-full ${
-                hasVariants ? 'bg-pink-500' : 'bg-gray-200'
-              }`}
+              onPress={handleToggleVariants}
+              className={`px-4 py-2 rounded-full ${hasVariants ? 'bg-pink-500' : 'bg-gray-200'
+                }`}
             >
-              <Text className={`text-xs font-semibold ${
-                hasVariants ? 'text-white' : 'text-gray-700'
-              }`}>
+              <Text className={`text-xs font-semibold ${hasVariants ? 'text-white' : 'text-gray-700'
+                }`}>
                 {hasVariants ? 'Enabled' : 'Disabled'}
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           {hasVariants ? (
             <View>
               <Text className="text-sm text-gray-600 mb-3">
                 Add variants like Color, Size, Material to create different product options.
               </Text>
-              
+
               {variantCategories.length > 0 && (
                 <View className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200">
                   <Text className="text-sm font-semibold text-gray-900 mb-2">
@@ -499,12 +346,9 @@ const ProductScreen: React.FC = () => {
                       • {cat.name}: {cat.values.join(', ')}
                     </Text>
                   ))}
-                  
-                  {/* Show summary of variant availability */}
-                 
                 </View>
               )}
-              
+
               <TouchableOpacity
                 onPress={() => setVariantModalVisible(true)}
                 className="bg-pink-500 rounded-xl py-3 items-center flex-row justify-center"
@@ -521,17 +365,22 @@ const ProductScreen: React.FC = () => {
             </Text>
           )}
         </View>
-        
+
         {/* Description */}
         <View className="mt-5 mb-6">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Description
           </Text>
           <TextInput
-            className="bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border border-gray-200"
+            ref={productDescriptionRef}
+            className={`bg-gray-50 rounded-xl px-4 py-4 text-gray-900 text-base border ${fieldErrors.productDescription ? 'border-red-500' : 'border-gray-200'
+              }`}
             placeholder="Tell us more about this product..."
             value={productDescription}
-            onChangeText={setProductDescription}
+            onChangeText={(text) => {
+              setProductDescription(text);
+              setFieldErrors(prev => ({ ...prev, productDescription: false }));
+            }}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -546,9 +395,8 @@ const ProductScreen: React.FC = () => {
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={loading}
-          className={`rounded-xl py-4 items-center justify-center ${
-            loading ? 'bg-gray-300' : 'bg-pink-500'
-          }`}
+          className={`rounded-xl py-4 items-center justify-center ${loading ? 'bg-gray-300' : 'bg-pink-500'
+            }`}
           activeOpacity={0.8}
         >
           {loading ? (
@@ -575,7 +423,15 @@ const ProductScreen: React.FC = () => {
         initialVariants={variants}
         basePrice={Number(productPrice) || 0}
       />
-    </View>
+
+      {/* Toast */}
+      <GeneralToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
+    </KeyboardAvoidingView>
   );
 };
 

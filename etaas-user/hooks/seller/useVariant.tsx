@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Variant, VariantCategory } from '@/types/product/product';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+
 const useVariant = () => {
     const [step, setStep] = useState<1 | 2>(1);
     const [categories, setCategories] = useState<VariantCategory[]>([]);
@@ -14,9 +15,12 @@ const useVariant = () => {
     const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
     const [editPrice, setEditPrice] = useState('');
     const [editStock, setEditStock] = useState('');
-  const [showCustomVariant, setShowCustomVariant] = useState(false);
-  const [selectedCategoryValues, setSelectedCategoryValues] = useState<{[key: string]: string}>({});
-
+    const [showCustomVariant, setShowCustomVariant] = useState(false);
+    const [selectedCategoryValues, setSelectedCategoryValues] = useState<{[key: string]: string}>({});
+    
+    // New states for bulk deletion
+    const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -213,8 +217,8 @@ const useVariant = () => {
                 {
                     text: 'Remove',
                     style: 'destructive',
-                    onPress: () => {updateVariant(variantId, 'image', '');
-                        
+                    onPress: () => {
+                        updateVariant(variantId, 'image', '');
                     },
                 },
             ]
@@ -232,53 +236,101 @@ const useVariant = () => {
         onCloseFn();
     };
 
-
     const handleAddCustomVariant = (basePrice: number) => {
-      
         const selectedValues = Object.values(selectedCategoryValues).filter(value => value);
         
         if (selectedValues.length === 0) {
-          Alert.alert('Error', 'Please select at least one variant option');
-          return;
+            Alert.alert('Error', 'Please select at least one variant option');
+            return;
         }
     
-        // Create combination array in the same order as categories
         const combination = categories.map(category => 
-          selectedCategoryValues[category.id] || ''
-        ).filter(value => value); // Remove empty values
+            selectedCategoryValues[category.id] || ''
+        ).filter(value => value);
     
-        // Check if this combination already exists
         const exists = variants.some(variant => 
-          JSON.stringify(variant.combination) === JSON.stringify(combination)
+            JSON.stringify(variant.combination) === JSON.stringify(combination)
         );
     
         if (exists) {
-          Alert.alert('Error', 'This variant combination already exists');
-          return;
+            Alert.alert('Error', 'This variant combination already exists');
+            return;
         }
     
         const newVariant: Variant = {
-          id: generateId(),
-          combination,
-          price: basePrice,
-          stock: 0,
-          image: "",
+            id: generateId(),
+            combination,
+            price: basePrice,
+            stock: 0,
+            image: "",
         };
     
         setVariants(prev => [...prev, newVariant]);
         setSelectedCategoryValues({});
         setShowCustomVariant(false);
-      };
+    };
     
-      const handleCategoryValueSelect = (categoryId: string, value: string) => {
+    const handleCategoryValueSelect = (categoryId: string, value: string) => {
         setSelectedCategoryValues(prev => ({
-          ...prev,
-          [categoryId]: prev[categoryId] === value ? '' : value // Toggle selection
+            ...prev,
+            [categoryId]: prev[categoryId] === value ? '' : value
         }));
-      };
-    
+    };
 
-    return  {
+    // New bulk deletion functions
+    const toggleVariantSelection = (variantId: string) => {
+        setSelectedVariantIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(variantId)) {
+                newSet.delete(variantId);
+            } else {
+                newSet.add(variantId);
+            }
+            return newSet;
+        });
+    };
+
+    const selectAllVariants = () => {
+        const allIds = new Set(variants.map(v => v.id));
+        setSelectedVariantIds(allIds);
+    };
+
+    const deselectAllVariants = () => {
+        setSelectedVariantIds(new Set());
+    };
+
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => !prev);
+        if (isSelectionMode) {
+            deselectAllVariants();
+        }
+    };
+
+    const deleteSelectedVariants = () => {
+        if (selectedVariantIds.size === 0) {
+            Alert.alert('Error', 'Please select at least one variant to delete');
+            return;
+        }
+
+        Alert.alert(
+            'Delete Selected Variants',
+            `Are you sure you want to delete ${selectedVariantIds.size} variant${selectedVariantIds.size !== 1 ? 's' : ''}? This action cannot be undone.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        setVariants(prev => prev.filter(variant => !selectedVariantIds.has(variant.id)));
+                        setSelectedVariantIds(new Set());
+                        setIsSelectionMode(false);
+                    },
+                },
+            ]
+        );
+    };
+
+    return {
         step,
         setStep,
         categories,
@@ -316,10 +368,15 @@ const useVariant = () => {
         setShowCustomVariant,
         selectedCategoryValues,
         setSelectedCategoryValues,
+        // Bulk deletion exports
+        selectedVariantIds,
+        isSelectionMode,
+        toggleVariantSelection,
+        selectAllVariants,
+        deselectAllVariants,
+        toggleSelectionMode,
+        deleteSelectedVariants,
     }
-
-
-
 }
 
 export default useVariant

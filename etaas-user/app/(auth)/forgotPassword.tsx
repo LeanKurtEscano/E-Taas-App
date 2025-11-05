@@ -116,7 +116,7 @@ export default function ForgotPasswordScreen() {
           <View className="w-16 h-16 bg-white rounded-full items-center justify-center mb-4">
             <Lock size={32} color="#ec4899" strokeWidth={2.5} />
           </View>
-          <Text className="text-white text-3xl font-bold mb-2">E-Taas App</Text>
+          <Text className="text-white text-3xl font-bold mb-2">E-TAAS</Text>
           <Text className="text-white text-xl font-semibold mb-3">
             Forgot your password?
           </Text>

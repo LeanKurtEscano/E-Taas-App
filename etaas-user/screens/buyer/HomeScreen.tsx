@@ -208,10 +208,7 @@ const HomeScreen = () => {
                 className="bg-white border border-gray-200 rounded-3xl p-5 items-center mb-3"
                 style={{ 
                   width: (width - 48) / 2 - 6,
-                  shadowColor: feature.color,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 12,
+                  
                   elevation: 5,
                 }}
               >

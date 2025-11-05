@@ -4,8 +4,8 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import { 
   Eye, 
   Edit, 
-  Trash2, 
-
+  Trash2,
+  BarChart3,
 } from 'lucide-react-native';
 import { router } from "expo-router";
 
@@ -71,6 +71,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
           <Text className="font-semibold text-sm ml-1" style={{ color: '#EF4444' }}>Delete</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Analytics Button */}
+      <TouchableOpacity 
+        className="mt-3 py-3 rounded-xl border border-gray-200 items-center flex-row justify-center"
+        onPress={() => router.push(`/seller/analytics/${product.id}`)}
+      >
+        <BarChart3 size={16} color="#374151" strokeWidth={2} />
+        <Text className="text-gray-700 font-semibold text-sm ml-1">Product Analytics</Text>
+      </TouchableOpacity>
     </View>
   )
 }

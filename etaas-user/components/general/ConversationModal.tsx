@@ -11,17 +11,48 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { X, Send, ImageIcon, Phone, Mail, Store, ChevronLeft } from 'lucide-react-native';
 import { useConversation } from '@/hooks/general/useConversation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { UserData } from '@/hooks/useCurrentUser';
-import { formatTime,formatDateMessage } from '@/utils/general/formatDate';
+import { formatTime, formatDateMessage } from '@/utils/general/formatDate';
+
 interface ConversationModalProps {
   visible: boolean;
   onClose: () => void;
   sellerData: UserData;
 }
+
+
+const MessageText: React.FC<{ text: string; isCurrentUser: boolean }> = ({ text, isCurrentUser }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  const handleLinkPress = (url: string) => {
+    Linking.openURL(url).catch((err) => console.error('Error opening link:', err));
+  };
+
+  return (
+    <Text className={`text-base leading-6 ${isCurrentUser ? 'text-white' : 'text-gray-900'}`}>
+      {parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+          return (
+            <Text
+              key={index}
+              className={`underline ${isCurrentUser ? 'text-white' : 'text-blue-500'}`}
+              onPress={() => handleLinkPress(part)}
+            >
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      })}
+    </Text>
+  );
+};
 
 export const ConversationModal: React.FC<ConversationModalProps> = ({
   visible,
@@ -40,7 +71,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     uploadingImage,
     sendMessage,
     uploadImage,
-    
   } = useConversation(userData?.uid || '', sellerData.uid || sellerData.id || '');
 
   // Determine if the other person is a seller or regular user
@@ -64,18 +94,18 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     }
   }, [messages]);
 
-const handleSendMessage = async () => {
-  if ((!messageText.trim() && !selectedImage) || sendingMessage) return;
-  
-  const text = messageText;
-  const imageUri = selectedImage; // This is now a local URI
-  
-  setMessageText('');
-  setSelectedImage(null);
-  
-  // sendMessage will handle the Cloudinary upload
-  await sendMessage(text, imageUri || '');
-};
+  const handleSendMessage = async () => {
+    if ((!messageText.trim() && !selectedImage) || sendingMessage) return;
+    
+    const text = messageText;
+    const imageUri = selectedImage; // This is now a local URI
+    
+    setMessageText('');
+    setSelectedImage(null);
+    
+    // sendMessage will handle the Cloudinary upload
+    await sendMessage(text, imageUri || '');
+  };
 
   const handleImageUpload = async () => {
     const imageUrl = await uploadImage();
@@ -87,9 +117,6 @@ const handleSendMessage = async () => {
   const handleRemoveImage = () => {
     setSelectedImage(null);
   };
-
- 
-
 
   const renderDateSeparator = (currentMessage: any, previousMessage: any) => {
     if (!currentMessage.createdAt) return null;
@@ -135,13 +162,11 @@ const handleSendMessage = async () => {
                 <ChevronLeft size={24} color="#ec4899" />
               </TouchableOpacity>
               
+              <View className="bg-pink-500 w-12 h-12 rounded-full items-center justify-center mr-3">
+                <Store size={24} color="#fff" />
+              </View>
               
-                <View className="bg-pink-500 w-12 h-12 rounded-full items-center justify-center mr-3">
-                    <Store size={24} color="#fff" />
-                  </View>
               <View className="flex-1">
-
-                
                 <Text className="text-gray-900 font-bold text-xl">
                   {otherPersonName}
                 </Text>
@@ -159,43 +184,7 @@ const handleSendMessage = async () => {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Info - Show seller info if they're a seller, otherwise show customer info */}
-          {isOtherPersonASeller ? (
-            // Seller Info Card
-            <></>
-          ) : (
-            // Customer Info Card
-            sellerData.addressesList?.[0] && (
-              <View className="bg-blue-50 rounded-xl p-3 mt-3 border border-blue-100">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-blue-500 w-8 h-8 rounded-full items-center justify-center mr-3">
-                      <Text className="text-white font-bold text-sm">
-                        {sellerData.addressesList[0].fullName.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-gray-900 font-semibold text-sm">
-                        {sellerData.addressesList[0].fullName}
-                      </Text>
-                      <Text className="text-blue-600 text-xs">
-                        {sellerData.email}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View className="flex-row items-center gap-3">
-                    <TouchableOpacity className="bg-white p-2 rounded-lg border border-blue-200">
-                      <Phone size={16} color="#3b82f6" />
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-white p-2 rounded-lg border border-blue-200">
-                      <Mail size={16} color="#3b82f6" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )
-          )}
+      
         </View>
 
         {/* Messages */}
@@ -238,7 +227,7 @@ const handleSendMessage = async () => {
                         }`}
                       >
                         <View
-                          className={`max-w-[75%] rounded-2xl ${
+                          className={`max-w-[85%] rounded-2xl ${
                             isCurrentUser
                               ? 'bg-pink-500 rounded-br-md'
                               : 'bg-white rounded-bl-md shadow-sm border border-gray-100'
@@ -255,13 +244,10 @@ const handleSendMessage = async () => {
                           ) : null}
                           {message.text ? (
                             <View className={message.imageUrl ? 'px-3 pb-3 pt-1' : 'px-3 py-2.5'}>
-                              <Text
-                                className={`text-base leading-5 ${
-                                  isCurrentUser ? 'text-white' : 'text-gray-900'
-                                }`}
-                              >
-                                {message.text}
-                              </Text>
+                              <MessageText
+                                text={message.text}
+                                isCurrentUser={isCurrentUser}
+                              />
                             </View>
                           ) : null}
                         </View>

@@ -167,32 +167,32 @@ export const features = [
     icon: Truck,
     title: 'Fast Delivery',
     description: '2-3 day shipping',
-    color: '#fff', // lighter pink (icon/text)
-    bgColor: '#f472b6', // bg-pink-400
+    color: '#ec4899', 
+    bgColor: '#fce7f3', 
   },
   {
     id: 2,
     icon: Shield,
     title: 'Secure Payment',
     description: '100% protected',
-    color: '#fff',
-    bgColor: '#f472b6',
+    color: '#ec4899',
+    bgColor: '#fce7f3',
   },
   {
     id: 3,
     icon: RefreshCw,
     title: 'Easy Returns',
     description: '30-day policy',
-    color: '#fff',
-    bgColor: '#f472b6',
+    color: '#ec4899',
+    bgColor: '#fce7f3',
   },
   {
     id: 4,
     icon: Award,
     title: 'Best Quality',
     description: 'Premium products',
-    color: '#fff',
-    bgColor: '#f472b6',
+    color: '#ec4899',
+    bgColor: '#fce7f3',
   },
 ];
 
@@ -203,7 +203,7 @@ export const profileOptions: ProfileOption[] = [
         { id: 2, title: 'To Ship', icon: Package, route:'/orders/toship' },
         { id: 3, title: 'To Receive', icon: Truck ,route:'/orders/toreceive'},
        // { id: 4, title: 'To Pay', icon: Wallet,route:'/orders/to-pay' },
-        { id: 4, title: 'My Purchase History', icon: Clock, route:'/orders/purchase-history' },
+        { id: 4, title: 'My Purchase History', icon: Clock, route:'/orders/history' },
         { id: 5, title: 'Help & Support', icon: HelpCircle,route:'/support/help' },
         { id: 6, title: 'Settings', icon: Settings, route:'/settings' },
     ];

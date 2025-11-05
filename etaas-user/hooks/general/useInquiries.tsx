@@ -24,6 +24,7 @@ interface Service {
 }
 
 export interface InquiryData {
+  id?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;

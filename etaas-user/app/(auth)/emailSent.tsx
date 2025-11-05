@@ -60,14 +60,14 @@ const CheckEmailScreen = () => {
       className="flex-1 bg-pink-500"
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      {/* Top Section - Pink Background */}
+    
       <View className="items-center justify-center px-8 pt-40 pb-12">
-        {/* Email Icon with Checkmark */}
+       
         <View className="w-32 h-32 bg-white rounded-full items-center justify-center mb-10 shadow-lg">
           <View className="w-20 h-20 items-center justify-center">
-            {/* Envelope */}
+         
             <View className="w-16 h-12 border-4 border-pink-400 rounded-lg relative">
-              {/* Envelope flap */}
+            
               <View className="absolute -top-3 left-0 right-0 items-center">
                 <View className="w-16 h-6 bg-pink-400" style={{ 
                   transform: [{ rotate: '0deg' }],
@@ -76,38 +76,37 @@ const CheckEmailScreen = () => {
                 }} />
               </View>
             </View>
-            {/* Checkmark badge */}
+      
             <View className="absolute -bottom-1 -right-1 w-8 h-8 bg-pink-400 rounded-full items-center justify-center border-2 border-white">
               <Text className="text-white font-bold text-lg">✓</Text>
             </View>
           </View>
         </View>
 
-        {/* Title */}
+       
         <Text className="text-white text-3xl font-bold mb-6 text-center leading-tight">
           {title}
         </Text>
 
-        {/* Description */}
+     
         <Text className="text-white/95 text-center text-base mb-4 px-6 leading-relaxed">
           {message}
         </Text>
 
-        {/* Email Address - Highlighted */}
+       
         <View className="bg-white/20 rounded-xl px-6 py-3 mb-6">
           <Text className="text-white text-center text-base font-semibold">
             {email}
           </Text>
         </View>
 
-        {/* Instructions */}
+     
         <Text className="text-white/90 text-center text-sm px-4 leading-relaxed">
           Click the link in the email to continue.{'\n'}
           If you don't see it, check your spam folder.
         </Text>
       </View>
 
-      {/* Bottom Section - White Background */}
       <View className="bg-white flex-1 rounded-t-3xl px-6 py-10 mt-2">
         {/* Success Message */}
         {resendSuccess && (
@@ -118,7 +117,7 @@ const CheckEmailScreen = () => {
           </View>
         )}
 
-        {/* Error Message */}
+     
         {error && (
           <View className="bg-red-50 border-2 border-red-400 rounded-2xl px-4 py-4 mb-6">
             <Text className="text-red-700 text-center font-medium text-sm">
@@ -127,7 +126,7 @@ const CheckEmailScreen = () => {
           </View>
         )}
 
-        {/* Resend Button - Only for reset type */}
+       
         {type === 'reset' && ( 
           <TouchableOpacity
             onPress={handleResend}
@@ -141,7 +140,7 @@ const CheckEmailScreen = () => {
           </TouchableOpacity>
         )}
         
-        {/* Back to Login Link */}
+       
         <TouchableOpacity
           onPress={() => router.push('/(auth)')}
           className="py-4"
@@ -152,7 +151,7 @@ const CheckEmailScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Help Text */}
+ 
         <View className="mt-8 px-4">
           <Text className="text-gray-400 text-center text-sm leading-relaxed">
             Didn't receive the email?{'\n'}
@@ -166,23 +165,3 @@ const CheckEmailScreen = () => {
 
 export default CheckEmailScreen;
 
-// USAGE EXAMPLE:
-// In your navigation file, pass parameters like this:
-/*
-navigation.navigate('CheckEmail', {
-  email: userEmail,
-  type: 'reset' // or 'verification'
-});
-*/
-
-// FIREBASE SETUP:
-// Make sure you pass the auth instance as a prop or import it from your firebase config
-/*
-import { auth } from './firebase-config';
-
-<CheckEmailScreen 
-  route={route}
-  navigation={navigation}
-  auth={auth}
-/>
-*/

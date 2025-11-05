@@ -12,6 +12,7 @@ import { collection, addDoc, serverTimestamp, getDoc, updateDoc, setDoc, arrayUn
 import CheckoutToast from '@/components/general/CheckOutToast';
 import generateRandomId from '@/utils/general/generateId';
 import { useNotification } from '@/hooks/general/useNotification';
+
 interface Address {
   id: string;
   fullName: string;
@@ -24,7 +25,7 @@ interface Address {
   isDefault: boolean;
 }
 
-
+type PaymentMethod = 'cod' | 'gcash';
 
 export default function CheckoutScreen() {
   const params = useLocalSearchParams();
@@ -32,6 +33,7 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(true);
   const { userData } = useCurrentUser();
   const [checkOutLoading, setCheckOutLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cod');
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -81,8 +83,8 @@ export default function CheckoutScreen() {
     return items.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const shippingFee = 70;
-  const totalPrice = calculateSubtotal() + shippingFee;
+  const codFee = selectedPaymentMethod === 'cod' ? 70 : 0;
+  const totalPrice = calculateSubtotal() + codFee;
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToastMessage(message);
@@ -106,24 +108,22 @@ export default function CheckoutScreen() {
       }
       setCheckOutLoading(true);
 
-
       const orderData = {
         userId: userData.uid,
         sellerId,
         shopName,
         items,
         shippingAddress: selectedAddress,
-        shippingFee,
+        shippingFee: codFee,
+        paymentMethod: selectedPaymentMethod,
         totalAmount: calculateSubtotal(),
         totalPayment: totalPrice,
         status: 'pending',
-        paymentStatus: 'unpaid',
+        paymentStatus: selectedPaymentMethod === 'cod' ? 'unpaid' : 'pending',
         createdAt: serverTimestamp(),
       };
 
-
       const orderDocRef = await addDoc(collection(db, 'orders'), orderData);
-
 
       const cartRef = doc(db, 'carts', userData.uid);
       const cartSnap = await getDoc(cartRef);
@@ -131,7 +131,6 @@ export default function CheckoutScreen() {
       if (cartSnap.exists()) {
         const cartData = cartSnap.data();
         const currentItems = cartData.items || [];
-
 
         const updatedItems = currentItems.filter((cartItem: any) => {
           return !items.some(
@@ -143,6 +142,7 @@ export default function CheckoutScreen() {
 
         await updateDoc(cartRef, { items: updatedItems });
       }
+      
       await Promise.all([
         sendNotification(
           userData.uid,
@@ -245,6 +245,76 @@ export default function CheckoutScreen() {
           )}
         </TouchableOpacity>
 
+        {/* Payment Method Card */}
+        <View className="bg-white mx-4 mt-3 rounded-xl p-4 border border-gray-200">
+          <View className="flex-row items-center mb-3">
+            <View className="w-8 h-8 bg-pink-100 rounded-full items-center justify-center mr-2">
+              <Ionicons name="wallet" size={18} color="#EC4899" />
+            </View>
+            <Text className="text-base font-bold text-gray-900">Payment Method</Text>
+          </View>
+
+          {/* COD Option */}
+          <TouchableOpacity
+            onPress={() => setSelectedPaymentMethod('cod')}
+            className={`flex-row items-center justify-between p-3 rounded-lg mb-2 ${
+              selectedPaymentMethod === 'cod' ? 'bg-pink-50 border-2 border-pink-500' : 'bg-gray-50 border border-gray-200'
+            }`}
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center flex-1">
+              <View className="w-10 h-10 bg-white rounded-lg items-center justify-center mr-3 border border-gray-200">
+                <Ionicons name="cash" size={20} color="#EC4899" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-sm font-semibold ${
+                  selectedPaymentMethod === 'cod' ? 'text-pink-600' : 'text-gray-900'
+                }`}>
+                  Cash on Delivery
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">+ ₱70.00 handling fee</Text>
+              </View>
+            </View>
+            <View className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
+              selectedPaymentMethod === 'cod' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+            }`}>
+              {selectedPaymentMethod === 'cod' && (
+                <Ionicons name="checkmark" size={14} color="white" />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* GCash Option */}
+          <TouchableOpacity
+            onPress={() => setSelectedPaymentMethod('gcash')}
+            className={`flex-row items-center justify-between p-3 rounded-lg ${
+              selectedPaymentMethod === 'gcash' ? 'bg-pink-50 border-2 border-pink-500' : 'bg-gray-50 border border-gray-200'
+            }`}
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center flex-1">
+              <View className="w-10 h-10 bg-white rounded-lg items-center justify-center mr-3 border border-gray-200">
+                <Ionicons name="phone-portrait" size={20} color="#007DFF" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-sm font-semibold ${
+                  selectedPaymentMethod === 'gcash' ? 'text-pink-600' : 'text-gray-900'
+                }`}>
+                  GCash
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">No additional fees</Text>
+              </View>
+            </View>
+            <View className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
+              selectedPaymentMethod === 'gcash' ? 'border-pink-500 bg-pink-500' : 'border-gray-300'
+            }`}>
+              {selectedPaymentMethod === 'gcash' && (
+                <Ionicons name="checkmark" size={14} color="white" />
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Order Summary */}
         <View className="bg-white mx-4 mt-3 rounded-xl p-4 border border-gray-200">
           <Text className="text-base font-bold text-gray-900 mb-3">Order Summary</Text>
@@ -297,12 +367,14 @@ export default function CheckoutScreen() {
               </Text>
             </View>
 
-            <View className="flex-row justify-between py-1.5">
-              <Text className="text-sm text-gray-600">Shipping Fee</Text>
-              <Text className="text-sm text-gray-900">
-                ₱{shippingFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
+            {selectedPaymentMethod === 'cod' && (
+              <View className="flex-row justify-between py-1.5">
+                <Text className="text-sm text-gray-600">Shipping Fee</Text>
+                <Text className="text-sm text-gray-900">
+                  ₱{codFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+            )}
 
             <View className="h-px bg-gray-200 my-2" />
 

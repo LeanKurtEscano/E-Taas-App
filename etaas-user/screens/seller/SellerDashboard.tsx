@@ -50,8 +50,8 @@ export default function SellerDashboard() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refreshDashboard}
-            colors={['#ec4899']} // Pink color for Android
-            tintColor="#ec4899" // Pink color for iOS
+            colors={['#ec4899']} 
+            tintColor="#ec4899" 
           />
         }
       >
@@ -69,7 +69,7 @@ export default function SellerDashboard() {
         </View>
 
         <View className="px-6 py-6">
-          {/* Summary Metrics Cards - 2x2 Grid */}
+         
           <View className="mb-8">
             <View className="flex-row gap-4 mb-4">
               <MetricCard
@@ -101,12 +101,11 @@ export default function SellerDashboard() {
             </View>
           </View>
 
-          {/* Sales Overview Chart */}
           <View className="mb-8">
             <SimpleBarChart data={chartData} />
           </View>
 
-          {/* Recent Orders */}
+       
           <View className="mb-8">
             <View className="flex-row items-center mb-5">
               <View className="bg-pink-100 w-10 h-10 rounded-xl items-center justify-center mr-3">
@@ -136,7 +135,7 @@ export default function SellerDashboard() {
             )}
           </View>
 
-          {/* Recent Inquiries */}
+        
           <View className="mb-8">
             <View className="flex-row items-center mb-5">
               <View className="bg-pink-100 w-10 h-10 rounded-xl items-center justify-center mr-3">
@@ -156,7 +155,7 @@ export default function SellerDashboard() {
                 {recentInquiriesData.map((inquiry) => (
                   <InquiryItem key={inquiry.id} inquiry={inquiry} />
                 ))}
-                <TouchableOpacity className="bg-pink-500 rounded-2xl py-4 items-center mt-2">
+                <TouchableOpacity onPress={() => router.push('/seller/inquiries/all')} className="bg-pink-500 rounded-2xl py-4 items-center mt-2">
                   <Text className="text-white font-bold text-base">View All Inquiries</Text>
                 </TouchableOpacity>
               </>

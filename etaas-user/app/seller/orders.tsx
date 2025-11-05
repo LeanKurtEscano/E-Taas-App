@@ -50,6 +50,7 @@ const ManageOrders = () => {
   const { userData } = useCurrentUser()
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { sendShippingMessageNotification } = useNotification();
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
@@ -106,6 +107,8 @@ const ManageOrders = () => {
                 const productData = productSnap.data() as ProductData;
 
 
+
+
                 if (productData.hasVariants) {
                   const variants = productData.variants || [];
 
@@ -121,9 +124,50 @@ const ManageOrders = () => {
                     throw new Error(`Insufficient stock for ${item.productName} - ${item.variantText}`);
                   }
 
-                  variants[variantIndex].stock = currentQuantity - item.quantity;
-                  await updateDoc(productRef, { variants });
+                  const newQuantity = currentQuantity - item.quantity;
+                  const isOutOfStock = newQuantity <= 0;
+                  const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
+
+                  if (isOutOfStock) {
+                    variants[variantIndex].stock = newQuantity;
+                    await updateDoc(productRef, { variants });
+
+                    await sendNotification(
+                      userData!.uid,
+                      'seller',
+                      'Product Variant Out of Stock',
+                      `Your product "${item.productName}" variant "${item.variantText}" is now out of stock after confirming an order.`,
+                      undefined,
+                      item.productId
+                    );
+
+
+                  } else if (isProductLowOnStock) {
+
+                    await sendNotification(
+                      userData!.uid,
+                      'seller',
+                      'Product Variant Low on Stock',
+                      `Your product "${item.productName}" variant "${item.variantText}" is low on stock after confirming an order.`,
+                      undefined,
+                      item.productId
+                    );
+
+                    variants[variantIndex].stock = newQuantity;
+                    await updateDoc(productRef, { variants });
+                  } else {
+                    variants[variantIndex].stock = newQuantity;
+                    await updateDoc(productRef, { variants });
+
+                  }
+
+
+
+
+
+
                 } else {
+
                   const currentQuantity = productData.quantity || 0;
                   if (currentQuantity < item.quantity) {
                     throw new Error(`Insufficient stock for ${item.productName}`);
@@ -183,7 +227,7 @@ const ManageOrders = () => {
               );
               Alert.alert('Success', 'Order confirmed successfully!');
             } catch (error) {
-              console.error('Error confirming order:', error);
+              
               const errorMessage = error instanceof Error ? error.message : 'Failed to confirm order';
               Alert.alert('Error', errorMessage);
             } finally {
@@ -212,6 +256,19 @@ const ManageOrders = () => {
         shippingLink: trackingLink.trim(),
         shippedAt: serverTimestamp()
       });
+
+
+      for (const item of order.items) {
+        await sendShippingMessageNotification(
+          order.userId,
+          order.sellerId,
+          `Your item "${item.productName}" is being packed and is almost ready to ship! 🚚
+Track its progress here: ${trackingLink.trim()}`,
+          item.image
+        );
+
+      }
+
 
       await sendNotification(
         order.userId,
@@ -334,7 +391,7 @@ const ManageOrders = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-       
+
       >
         {filteredOrders.length === 0 ? (
           <View className="flex-1 justify-center items-center py-20 px-6">

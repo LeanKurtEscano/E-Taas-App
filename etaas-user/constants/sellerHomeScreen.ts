@@ -1,4 +1,4 @@
-import { Store, Package, TrendingUp, DollarSign, Users, BarChart3, Settings, HelpCircle, LogOut, ChevronRight, RefreshCw } from 'lucide-react-native';
+import { Store, Package, TrendingUp, DollarSign, Users, BarChart3, Settings, HelpCircle, LogOut, ChevronRight, RefreshCw, MessageSquare } from 'lucide-react-native';
 
 interface SellerOption {
     id: number;
@@ -9,52 +9,59 @@ interface SellerOption {
 
 
 export const sellerOptions: SellerOption[] = [
-    { 
-        id: 1, 
-        title: 'My Products', 
+    {
+        id: 1,
+        title: 'My Products',
         icon: Package,
-        route: '/products' 
+        route: '/products'
     },
-    { 
-        id: 2, 
-        title: 'Orders Management', 
+    {
+        id: 2,
+        title: 'Orders Management',
         icon: Store,
-        route: '/seller/orders' 
+        route: '/seller/orders'
     },
-    { 
-        id: 3, 
-        title: 'Sales Analytics', 
+    {
+        id: 3,
+        title: 'Sales Analytics',
         icon: TrendingUp,
-        route: '/(tabs)' 
+        route: '/(tabs)'
     },
-    { 
-        id: 4, 
-        title: 'Revenue Report', 
+    {
+        id: 4,
+        title: 'Customer Inquiries',
+        icon: MessageSquare,
+        route: '/seller/inquiries/all'
+    },
+
+    {
+        id: 5,
+        title: 'Revenue Report',
         icon: DollarSign,
-        route: '/seller/revenue' 
+        route: '/seller/revenue'
     },
-    { 
-        id: 5, 
-        title: 'Customer Reviews', 
+    {
+        id: 6,
+        title: 'Customer Reviews',
         icon: Users,
-        route: '/seller/reviews' 
+        route: '/seller/reviews'
     },
-    { 
-        id: 6, 
-        title: 'Shop Statistics', 
+    {
+        id: 7,
+        title: 'Shop Statistics',
         icon: BarChart3,
-        route: '/seller/statistics' 
+        route: '/seller/statistics'
     },
-    { 
-        id: 7, 
-        title: 'Seller Settings', 
+    {
+        id: 8,
+        title: 'Seller Settings',
         icon: Settings,
-        route: '/seller/settings' 
+        route: '/seller/settings'
     },
-    { 
-        id: 8, 
-        title: 'Help & Support', 
+    {
+        id: 9,
+        title: 'Help & Support',
         icon: HelpCircle,
-        route: '/seller/support' 
+        route: '/seller/support'
     },
 ];

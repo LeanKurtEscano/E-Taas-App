@@ -30,7 +30,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <View className="flex-row items-center justify-between">
         {/* Logo */}
         <Text className="text-pink-500 text-2xl font-bold tracking-tight">
-          E-Taas
+          E-TAAS
         </Text>
         
         {/* Search Bar */}

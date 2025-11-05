@@ -317,7 +317,7 @@ export default function RegisterScreen() {
               />
             </View>
           </View>
-          <Text className="text-white text-3xl font-bold mb-2">E-Taas App</Text>
+          <Text className="text-white text-3xl font-bold mb-2">E-TAAS</Text>
           <Text className="text-white text-2xl font-semibold mb-3">Create Account</Text>
           <Text className="text-white text-lg opacity-90">Sign up to get started</Text>
         </View>
