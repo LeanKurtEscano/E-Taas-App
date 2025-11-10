@@ -238,8 +238,8 @@ const OrderDetailsScreen = () => {
           </View>
 
       
-          {orderData.status == "shipped"&& (
-            <TouchableOpacity onPress={() => router.push('/orders/toship')} className="mt-6 bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-2xl shadow-sm active:opacity-90">
+          {orderData.status == "shipped"  && (
+            <TouchableOpacity onPress={() => router.push('/orders/toship')} className="mt-6 bg-pink-500 p-4 rounded-2xl shadow-sm active:opacity-90">
               <Text className="text-white font-bold text-center text-base">Track Shipment</Text>
             </TouchableOpacity>
           )}
@@ -342,11 +342,7 @@ const OrderDetailsScreen = () => {
               </View>
               <Text className="text-lg font-bold text-gray-900 ml-3">Payment Summary</Text>
             </View>
-            <View className={`px-4 py-1.5 rounded-full ${paymentColors.bg} border ${paymentColors.border}`}>
-              <Text className={`text-xs font-bold ${paymentColors.text} uppercase tracking-wide`}>
-                {orderData.paymentStatus}
-              </Text>
-            </View>
+           
           </View>
 
           <View className="space-y-3">

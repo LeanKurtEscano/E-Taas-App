@@ -102,7 +102,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100">
           <MapPin size={12} color="#9CA3AF" />
           <Text className="text-xs text-gray-500 ml-1" numberOfLines={1}>
-            Naic, Cavite
+            Santa Cruz, Laguna
           </Text>
         </View>
       </View>

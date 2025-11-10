@@ -247,16 +247,7 @@ export default function AddNewAddressScreen() {
           <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
             <Text className="text-base font-bold text-gray-900 mb-3">Address Details</Text>
             
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">Region *</Text>
-              <TextInput
-                value={form.region}
-                onChangeText={(text) => updateForm('region', text)}
-                placeholder="e.g., National Capital Region"
-                className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+           
 
             <View className="mb-4">
               <Text className="text-sm font-medium text-gray-700 mb-2">Province *</Text>

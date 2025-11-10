@@ -127,7 +127,7 @@ const ViewProductScreen = () => {
   };
 
   const handleViewOrders = () => {
-    
+    router.push(`/seller/orders`)
   };
 
   const handleShare = () => {
@@ -178,7 +178,7 @@ const ViewProductScreen = () => {
       productName: product?.name,
       image: product?.variants?.find((v) => v.id === params.variantId)?.image || '',
       variantText: product?.variants?.
-      find((v) => v.id === params.variantId)?.combination.map((value, index) => `${product?.variantCategories[index].name}: ${value}`).join(', ') || '',
+        find((v) => v.id === params.variantId)?.combination.map((value, index) => `${product?.variantCategories[index].name}: ${value}`).join(', ') || '',
       sellerId: product?.sellerId || '',
       shopName: shopData?.sellerInfo?.shopName || 'Shop',
     });
@@ -236,9 +236,14 @@ const ViewProductScreen = () => {
     ? product?.description.substring(0, 150) + '...'
     : product?.description;
 
+
+  const isStockEmpty = product.hasVariants
+    ? product.variants?.every(variant => variant.stock === 0)
+    : product.quantity === 0;
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <ScrollView 
+      <ScrollView
         className="flex-1"
         refreshControl={
           <RefreshControl
@@ -530,30 +535,48 @@ const ViewProductScreen = () => {
           ) : (
             <View className="flex-row gap-2">
               <TouchableOpacity
-                onPress={() => product.hasVariants ? setShowVariantModal(true) : handleAddToCartDirect({ userId: userData?.uid, productId: product.id, sellerId: product.sellerId })}
-                className="flex-1 bg-white border-2 border-pink-500 py-4 rounded-xl flex-row items-center justify-center"
+                onPress={() => !isStockEmpty && (product.hasVariants ? setShowVariantModal(true) : handleAddToCartDirect({ userId: userData?.uid, productId: product.id, sellerId: product.sellerId }))}
+                disabled={isStockEmpty}
+                className={`flex-1 py-4 rounded-xl flex-row items-center justify-center ${isStockEmpty
+                    ? 'bg-gray-200 border-2 border-gray-300'
+                    : 'bg-white border-2 border-pink-500'
+                  }`}
+                style={!isStockEmpty ? { elevation: 3 } : {}}
               >
-                <ShoppingCart size={18} color="#EC4899" strokeWidth={2.5} />
-                <Text className="text-pink-500 font-bold text-center text-base ml-2">
-                  Add to Cart
+                <ShoppingCart
+                  size={18}
+                  color={isStockEmpty ? "#9CA3AF" : "#EC4899"}
+                  strokeWidth={2.5}
+                />
+                <Text className={`font-bold text-center text-base ml-2 ${isStockEmpty ? 'text-gray-500' : 'text-pink-500'
+                  }`}>
+                  {isStockEmpty ? 'Out of Stock' : 'Add to Cart'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => {
-                  if (product.hasVariants) {
-                    setIsBuyingDirectly(true);
-                    setShowVariantModal(true);
-                  } else {
-                    handleBuyDirectly();
+                  if (!isStockEmpty) {
+                    if (product.hasVariants) {
+                      setIsBuyingDirectly(true);
+                      setShowVariantModal(true);
+                    } else {
+                      handleBuyDirectly();
+                    }
                   }
                 }}
-                className="flex-1 bg-pink-500 py-4 rounded-xl flex-row items-center justify-center"
-                style={{ elevation: 3 }}
+                disabled={isStockEmpty}
+                className={`flex-1 py-4 rounded-xl flex-row items-center justify-center ${isStockEmpty ? 'bg-gray-400' : 'bg-pink-500'
+                  }`}
+                style={!isStockEmpty ? { elevation: 3 } : {}}
               >
-                <CreditCard size={18} color="#ffffff" strokeWidth={2.5} />
+                <CreditCard
+                  size={18}
+                  color="#ffffff"
+                  strokeWidth={2.5}
+                />
                 <Text className="text-white font-bold text-center text-base ml-2">
-                  Buy Now
+                  {isStockEmpty ? 'Out of Stock' : 'Buy Now'}
                 </Text>
               </TouchableOpacity>
             </View>

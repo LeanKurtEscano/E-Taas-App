@@ -231,7 +231,7 @@ export const useCartCard = (
       }
     });
 
-    router.push({
+    router.replace({
       pathname: '/cart/checkout',
       params: {
         items: JSON.stringify(checkoutItems),

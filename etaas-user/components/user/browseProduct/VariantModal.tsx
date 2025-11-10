@@ -160,7 +160,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     : product.variants.reduce((acc, variant) => acc + variant.stock, 0)
   : product?.quantity || 0;
 
-  const currentImage = selectedVariant?.image || product?.images?.[0] || '';
+ const currentImage =
+  selectedVariant?.image && selectedVariant.image.trim() !== ''
+    ? selectedVariant.image
+    : product?.images?.[0] || '';
+
 
   const canAddToCart = product?.hasVariants
     ? selectedVariant !== null && currentStock > 0

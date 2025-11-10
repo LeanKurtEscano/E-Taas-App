@@ -153,115 +153,108 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleEmailSignUp = async () => {
-    setUsernameError('');
-    setEmailError('');
-    setPasswordError('');
-    setConfirmPasswordError('');
+ const handleEmailSignUp = async () => {
+  setUsernameError('');
+  setEmailError('');
+  setPasswordError('');
+  setConfirmPasswordError('');
 
-    let hasError = false;
+  let hasError = false;
 
-    // Validate username
-    const usernameValidationError = validateUsername(username);
-    if (usernameValidationError) {
-      setUsernameError(usernameValidationError);
-      hasError = true;
-    }
+  // Validate username
+  const usernameValidationError = validateUsername(username);
+  if (usernameValidationError) {
+    setUsernameError(usernameValidationError);
+    hasError = true;
+  }
 
-    // Validate email
-    const emailValidationError = validateEmail(email);
-    if (emailValidationError) {
-      setEmailError(emailValidationError);
-      hasError = true;
-    }
+  // Validate email
+  const emailValidationError = validateEmail(email);
+  if (emailValidationError) {
+    setEmailError(emailValidationError);
+    hasError = true;
+  }
 
-    // Validate password
-    if (!password) {
-      setPasswordError('Password is required.');
-      hasError = true;
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters long.');
-      hasError = true;
-    }
+  // Validate password
+  if (!password) {
+    setPasswordError('Password is required.');
+    hasError = true;
+  } else if (password.length < 6) {
+    setPasswordError('Password must be at least 6 characters long.');
+    hasError = true;
+  }
 
-    // Validate confirm password
-    if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password.');
-      hasError = true;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.');
-      hasError = true;
-    }
+  // Validate confirm password
+  if (!confirmPassword) {
+    setConfirmPasswordError('Please confirm your password.');
+    hasError = true;
+  } else if (password !== confirmPassword) {
+    setConfirmPasswordError('Passwords do not match.');
+    hasError = true;
+  }
 
-    if (hasError) {
+  if (hasError) {
+    return;
+  }
+
+  setLoading(true);
+  try {
+    // Check if username already exists
+    const usernameExists = await checkUsernameExists(username);
+    if (usernameExists) {
+      setUsernameError('This username is already taken');
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    try {
-      // Check if username already exists
-      const usernameExists = await checkUsernameExists(username);
-      if (usernameExists) {
-        setUsernameError('This username is already taken');
-        setLoading(false);
-        return;
-      }
-
-      // Check if email already exists
-      const emailExists = await checkEmailExists(email);
-      if (emailExists) {
-        setEmailError('An account with this email already exists');
-        setLoading(false);
-        return;
-      }
-
-      // Create user account
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('User created successfully:', userCredential.user);
-
-      // Send verification email
-      await sendEmailVerification(userCredential.user);
-      console.log('Verification email sent');
-
-      // Create user document with username
-      await createUserDocument(
-        userCredential.user.uid,
-        email,
-        username,
-        'email',
-        userCredential.user.uid
-      );
-
-      Alert.alert(
-        'Success!',
-        'Account created successfully! Please check your email to verify your account.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.push({
-              pathname: '/(auth)/emailSent',
-              params: { email: userCredential.user.email, type: 'verification' }
-            }),
-          },
-        ]
-      );
-    } catch (error: any) {
-      console.error('Sign-up error:', error);
-
-      if (error.code === 'auth/email-already-in-use') {
-        setEmailError('This email is already registered');
-      } else if (error.code === 'auth/invalid-email') {
-        setEmailError('Invalid email address');
-      } else if (error.code === 'auth/weak-password') {
-        setPasswordError('Password is too weak');
-      } else {
-        Alert.alert('Error', error.message || 'Failed to create account');
-      }
-    } finally {
+    // Check if email already exists
+    const emailExists = await checkEmailExists(email);
+    if (emailExists) {
+      setEmailError('An account with this email already exists');
       setLoading(false);
+      return;
     }
-  };
 
+    // Create user account
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    console.log('User created successfully:', userCredential.user);
+
+    // Send verification email
+    await sendEmailVerification(userCredential.user);
+    console.log('Verification email sent');
+
+    // Create user document with username
+    await createUserDocument(
+      userCredential.user.uid,
+      email,
+      username,
+      'email',
+      userCredential.user.uid
+    );
+
+
+    // Then navigate
+    router.replace({
+      pathname: '/(auth)/emailSent',
+      params: { email: email, type: 'verification' }
+    });
+
+  } catch (error: any) {
+    console.error('Sign-up error:', error);
+
+    if (error.code === 'auth/email-already-in-use') {
+      setEmailError('This email is already registered');
+    } else if (error.code === 'auth/invalid-email') {
+      setEmailError('Invalid email address');
+    } else if (error.code === 'auth/weak-password') {
+      setPasswordError('Password is too weak');
+    } else {
+      Alert.alert('Error', error.message || 'Failed to create account');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
   const handleSocialSignIn = async (provider: 'google' | 'facebook', token: string) => {
     setLoading(true);
     try {
@@ -456,14 +449,13 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View className="flex-row items-center mb-6">
+          {/*<View className="flex-row items-center mb-6">
             <View className="flex-1 h-px bg-gray-300" />
             <Text className="mx-4 text-gray-400 text-sm">OR</Text>
             <View className="flex-1 h-px bg-gray-300" />
           </View>
 
-          {/* Google Sign In */}
+
           <TouchableOpacity
             onPress={() => googlePromptAsync()}
             disabled={loading || !googleRequest}
@@ -480,7 +472,7 @@ export default function RegisterScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Facebook Sign In */}
+        
           <TouchableOpacity
             onPress={() => fbPromptAsync()}
             disabled={loading || !fbRequest}
@@ -495,7 +487,8 @@ export default function RegisterScreen() {
             <Text className="text-gray-700 text-base font-medium">
               Continue with Facebook
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          
 
           {/* Log In Link */}
           <View className="flex-row justify-center items-center mb-8">

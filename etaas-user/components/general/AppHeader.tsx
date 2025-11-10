@@ -3,22 +3,24 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { ShoppingCart, MessageCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { SearchBar } from '../user/userHomeScreen/SearchBar';
-
+import { UserData } from '@/types/seller/shop';
 interface AppHeaderProps {
   searchQuery: string;
   cartCount: number;
   totalUnreadCount: number;
   onCartPress: () => void;
   showSearch?: boolean;
+  user: UserData;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   cartCount,
   onCartPress,
   showSearch = true,
-  totalUnreadCount
+  totalUnreadCount,
+  user,
 }) => {
-  // Mock unread message count (replace with actual logic later)
+
 
 
   const handleInboxPress = () => {

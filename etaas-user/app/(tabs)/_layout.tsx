@@ -9,11 +9,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { db } from '@/config/firebaseConfig'
 import { doc, onSnapshot } from 'firebase/firestore'
+
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const { cartLength, totalUnreadCount } = useCurrentUser();
+  const { cartLength, totalUnreadCount,userData } = useCurrentUser();
   const [loading, setLoading] = useState(true)
+  
 
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
@@ -56,6 +58,10 @@ const TabsLayout = () => {
     return () => unsubscribe()
   }, [user])
 
+  const showSearch = userData?.isSeller ? false : true;
+
+  
+
 
   if (loading) {
     return (
@@ -79,7 +85,8 @@ const TabsLayout = () => {
         cartCount={cartLength}
         onCartPress={handleCartPress}
         totalUnreadCount={totalUnreadCount}
-        showSearch={true}
+        showSearch={showSearch}
+        user={user}
       />
 
       <Tabs

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { X, Plus, Trash2, Upload, Edit3, Check, X as XIcon, ChevronDown, ChevronUp, Square, CheckSquare } from 'lucide-react-native';
 import useVariant from '@/hooks/seller/useVariant';
-
+import { useRef } from 'react';
 export interface VariantCategory {
   id: string;
   name: string;
@@ -69,6 +69,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
       setSelectedCategoryValues({});
     }
   }, [visible, initialCategories, initialVariants]);
+
+   const scrollViewRef = useRef<ScrollView>(null);
 
   const renderCategorySetup = () => (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

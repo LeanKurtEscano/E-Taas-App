@@ -92,6 +92,7 @@ const NotificationScreen = () => {
     const routeMap: { [key: string]: string } = {
       shipped: '/orders/toship',
       confirmed: '/orders/toship',
+      'variant': `/products`,
       'out of stock': `/seller/product/?productId=${notification.directId}`,
       'inquiry': `/seller/inquiries/${notification.directId}`,
       'placed successfully': '/orders/order',

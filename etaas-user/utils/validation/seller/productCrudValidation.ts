@@ -28,7 +28,7 @@ export const validateDescription = (description: string) => {
     return "Description is required.";
 
   const trimmedDesc = description.trim();
-  const minLength = 10;
+  const minLength = 2;
   const maxLength = 1000;
 
   // Disallow potentially dangerous or unreadable input
@@ -41,16 +41,16 @@ export const validateDescription = (description: string) => {
   if (trimmedDesc.length > maxLength)
     return `Description must be at most ${maxLength} characters long.`;
 
-  if (invalidCharsRegex.test(trimmedDesc))
-    return "Description contains invalid or unsafe characters.";
+  //if (invalidCharsRegex.test(trimmedDesc))
+    //return "Description contains invalid or unsafe characters.";
 
-  if (repeatedCharRegex.test(trimmedDesc))
-    return "Description must not contain long repeated characters.";
+  //if (repeatedCharRegex.test(trimmedDesc))
+   // return "Description must not contain long repeated characters.";
 
   // Optional: basic readability check
-  const wordCount = trimmedDesc.split(/\s+/).length;
-  if (wordCount < 3)
-    return "Please provide a more detailed description.";
+ // const wordCount = trimmedDesc.split(/\s+/).length;
+  //if (wordCount < 3)
+    //return "Please provide a more detailed description.";
 
   return "";
 };

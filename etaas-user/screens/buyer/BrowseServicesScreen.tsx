@@ -153,14 +153,8 @@ const BrowseServicesScreen = () => {
   const ServiceCard = ({ service }: { service: Service }) => (
     <TouchableOpacity
       onPress={() => handleViewDetails(service.id)}
-      className="mb-4 bg-white rounded-3xl overflow-hidden"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-      }}
+      className="mb-4 bg-white border border-gray-300 rounded-3xl overflow-hidden"
+    
       activeOpacity={0.9}
     >
       {/* Banner Image */}

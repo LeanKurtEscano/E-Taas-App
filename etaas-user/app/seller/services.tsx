@@ -284,7 +284,7 @@ const OfferServiceScreen = () => {
                 Currently Available
               </Text>
               <Text className="text-xs text-gray-500 mt-1">
-                Toggle to show if you're accepting orders
+                Toggle to show if you're accepting inquiries
               </Text>
             </View>
             <Switch

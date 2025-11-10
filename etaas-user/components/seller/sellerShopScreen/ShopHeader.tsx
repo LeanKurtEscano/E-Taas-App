@@ -101,9 +101,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({
               <Edit size={20} color="white" />
               <Text className="text-white font-semibold ml-2">Edit Shop</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="bg-pink-100 py-3 px-4 rounded-lg">
-              <MessageCircle size={20} color="#E91E8C" />
-            </TouchableOpacity>
+           
           </View>
         ) : (
           <View className="flex-row space-x-2">

@@ -162,7 +162,7 @@ export default function CheckoutScreen() {
 
       showToast('Order placed successfully!', 'success');
       setTimeout(() => {
-        router.push('/orders/order');
+        router.replace('/orders/order');
       }, 2000);
     } catch (error) {
       console.error('Error placing order:', error);
@@ -227,7 +227,7 @@ export default function CheckoutScreen() {
                 {selectedAddress.phoneNumber}
               </Text>
               <Text className="text-sm text-gray-700 leading-5">
-                {selectedAddress.streetAddress}, {selectedAddress.barangay}, {selectedAddress.city}, {selectedAddress.province}, {selectedAddress.region}
+                {selectedAddress.streetAddress}, {selectedAddress.barangay}, {selectedAddress.city}, {selectedAddress.province}
               </Text>
             </View>
           ) : (

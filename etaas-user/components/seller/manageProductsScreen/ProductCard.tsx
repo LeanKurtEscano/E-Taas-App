@@ -75,7 +75,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
       {/* Analytics Button */}
       <TouchableOpacity 
         className="mt-3 py-3 rounded-xl border border-gray-200 items-center flex-row justify-center"
-        onPress={() => router.push(`/seller/analytics/${product.id}`)}
+      
       >
         <BarChart3 size={16} color="#374151" strokeWidth={2} />
         <Text className="text-gray-700 font-semibold text-sm ml-1">Product Analytics</Text>

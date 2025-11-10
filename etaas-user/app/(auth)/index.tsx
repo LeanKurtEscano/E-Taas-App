@@ -226,9 +226,9 @@ export default function LoginScreen() {
               <Text className="text-white text-base font-semibold">Sign In</Text>
             )}
           </TouchableOpacity>
+      
 
-    
-          <View className="flex-row items-center mb-6">
+          {/* <View className="flex-row items-center mb-6">
             <View className="flex-1 h-px bg-gray-300" />
             <Text className="mx-4 text-gray-400 text-sm">OR</Text>
             <View className="flex-1 h-px bg-gray-300" />
@@ -267,7 +267,9 @@ export default function LoginScreen() {
               Continue with Facebook
             </Text>
           </TouchableOpacity>
-
+ */}
+    
+         
           {/* Sign Up Link */}
           <View className="flex-row justify-center items-center mb-8">
             <Text className="text-gray-600 text-sm">Don't have an account? </Text>
