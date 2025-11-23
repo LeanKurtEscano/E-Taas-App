@@ -232,6 +232,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
         bannerImage: uploadedBannerUrl,
         images: uploadedImageUrls,
         userId,
+        shopId: shopId,
         updatedAt: new Date().toISOString(),
       };
 

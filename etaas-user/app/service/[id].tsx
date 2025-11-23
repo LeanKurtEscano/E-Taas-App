@@ -13,8 +13,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useInquiries } from '@/hooks/general/useInquiries';
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
-
+import { useState } from 'react';
 import ChatButton from '@/components/general/ChatButton';
+import AssistantChatModal from '@/components/general/AssistantChatModal';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +23,7 @@ const InquireServiceScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const serviceId = params.id as string;
-
+  const [isAssistantModalVisible, setAssistantModalVisible] = useState(false);
   const {
     service,
     loading,
@@ -38,6 +39,7 @@ const InquireServiceScreen = () => {
     setCurrentImageIndex,
     updateInquiryData,
     submitInquiry,
+    userData
   } = useInquiries(serviceId);
 
   const handleSubmitInquiry = async () => {
@@ -385,9 +387,17 @@ const InquireServiceScreen = () => {
         </View>
       </ScrollView>
 
-      <ChatButton bottomOffset={100}/>
+      <ChatButton onPress={() => setAssistantModalVisible(true)} bottomOffset={100}/>
 
-      {/* Toast Notification */}
+      <AssistantChatModal
+        visible={isAssistantModalVisible}
+        onClose={() => setAssistantModalVisible(false)}
+        userId={userData?.uid}
+        shopId={service.shopId}
+      />
+ 
+
+      {/* Toast Notification     */}
       <CheckoutToast 
         visible={toastVisible} 
         onHide={() => setToastVisible(false)} 

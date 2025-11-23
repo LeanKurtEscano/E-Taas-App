@@ -19,6 +19,7 @@ interface Service {
   bannerImage: string;
   images: string[];
   userId: string;
+  shopId?: Number;
   createdAt: string;
   updatedAt: string;
 }
@@ -147,6 +148,7 @@ export const useInquiries = (serviceId: string) => {
     toastMessage,
     toastType,
     setToastVisible,
+    userData,
     
     // Actions
     setCurrentImageIndex,
