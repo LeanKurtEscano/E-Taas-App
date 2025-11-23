@@ -13,7 +13,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useInquiries } from '@/hooks/general/useInquiries';
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotification } from '@/hooks/general/useNotification';
+
+import ChatButton from '@/components/general/ChatButton';
 
 const { width } = Dimensions.get('window');
 
@@ -383,6 +384,8 @@ const InquireServiceScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <ChatButton bottomOffset={100}/>
 
       {/* Toast Notification */}
       <CheckoutToast 

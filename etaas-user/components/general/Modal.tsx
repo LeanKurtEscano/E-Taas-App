@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, Pressable } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
 
 interface ReusableModalProps {
   isVisible: boolean;
@@ -9,6 +9,7 @@ interface ReusableModalProps {
   onConfirm: () => void;
   confirmText?: string;
   confirmButtonColor?: string;
+  isLoading?: boolean;
 }
 
 const ReusableModal: React.FC<ReusableModalProps> = ({
@@ -19,6 +20,7 @@ const ReusableModal: React.FC<ReusableModalProps> = ({
   onConfirm,
   confirmText = 'Confirm',
   confirmButtonColor = 'bg-pink-500',
+  isLoading = false,
 }) => {
   return (
     <Modal
@@ -29,7 +31,7 @@ const ReusableModal: React.FC<ReusableModalProps> = ({
     >
       <Pressable 
         className="flex-1 bg-black/50 justify-center items-center px-6"
-        onPress={onCancel}
+        onPress={isLoading ? undefined : onCancel}
       >
         <Pressable 
           className="bg-white rounded-2xl w-full max-w-sm p-6"
@@ -52,8 +54,9 @@ const ReusableModal: React.FC<ReusableModalProps> = ({
               onPress={onCancel}
               className="flex-1 bg-gray-100 py-3.5 rounded-xl items-center"
               activeOpacity={0.7}
+              disabled={isLoading}
             >
-              <Text className="text-gray-700 font-semibold text-base">
+              <Text className={`font-semibold text-base ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -61,12 +64,17 @@ const ReusableModal: React.FC<ReusableModalProps> = ({
             {/* Confirm Button */}
             <TouchableOpacity
               onPress={onConfirm}
-              className={`flex-1 ${confirmButtonColor} py-3.5 rounded-xl items-center`}
+              className={`flex-1 ${confirmButtonColor} py-3.5 rounded-xl items-center ${isLoading ? 'opacity-70' : ''}`}
               activeOpacity={0.7}
+              disabled={isLoading}
             >
-              <Text className="text-white font-semibold text-base">
-                {confirmText}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-semibold text-base">
+                  {confirmText}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -76,4 +84,3 @@ const ReusableModal: React.FC<ReusableModalProps> = ({
 };
 
 export default ReusableModal;
-

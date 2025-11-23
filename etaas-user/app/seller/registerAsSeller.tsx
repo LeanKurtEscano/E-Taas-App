@@ -27,6 +27,7 @@ import {
 import { router } from 'expo-router';
 import useToast from '@/hooks/general/useToast';
 import GeneralToast from '@/components/general/GeneralToast';
+import { sellerApi } from '@/config/apiConfig';
 interface SellerFormData {
   name: string;
   businessName: string;
@@ -77,7 +78,7 @@ const RegisterAsSeller = () => {
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({
@@ -176,7 +177,7 @@ const RegisterAsSeller = () => {
         where('sellerInfo.email', '==', email.trim().toLowerCase())
       );
       const querySnapshot = await getDocs(q);
-      
+
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
@@ -194,7 +195,7 @@ const RegisterAsSeller = () => {
         where('sellerInfo.contactNumber', '==', contactNumber.trim())
       );
       const querySnapshot = await getDocs(q);
-      
+
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
@@ -209,9 +210,9 @@ const RegisterAsSeller = () => {
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('isSeller', '==', true));
       const querySnapshot = await getDocs(q);
-      
+
       const normalizedShopName = shopName.trim().toLowerCase();
-      
+
       // Check if any shop name matches (case-insensitive) and it's not the current user
       return querySnapshot.docs.some(doc => {
         const sellerInfo = doc.data().sellerInfo;
@@ -245,7 +246,7 @@ const RegisterAsSeller = () => {
 
   const handleBlur = (field: keyof SellerFormData) => {
     let error = '';
-    
+
     switch (field) {
       case 'name':
         error = validateName(formData.name);
@@ -322,25 +323,46 @@ const RegisterAsSeller = () => {
         return;
       }
 
-      // Update user document in Firebase
-      const userRef = doc(db, 'users', userData?.uid);
-      await updateDoc(userRef, {
-        sellerInfo: {
-          name: formData.name.trim(),
-          businessName: formData.businessName.trim(),
-          shopName: formData.shopName.trim(),
-          addressLocation: formData.addressLocation.trim(),
-          addressOfOwner: formData.addressOfOwner.trim(),
-          contactNumber: formData.contactNumber.trim(),
-          email: formData.email.trim().toLowerCase(),
-          registeredAt: new Date().toISOString(),
-        },
-        isSeller: true,
-      });
+      const sellerInfo = {
+        name: formData.name.trim(),
+        businessName: formData.businessName.trim(),
+        shopName: formData.shopName.trim(),
+        addressLocation: formData.addressLocation.trim(),
+        addressOfOwner: formData.addressOfOwner.trim(),
+        contactNumber: formData.contactNumber.trim(),
+        email: formData.email.trim().toLowerCase(),
+
+      }
+
+      try {
+        const response = await sellerApi.post('/sellers', sellerInfo)
+        const sellerId = response.data.id;
+        const userRef = doc(db, 'users', userData?.uid);
+        await updateDoc(userRef, {
+          sellerInfo: {
+            name: formData.name.trim(),
+            businessName: formData.businessName.trim(),
+            shopName: formData.shopName.trim(),
+            addressLocation: formData.addressLocation.trim(),
+            addressOfOwner: formData.addressOfOwner.trim(),
+            contactNumber: formData.contactNumber.trim(),
+            email: formData.email.trim().toLowerCase(),
+            sellerId: sellerId,
+            registeredAt: new Date().toISOString(),
+          },
+          isSeller: true,
+        });
+
+
+      } catch (error) {
+        showToast('An error occurred while validating your information. Please try again.', 'error');
+        setLoading(false);
+        return;
+      }
+
 
       showToast('Successfully registered as seller!', 'success');
-      
-      // Navigate after a brief delay to show the success toast
+
       setTimeout(() => {
         router.replace('/(tabs)/profile');
       }, 1500);
@@ -379,8 +401,8 @@ const RegisterAsSeller = () => {
         className="flex-1"
         keyboardVerticalOffset={0}
       >
-        <ScrollView 
-          className="flex-1" 
+        <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
           keyboardShouldPersistTaps="handled"
@@ -428,9 +450,8 @@ const RegisterAsSeller = () => {
                 onChangeText={(value) => handleInputChange('name', value)}
                 onBlur={() => handleBlur('name')}
                 placeholder="John Doe"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                  errors.name ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.name ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.name ? (
@@ -455,9 +476,8 @@ const RegisterAsSeller = () => {
                 placeholder="john.doe@example.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                  errors.email ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.email ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.email ? (
@@ -481,9 +501,8 @@ const RegisterAsSeller = () => {
                 onBlur={() => handleBlur('contactNumber')}
                 placeholder="09123456789"
                 keyboardType="phone-pad"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                  errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.contactNumber ? (
@@ -510,9 +529,8 @@ const RegisterAsSeller = () => {
                 onChangeText={(value) => handleInputChange('businessName', value)}
                 onBlur={() => handleBlur('businessName')}
                 placeholder="ABC Trading Company"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                  errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.businessName ? (
@@ -540,9 +558,8 @@ const RegisterAsSeller = () => {
                 onChangeText={(value) => handleInputChange('shopName', value)}
                 onBlur={() => handleBlur('shopName')}
                 placeholder="John's Amazing Store"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                  errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.shopName ? (
@@ -568,9 +585,8 @@ const RegisterAsSeller = () => {
                 multiline
                 numberOfLines={2}
                 textAlignVertical="top"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
-                  errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.addressLocation ? (
@@ -596,9 +612,8 @@ const RegisterAsSeller = () => {
                 multiline
                 numberOfLines={2}
                 textAlignVertical="top"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
-                  errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                }`}
+                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                  }`}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.addressOfOwner ? (
@@ -625,7 +640,7 @@ const RegisterAsSeller = () => {
                 </>
               )}
             </TouchableOpacity>
-            
+
             <Text className="text-center text-xs text-gray-500 mt-4 px-4">
               By registering, you agree to our Terms of Service and Privacy Policy
             </Text>

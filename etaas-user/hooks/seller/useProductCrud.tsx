@@ -8,9 +8,11 @@ import { VariantCategory, Variant } from '@/types/product/product';
 import { validateProductName, validatePrice, validateStock, validateDescription } from '@/utils/validation/seller/productCrudValidation';
 import { useRef } from 'react';
 import { TextInput } from 'react-native';
+import { ingestApi, sellerApi } from '@/config/apiConfig';
 
 interface UseProductCrudProps {
     sellerId: string | undefined;
+    sellerIdInt?: number;
     productId: string | undefined;
     showToast: (message: string, type: 'success' | 'error') => void;
     setFieldErrors: React.Dispatch<React.SetStateAction<{
@@ -22,7 +24,7 @@ interface UseProductCrudProps {
 
 
 
-export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors }: UseProductCrudProps) => {
+export const useProductCrud = ({ sellerId,sellerIdInt, productId, showToast, setFieldErrors }: UseProductCrudProps) => {
     const router = useRouter();
     const sellerStore = useSellerStore();
 
@@ -99,32 +101,40 @@ export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors 
         fetchProductData();
     }, [productId]);
 
-    const pickImages = async () => {
-        try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+const pickImages = async () => {
+  try {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-            if (status !== 'granted') {
-                showToast('Please grant camera roll permissions', 'error');
-                return;
-            }
+    if (status !== 'granted') {
+      showToast('Please grant camera roll permissions', 'error');
+      return;
+    }
 
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsMultipleSelection: true,
+       const pickerOptions: ImagePicker.ImagePickerOptions = {
+                allowsEditing: true,
+                aspect: [16, 9] as [number, number],
                 quality: 0.8,
-                aspect: [1, 1],
-            });
+            };
 
-            if (!result.canceled && result.assets) {
-                const newUris = result.assets.map(asset => asset.uri);
-                setImageUris(prev => [...prev, ...newUris]);
-                setImageError('');
-            }
-        } catch (error) {
-            console.error('Error picking images:', error);
-            showToast('Failed to pick images', 'error');
-        }
-    };
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      ...pickerOptions, 
+       mediaTypes: ["images"],
+    });
+
+    if (!result.canceled && result.assets) {
+      const newUris = result.assets.map(asset => asset.uri);
+      setImageUris(prev => [...prev, ...newUris]);
+      setImageError('');
+    }
+  } catch (error) {
+    console.error('Error picking images:', error);
+    showToast('Failed to pick images', 'error');
+  }
+
+}
+
 
     const removeImage = (index: number) => {
         const imageToRemove = imageUris[index];
@@ -238,6 +248,7 @@ export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors 
 
     const handleSubmit = async () => {
         if (!validateForm()) return;
+        
 
         setLoading(true);
 
@@ -257,6 +268,23 @@ export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors 
                 }),
             };
 
+
+              const ragProductData = {
+                name: productName.trim(),
+                price: Number(productPrice),
+                description: productDescription.trim(),
+                category: productCategory,
+                availability: productAvailability,
+                quantity: hasVariants ? 0 : productQuantity,
+                sellerId: sellerIdInt,
+                hasVariants,
+                ...(hasVariants && {
+                    variantCategories,
+                    variants,
+                }),
+            };
+
+
             if (productId) {
                 // Separate existing images from new ones
                 const existingImages = imageUris.filter(uri => existingImageUrls.includes(uri));
@@ -271,7 +299,10 @@ export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors 
                 );
                 showToast('Product updated successfully!', 'success');
             } else {
-                await sellerStore.addProduct(productData, imageUris);
+                console.log('Submitting new product with data:', ragProductData);
+                const uid = await sellerStore.addProduct(productData, imageUris);
+                await sellerStore.addRagProduct({...ragProductData, uid: uid}, imageUris);
+            
                 showToast('Product added successfully!', 'success');
             }
 
@@ -334,4 +365,6 @@ export const useProductCrud = ({ sellerId, productId, showToast, setFieldErrors 
         productPriceRef,
         productDescriptionRef,
     };
+
+
 };

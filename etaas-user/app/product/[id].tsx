@@ -42,6 +42,7 @@ import { useCart } from '@/hooks/general/useCart';
 import CartToast from '@/components/general/CartToast';
 import { ConversationModal } from '@/components/general/ConversationModal';
 import { CheckoutItem } from '@/types/product/product';
+import ChatButton from '@/components/general/ChatButton';
 
 const ViewProductScreen = () => {
   const router = useRouter();
@@ -505,7 +506,11 @@ const ViewProductScreen = () => {
         </View>
 
         <View className="h-24" />
+
+        
       </ScrollView>
+
+      
 
       <SafeAreaView edges={['bottom']} className="bg-white border-t border-gray-200 ">
         <View className="px-4 py-3">
@@ -602,7 +607,10 @@ const ViewProductScreen = () => {
         />
       </SafeAreaView>
 
+      
       <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData} />
+       
+       <ChatButton />
     </SafeAreaView>
   );
 };

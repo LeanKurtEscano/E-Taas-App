@@ -4,15 +4,18 @@ import { db } from '@/config/firebaseConfig';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import useCloudinary from '../image-upload/useCloudinary';
 import { ServiceFormData } from '@/types/seller/services';
+import { ingestApi } from '@/config/apiConfig';
+import { router } from 'expo-router';
 
 
 interface UseOfferServiceProps {
   userId: string;
+  shopId?: Number;
   serviceId?: string; // Optional serviceId for edit mode
   showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const useOfferService = ({ userId, serviceId, showToast }: UseOfferServiceProps) => {
+export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOfferServiceProps) => {
   const [formData, setFormData] = useState<ServiceFormData>({
     serviceName: '',
     businessName: '',
@@ -223,7 +226,7 @@ export const useOfferService = ({ userId, serviceId, showToast }: UseOfferServic
       
       setUploadingImages(false);
 
-      // Prepare service data
+   
       const serviceData = {
         ...formData,
         bannerImage: uploadedBannerUrl,
@@ -233,15 +236,31 @@ export const useOfferService = ({ userId, serviceId, showToast }: UseOfferServic
       };
 
       if (isEditMode && serviceId) {
-        // Update existing service
-        await updateDoc(doc(db, 'services', serviceId), serviceData);
+      
+        const docRef = await updateDoc(doc(db, 'services', serviceId), serviceData);
+        const uid = serviceId;
+        const response = await ingestApi.put(`/shops/${shopId}/service`, {
+          ...serviceData,
+          uid: uid,
+          images: uploadedImageUrls,
+      });
         showToast('Service updated successfully!', 'success');
       } else {
-        // Create new service
-        await addDoc(collection(db, 'services'), {
+       
+        const docRef = await addDoc(collection(db, 'services'), {
           ...serviceData,
           createdAt: new Date().toISOString(),
         });
+
+        const uid = docRef.id;
+        const response = await ingestApi.post(`/shops/${shopId}/service`, {
+          ...serviceData,
+          uid: uid,
+          images: uploadedImageUrls,
+      }); 
+
+         router.push('/(tabs)/services');
+      
         showToast('Service added successfully!', 'success');
         resetForm();
       }

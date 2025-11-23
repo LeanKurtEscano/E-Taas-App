@@ -7,14 +7,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import CheckoutToast from '@/components/general/CheckOutToast';
-
+import { ingestApi } from '@/config/apiConfig';
 interface Service {
   id: string;
   serviceName: string;
@@ -40,6 +41,7 @@ const ManageInquiriesScreen = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
 
   const fetchServices = async () => {
     if (!userData?.uid) return;
@@ -74,6 +76,42 @@ const ManageInquiriesScreen = () => {
     }
   };
 
+  const handleDeleteService = async (serviceId: string, serviceName: string) => {
+    Alert.alert(
+      'Delete Service',
+      `Are you sure you want to delete "${serviceName}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingServiceId(serviceId);
+            try {
+              await deleteDoc(doc(db, 'services', serviceId));
+              const response = await ingestApi.delete(`/shops/${userData?.sellerInfo.sellerId}/service/${serviceId}`);
+              setServices(services.filter(service => service.id !== serviceId));
+              
+              setToastMessage('Service deleted successfully');
+              setToastType('success');
+              setToastVisible(true);
+            } catch (error) {
+              console.error('Error deleting service:', error);
+              setToastMessage('Failed to delete service');
+              setToastType('error');
+              setToastVisible(true);
+            } finally {
+              setDeletingServiceId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     fetchServices();
   }, [userData?.uid]);
@@ -96,7 +134,7 @@ const ManageInquiriesScreen = () => {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="bg-white pt-12 pb-4 px-6 border-b border-gray-100">
-        <View className="flex-row items-center mb-3">
+        <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1">
             <Text className="text-2xl font-bold text-gray-800">
               Manage Inquiries
@@ -105,6 +143,24 @@ const ManageInquiriesScreen = () => {
               View and manage service inquiries
             </Text>
           </View>
+          
+          {/* Add Service Button */}
+          <TouchableOpacity
+            onPress={() => router.push('/seller/services')}
+            className="bg-pink-500 rounded-xl py-3 px-4 flex-row items-center ml-3"
+            style={{
+              shadowColor: '#ec4899',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: 5,
+            }}
+          >
+            <Ionicons name="add-circle" size={20} color="white" />
+            <Text className="text-white font-bold text-sm ml-2">
+              Add Service
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Stats Card */}
@@ -184,7 +240,6 @@ const ManageInquiriesScreen = () => {
             <View
               key={service.id}
               className="mb-4 bg-white border border-gray-300 rounded-3xl overflow-hidden"
-             
             >
               {/* Banner Image */}
               {service.bannerImage ? (
@@ -199,9 +254,26 @@ const ManageInquiriesScreen = () => {
                     className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40"
                   />
                   
-                  {/* Status Badge on Banner */}
+                  {/* Delete Button on Banner */}
                   <View className="absolute top-4 right-4">
-                  
+                    <TouchableOpacity
+                      onPress={() => handleDeleteService(service.id, service.serviceName)}
+                      disabled={deletingServiceId === service.id}
+                      className="bg-red-500 p-2.5 rounded-full"
+                      style={{
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 4,
+                        elevation: 5,
+                      }}
+                    >
+                      {deletingServiceId === service.id ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Ionicons name="trash" size={18} color="white" />
+                      )}
+                    </TouchableOpacity>
                   </View>
 
                   {/* Inquiry Badge on Banner */}
@@ -229,8 +301,32 @@ const ManageInquiriesScreen = () => {
                   </View>
                 </View>
               ) : (
-                <View className="w-full h-48 bg-gradient-to-br from-pink-100 to-purple-100 items-center justify-center">
-                  <Ionicons name="image-outline" size={64} color="#d1d5db" />
+                <View className="relative">
+                  <View className="w-full h-48 bg-gradient-to-br from-pink-100 to-purple-100 items-center justify-center">
+                    <Ionicons name="image-outline" size={64} color="#d1d5db" />
+                  </View>
+                  
+                  {/* Delete Button for no banner */}
+                  <View className="absolute top-4 right-4">
+                    <TouchableOpacity
+                      onPress={() => handleDeleteService(service.id, service.serviceName)}
+                      disabled={deletingServiceId === service.id}
+                      className="bg-red-500 p-2.5 rounded-full"
+                      style={{
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 4,
+                        elevation: 5,
+                      }}
+                    >
+                      {deletingServiceId === service.id ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Ionicons name="trash" size={18} color="white" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
 
@@ -311,7 +407,6 @@ const ManageInquiriesScreen = () => {
                   <TouchableOpacity
                     onPress={() => router.push(`/seller/inquiries/${service.id}`)}
                     className="flex-1 bg-pink-500 rounded-xl py-3.5 flex-row items-center justify-center"
-                  
                   >
                     <Ionicons name="chatbubbles" size={18} color="white" />
                     <Text className="text-white font-bold text-sm ml-2">

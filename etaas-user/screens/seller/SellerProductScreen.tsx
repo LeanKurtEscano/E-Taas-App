@@ -29,6 +29,7 @@ const SellerProductScreen: React.FC = () => {
   const [selectedAvailability, setSelectedAvailability] = useState<string>('All');
   const [showDeleteProduct, setShowDeleteProduct] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState<string | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
   const { listenToSellerProducts } = useSellerStore();
   const { deleteProduct } = useSellerStore();
   useEffect(() => {
@@ -76,9 +77,11 @@ const SellerProductScreen: React.FC = () => {
 
   const confirmDeleteProduct = async () => {
     if (productIdToDelete) {
+      setModalLoading(true);
       await deleteProduct(productIdToDelete);
       setProductIdToDelete(null);
       setShowDeleteProduct(false);
+      setModalLoading(false);
     }
 
 
@@ -255,6 +258,7 @@ const SellerProductScreen: React.FC = () => {
            description={`Are you sure you want to delete ${products.find(product => product.id === productIdToDelete)?.name}?`}
            confirmButtonColor='bg-red-500'
            confirmText='Delete'
+           isLoading={modalLoading}
          />
          
       )}

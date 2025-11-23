@@ -8,6 +8,8 @@ import {
   Image,
   Switch,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useOfferService } from '@/hooks/seller/useOfferService';
@@ -40,6 +42,7 @@ const OfferServiceScreen = () => {
     submitService,
   } = useOfferService({ 
     userId: userData?.uid || '', 
+    shopId: userData?.sellerInfo.sellerId || "",
     serviceId,
     showToast 
   });
@@ -61,7 +64,11 @@ const OfferServiceScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <KeyboardAvoidingView 
+          className="flex-1 bg-white"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
       {/* Header with Back Button */}
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
         <TouchableOpacity 
@@ -337,7 +344,13 @@ const OfferServiceScreen = () => {
             </View>
           </View>
 
-          {/* Submit Button */}
+      
+        </View>
+      </ScrollView>
+
+
+        <View className="bg-white border-t border-gray-200 px-6 py-4 ">
+          
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={loading || uploadingImages}
@@ -366,7 +379,6 @@ const OfferServiceScreen = () => {
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
 
       {/* Toast Notification */}
       <CheckoutToast 
@@ -375,7 +387,7 @@ const OfferServiceScreen = () => {
         message={toastMessage} 
         type={toastType} 
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

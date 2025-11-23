@@ -25,6 +25,8 @@ const ProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
   const params = useLocalSearchParams();
   const sellerId = userData?.uid;
+
+  const sellerIdInt = userData?.sellerInfo.sellerId;
   const productId = params.productId as string | undefined;
   const router = useRouter();
 
@@ -82,7 +84,7 @@ const ProductScreen: React.FC = () => {
     productNameRef,
     productPriceRef,
     productDescriptionRef,
-  } = useProductCrud({ sellerId, productId, showToast, setFieldErrors });
+  } = useProductCrud({ sellerId,sellerIdInt, productId, showToast, setFieldErrors });
 
   const handleToggleVariants = () => {
     const result = toggleVariants();

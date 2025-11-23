@@ -20,6 +20,7 @@ const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
 import { Variant } from '@/types/product/product';
 import { deleteField } from 'firebase/firestore';
+import { ingestApi } from '@/config/apiConfig';
 const useSellerStore = () => {
 
     const { userData } = useCurrentUser();
@@ -89,7 +90,7 @@ const useSellerStore = () => {
             callback(products);
         });
 
-        return unsubscribe; 
+        return unsubscribe;
     };
 
 
@@ -118,15 +119,15 @@ const useSellerStore = () => {
             const updatedProduct = { ...product };
 
             updatedProduct.variants = product.variants?.map((variant) => {
-              
+
                 const index = variantsWithImages.findIndex((v) => v.id === variant.id);
 
-               
+
                 if (index !== -1 && uploadVariantImageUrls[index]) {
                     return { ...variant, image: uploadVariantImageUrls[index] };
                 }
 
-                
+
                 return variant;
             }) || [];
 
@@ -148,82 +149,141 @@ const useSellerStore = () => {
     };
 
 
-  const updateProduct = async (
-    productId: string,
-    updates: Partial<Product>,
-    newImageUris?: string[],
-    existingImages?: string[],
-    imagesToDelete?: string[]
-): Promise<void> => {
-    try {
-        const productRef = doc(db, 'products', productId);
 
-        let updateData: any = { ...updates };
+    const addRagProduct = async (
+        product: Omit<Product, 'id' | 'createdAt'>,
+        imageUris: string[]
+    ) => {
+        try {
 
-        if (updates.hasVariants === false) {
-            updateData.variantCategories = deleteField();
-            updateData.variants = deleteField();
-        }
+            const uploadedImageUrls = await uploadMultipleImages(imageUris);
 
-        if (imagesToDelete && imagesToDelete.length > 0) {
-            const deletePromises = imagesToDelete.map(async (imageUrl) => {
-                try {
-                    const urlParts = imageUrl.split('/');
-                    const uploadIndex = urlParts.indexOf('upload');
-                    if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
-                        const pathAfterVersion = urlParts.slice(uploadIndex + 2).join('/');
-                        const publicId = pathAfterVersion.split('.')[0];
-                        console.log('Deleting public_id:', publicId);
-                    }
-                } catch (error) {
-                    console.error('Error deleting Cloudinary image:', imageUrl, error);
+            const variantsWithImages: Variant[] =
+                product.variants?.filter(
+                    (variant) => variant.image && variant.image.trim() !== ""
+                ) || [];
+
+
+
+            const getVariantImages =
+                variantsWithImages?.length > 0
+                    ? variantsWithImages.map((variant) => variant.image!)
+                    : [];
+
+            const uploadVariantImageUrls = await uploadMultipleImages(getVariantImages);
+
+            const updatedProduct = { ...product };
+
+            updatedProduct.variants = product.variants?.map((variant) => {
+
+                const index = variantsWithImages.findIndex((v) => v.id === variant.id);
+
+
+                if (index !== -1 && uploadVariantImageUrls[index]) {
+                    return { ...variant, image: uploadVariantImageUrls[index] };
                 }
+                return variant;
+            }) || [];
+
+            const response = await ingestApi.post(`/shops/${userData?.sellerInfo?.sellerId}/products`, {
+                ...product,
+                images: uploadedImageUrls,
             });
-            await Promise.all(deletePromises);
+
+        } catch (error) {
+            console.error('Error adding product:', error);
+            throw error;
         }
+    };
 
-     
-        let uploadedImageUrls: string[] = [];
-        if (newImageUris && newImageUris.length > 0) {
-            uploadedImageUrls = await uploadMultipleImages(newImageUris);
-        }
 
-        const finalImageUrls = [
-            ...(existingImages || []),
-            ...uploadedImageUrls
-        ];
+    const updateProduct = async (
+        productId: string,
+        updates: Partial<Product>,
+        newImageUris?: string[],
+        existingImages?: string[],
+        imagesToDelete?: string[]
+    ): Promise<void> => {
+        try {
+            const productRef = doc(db, 'products', productId);
 
-        if (imagesToDelete?.length || newImageUris?.length) {
-            updateData.images = finalImageUrls;
-        }
+            let updateData: any = { ...updates };
 
-        if (updates.variants && updates.variants.length > 0) {
-            const variantsWithLocalImages = updates.variants.filter(
-                (variant) => variant.image && !variant.image.startsWith('http')
-            );
-
-            if (variantsWithLocalImages.length > 0) {
-                const localImageUris = variantsWithLocalImages.map(v => v.image!);
-                const uploadedVariantUrls = await uploadMultipleImages(localImageUris);
-
-                updateData.variants = updates.variants.map((variant) => {
-                    const index = variantsWithLocalImages.findIndex((v) => v.id === variant.id);
-                    if (index !== -1 && uploadedVariantUrls[index]) {
-                        return { ...variant, image: uploadedVariantUrls[index] };
-                    }
-                    return variant;
-                });
+            if (updates.hasVariants === false) {
+                updateData.variantCategories = deleteField();
+                updateData.variants = deleteField();
             }
+
+            if (imagesToDelete && imagesToDelete.length > 0) {
+                const deletePromises = imagesToDelete.map(async (imageUrl) => {
+                    try {
+                        const urlParts = imageUrl.split('/');
+                        const uploadIndex = urlParts.indexOf('upload');
+                        if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+                            const pathAfterVersion = urlParts.slice(uploadIndex + 2).join('/');
+                            const publicId = pathAfterVersion.split('.')[0];
+                            console.log('Deleting public_id:', publicId);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting Cloudinary image:', imageUrl, error);
+                    }
+                });
+                await Promise.all(deletePromises);
+            }
+
+
+            let uploadedImageUrls: string[] = [];
+            if (newImageUris && newImageUris.length > 0) {
+                uploadedImageUrls = await uploadMultipleImages(newImageUris);
+            }
+
+            const finalImageUrls = [
+                ...(existingImages || []),
+                ...uploadedImageUrls
+            ];
+
+            if (imagesToDelete?.length || newImageUris?.length) {
+                updateData.images = finalImageUrls;
+            }
+
+            if (updates.variants && updates.variants.length > 0) {
+                const variantsWithLocalImages = updates.variants.filter(
+                    (variant) => variant.image && !variant.image.startsWith('http')
+                );
+
+                if (variantsWithLocalImages.length > 0) {
+                    const localImageUris = variantsWithLocalImages.map(v => v.image!);
+                    const uploadedVariantUrls = await uploadMultipleImages(localImageUris);
+
+                    updateData.variants = updates.variants.map((variant) => {
+                        const index = variantsWithLocalImages.findIndex((v) => v.id === variant.id);
+                        if (index !== -1 && uploadedVariantUrls[index]) {
+                            return { ...variant, image: uploadedVariantUrls[index] };
+                        }
+                        return variant;
+                    });
+                }
+            }
+
+            const backendUpdateData: any = { ...updates };
+            if (updates.hasVariants === false) {
+                backendUpdateData.variantCategories = [];
+                backendUpdateData.variants = [];
+            }
+
+            await updateDoc(productRef, updateData);
+            const response = await ingestApi.put(`/shops/${userData?.sellerInfo?.sellerId}/products`, {
+                ...backendUpdateData,
+                uid: productId,
+
+            });
+            console.log('Product updated successfully');
+
+        } catch (error) {
+            console.error('Error updating product:', error);
+            throw error;
         }
-
-        await updateDoc(productRef, updateData);
-        console.log('Product updated successfully');
-
-    } catch (error) {
-        console.error('Error updating product:', error);
-        throw error;
-    }
-};
+    };
 
 
 
@@ -231,6 +291,7 @@ const useSellerStore = () => {
     const deleteProduct = async (productId: string): Promise<void> => {
         try {
             const productRef = doc(db, 'products', productId);
+            const response = await ingestApi.delete(`/shops/${userData?.sellerInfo?.sellerId}/products/${productId}`);
             await deleteDoc(productRef);
         } catch (error) {
             console.error('Error deleting product:', error);
@@ -279,7 +340,8 @@ const useSellerStore = () => {
         deleteProduct,
         updateShopInfo,
         uploadToCloudinary,
-        uploadMultipleImages
+        uploadMultipleImages,
+        addRagProduct
     }
 }
 
