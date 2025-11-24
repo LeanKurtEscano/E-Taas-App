@@ -5,7 +5,7 @@ import Feather from '@expo/vector-icons/Feather'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/config/firebaseConfig'
 import { AppHeader } from '@/components/general/AppHeader'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { db } from '@/config/firebaseConfig'
 import { doc, onSnapshot } from 'firebase/firestore'
@@ -13,14 +13,15 @@ import { doc, onSnapshot } from 'firebase/firestore'
 const TabsLayout = () => {
   const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const { cartLength, totalUnreadCount,userData } = useCurrentUser();
+  const { cartLength, totalUnreadCount, userData } = useCurrentUser()
   const [loading, setLoading] = useState(true)
-  
-
   const [unreadNotifications, setUnreadNotifications] = useState(0)
+  
+  // Get safe area insets for proper bottom spacing
+  const insets = useSafeAreaInsets()
 
   const handleCartPress = (): void => {
-    router.push('/cart/cart');
+    router.push('/cart/cart')
   }
 
   useEffect(() => {
@@ -31,8 +32,6 @@ const TabsLayout = () => {
 
     return () => unsubscribe()
   }, [])
-
-
 
   useEffect(() => {
     if (!user) return
@@ -58,10 +57,7 @@ const TabsLayout = () => {
     return () => unsubscribe()
   }, [user])
 
-  const showSearch = userData?.isSeller ? false : true;
-
-  
-
+  const showSearch = userData?.isSeller ? false : true
 
   if (loading) {
     return (
@@ -73,6 +69,17 @@ const TabsLayout = () => {
 
   if (!user) {
     return <Redirect href="/(auth)" />
+  }
+
+  // Calculate dynamic tab bar height based on platform and safe area
+  const getTabBarHeight = () => {
+    if (Platform.OS === 'ios') {
+      // iOS with safe area (includes home indicator)
+      return 65 + insets.bottom
+    } else {
+      // Android - add extra padding if there's a bottom inset (gesture navigation)
+      return insets.bottom > 0 ? 60 + insets.bottom : 70
+    }
   }
 
   return (
@@ -98,8 +105,8 @@ const TabsLayout = () => {
             backgroundColor: '#fff',
             borderTopWidth: 1,
             borderTopColor: '#f3f4f6',
-            height: Platform.OS === 'ios' ? 90 : 70,
-            paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+            height: getTabBarHeight(),
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 10 : 5),
             paddingTop: 10,
             elevation: 8,
             shadowColor: '#000',
@@ -107,6 +114,8 @@ const TabsLayout = () => {
               width: 0,
               height: -2,
             },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
           },
           tabBarLabelStyle: {
             fontSize: 11,
@@ -118,7 +127,7 @@ const TabsLayout = () => {
           },
           // Customize badge appearance
           tabBarBadgeStyle: {
-            backgroundColor: '#ef4444', // Red color for notifications
+            backgroundColor: '#ef4444',
             color: '#fff',
             fontSize: 10,
             fontWeight: 'bold',
@@ -169,8 +178,6 @@ const TabsLayout = () => {
           }}
         />
 
-
-        {/* Add Notifications Tab */}
         <Tabs.Screen
           name="notification"
           options={{
@@ -182,7 +189,6 @@ const TabsLayout = () => {
                 color={color}
               />
             ),
-            // Show badge only when there are unread notifications
             tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined,
           }}
         />

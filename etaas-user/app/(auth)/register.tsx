@@ -291,10 +291,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-pink-500"
-    >
+    <KeyboardAvoidingView 
+         className="flex-1 bg-pink-500"
+         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+         keyboardVerticalOffset={0}
+       >
       <StatusBar barStyle="light-content" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}

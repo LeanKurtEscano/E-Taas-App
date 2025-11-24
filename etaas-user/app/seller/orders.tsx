@@ -46,6 +46,7 @@ import { formatDate } from '@/utils/general/formatDate';
 import { getStatusColor } from '@/utils/general/getStatus';
 import { ShippingAddress, ProductVariant, ProductData, Order } from '@/types/order/sellerOrder';
 import { useNotification } from '@/hooks/general/useNotification';
+import { SafeAreaView } from 'react-native-safe-area-context';
 const ManageOrders = () => {
   const { userData } = useCurrentUser()
   const [orders, setOrders] = useState<Order[]>([]);
@@ -323,7 +324,7 @@ Track its progress here: ${trackingLink.trim()}`,
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <View className="bg-white" style={{
