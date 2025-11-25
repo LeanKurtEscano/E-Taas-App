@@ -26,6 +26,7 @@ import { router } from 'expo-router';
 import { useToShipOrders } from '@/hooks/general/useToShipOrders';
 import { formatDate } from '@/utils/general/formatDate';
 import { Order } from '@/types/order/sellerOrder';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ToShipScreen = () => {
   const { orders, loading } = useToShipOrders();
@@ -143,14 +144,14 @@ const ToShipScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header */}
       <View
         className="bg-white"
         style={{
-          paddingTop: Platform.OS === 'ios' ? 50 : 20,
+          paddingTop: Platform.OS === 'ios' ? 20 : 20,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
@@ -319,7 +320,7 @@ const ToShipScreen = () => {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

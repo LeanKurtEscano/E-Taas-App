@@ -54,6 +54,7 @@ const ProductScreen: React.FC = () => {
     variants,
     loading,
     fetchingProduct,
+    handleQuantityChange,
 
     // Setters
     setProductName,
@@ -225,36 +226,46 @@ const ProductScreen: React.FC = () => {
         </View>
 
         {/* Quantity - Hide when variants are enabled */}
-        {!hasVariants && (
-          <View className="mt-5">
-            <Text className="text-base font-semibold text-gray-900 mb-3">
-              Quantity
-            </Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={decrementQuantity}
-                className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center border border-gray-200"
-                activeOpacity={0.7}
-              >
-                <Minus size={20} color="#374151" />
-              </TouchableOpacity>
+       {/* Quantity - Hide when variants are enabled */}
+{!hasVariants && (
+  <View className="mt-5">
+    <Text className="text-base font-semibold text-gray-900 mb-3">
+      Quantity
+    </Text>
+    <View className="flex-row items-center">
+      <TouchableOpacity
+        onPress={decrementQuantity}
+        className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center border border-gray-200"
+        activeOpacity={0.7}
+      >
+        <Minus size={20} color="#374151" />
+      </TouchableOpacity>
 
-              <View className="mx-6 min-w-[60px] items-center">
-                <Text className="text-2xl font-bold text-gray-900">
-                  {productQuantity}
-                </Text>
-              </View>
+     <View className="mx-6 min-w-[100px]">
+  <TextInput
+    className={`text-2xl font-bold text-center rounded-xl px-4 py-2 border ${
+      productQuantity >= 9999 
+        ? 'bg-yellow-50 border-yellow-400 text-yellow-700' 
+        : 'bg-gray-50 border-gray-200 text-gray-900'
+    }`}
+    value={productQuantity.toString()}
+    onChangeText={handleQuantityChange}
+    keyboardType="numeric"
+    selectTextOnFocus
+    maxLength={4}
+  />
+</View>
 
-              <TouchableOpacity
-                onPress={incrementQuantity}
-                className="w-12 h-12 bg-pink-500 rounded-xl items-center justify-center"
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+      <TouchableOpacity
+        onPress={incrementQuantity}
+        className="w-12 h-12 bg-pink-500 rounded-xl items-center justify-center"
+        activeOpacity={0.7}
+      >
+        <Plus size={20} color="white" />
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
 
         {/* Category */}
         <View className="mt-5">
@@ -285,8 +296,8 @@ const ProductScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* Availability - Only in Edit Mode */}
-        {productId && (
+      
+       
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
               Availability
@@ -312,8 +323,7 @@ const ProductScreen: React.FC = () => {
               ))}
             </View>
           </View>
-        )}
-
+      
         {/* Variant Section */}
         <View className="mt-6">
           <View className="flex-row justify-between items-center mb-3">

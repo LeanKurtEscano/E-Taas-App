@@ -29,6 +29,7 @@ import { useToReceiveOrders } from '@/hooks/general/useToReceived';
 import { formatDate } from '@/utils/general/formatDate';
 import { Order } from '@/types/order/sellerOrder';
 import { useNotification } from '@/hooks/general/useNotification';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ToReceiveScreen = () => {
   const { orders, loading } = useToReceiveOrders();
@@ -106,14 +107,14 @@ const ToReceiveScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header */}
       <View
         className="bg-white"
         style={{
-          paddingTop: Platform.OS === 'ios' ? 50 : 20,
+          paddingTop: Platform.OS === 'ios' ? 20 : 20,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
@@ -345,7 +346,7 @@ const ToReceiveScreen = () => {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

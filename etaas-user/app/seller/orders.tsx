@@ -664,7 +664,7 @@ Track its progress here: ${trackingLink.trim()}`,
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -24,7 +24,7 @@ interface UseProductCrudProps {
 
 
 
-export const useProductCrud = ({ sellerId,sellerIdInt, productId, showToast, setFieldErrors }: UseProductCrudProps) => {
+export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, setFieldErrors }: UseProductCrudProps) => {
     const router = useRouter();
     const sellerStore = useSellerStore();
 
@@ -101,39 +101,39 @@ export const useProductCrud = ({ sellerId,sellerIdInt, productId, showToast, set
         fetchProductData();
     }, [productId]);
 
-    
-const pickImages = async () => {
-  try {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== 'granted') {
-      showToast('Please grant camera roll permissions', 'error');
-      return;
-    }
+    const pickImages = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-       const pickerOptions: ImagePicker.ImagePickerOptions = {
+            if (status !== 'granted') {
+                showToast('Please grant camera roll permissions', 'error');
+                return;
+            }
+
+            const pickerOptions: ImagePicker.ImagePickerOptions = {
                 allowsEditing: true,
                 aspect: [16, 9] as [number, number],
                 quality: 0.8,
             };
 
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      ...pickerOptions, 
-       mediaTypes: ["images"],
-    });
+            const result = await ImagePicker.launchImageLibraryAsync({
+                ...pickerOptions,
+                mediaTypes: ["images"],
+            });
 
-    if (!result.canceled && result.assets) {
-      const newUris = result.assets.map(asset => asset.uri);
-      setImageUris(prev => [...prev, ...newUris]);
-      setImageError('');
+            if (!result.canceled && result.assets) {
+                const newUris = result.assets.map(asset => asset.uri);
+                setImageUris(prev => [...prev, ...newUris]);
+                setImageError('');
+            }
+        } catch (error) {
+            console.error('Error picking images:', error);
+            showToast('Failed to pick images', 'error');
+        }
+
     }
-  } catch (error) {
-    console.error('Error picking images:', error);
-    showToast('Failed to pick images', 'error');
-  }
-
-}
 
 
     const removeImage = (index: number) => {
@@ -148,8 +148,9 @@ const pickImages = async () => {
 
 
     const incrementQuantity = () => {
-        setProductQuantity(prev => prev + 1);
-    };
+    const MAX_QUANTITY = 9999;
+    setProductQuantity(prev => (prev < MAX_QUANTITY ? prev + 1 : prev));
+};
 
     const decrementQuantity = () => {
         setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
@@ -248,7 +249,7 @@ const pickImages = async () => {
 
     const handleSubmit = async () => {
         if (!validateForm()) return;
-        
+
 
         setLoading(true);
 
@@ -269,7 +270,7 @@ const pickImages = async () => {
             };
 
 
-              const ragProductData = {
+            const ragProductData = {
                 name: productName.trim(),
                 price: Number(productPrice),
                 description: productDescription.trim(),
@@ -301,8 +302,8 @@ const pickImages = async () => {
             } else {
                 console.log('Submitting new product with data:', ragProductData);
                 const uid = await sellerStore.addProduct(productData, imageUris);
-                await sellerStore.addRagProduct({...ragProductData, uid: uid}, imageUris);
-            
+                await sellerStore.addRagProduct({ ...ragProductData, uid: uid }, imageUris);
+
                 showToast('Product added successfully!', 'success');
             }
 
@@ -314,6 +315,29 @@ const pickImages = async () => {
             setLoading(false);
         }
     };
+
+   const handleQuantityChange = (text: string) => {
+    const MAX_QUANTITY = 9999;
+    
+    // Remove non-numeric characters
+    const numericValue = text.replace(/[^0-9]/g, '');
+    
+    if (numericValue === '') {
+        setProductQuantity(0);
+        return;
+    }
+    
+    const quantity = parseInt(numericValue, 10);
+    
+    if (isNaN(quantity)) {
+        setProductQuantity(0);
+    } else if (quantity > MAX_QUANTITY) {
+        // Don't update if it exceeds max - just stop at max
+        setProductQuantity(MAX_QUANTITY);
+    } else {
+        setProductQuantity(quantity);
+    }
+};
 
 
     const visibleImages = imageUris.slice(0, 2);
@@ -364,6 +388,7 @@ const pickImages = async () => {
         productNameRef,
         productPriceRef,
         productDescriptionRef,
+        handleQuantityChange,
     };
 
 

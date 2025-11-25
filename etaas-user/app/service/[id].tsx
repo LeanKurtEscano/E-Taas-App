@@ -8,6 +8,8 @@ import {
   TextInput,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useInquiries } from '@/hooks/general/useInquiries';
@@ -72,10 +74,14 @@ const InquireServiceScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-white">
+      <KeyboardAvoidingView 
+          className="flex-1 bg-white"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
       {/* Header */}
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           className="mr-4 p-2 rounded-full "
         >
@@ -91,8 +97,8 @@ const InquireServiceScreen = () => {
         </View>
       </View>
 
-      <ScrollView 
-        className="flex-1" 
+      <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
@@ -124,11 +130,10 @@ const InquireServiceScreen = () => {
               {allImages.map((_, index) => (
                 <View
                   key={index}
-                  className={`h-2 rounded-full ${
-                    index === currentImageIndex
+                  className={`h-2 rounded-full ${index === currentImageIndex
                       ? 'w-6 bg-pink-500'
                       : 'w-2 bg-white opacity-60'
-                  }`}
+                    }`}
                 />
               ))}
             </View>
@@ -142,9 +147,8 @@ const InquireServiceScreen = () => {
               </Text>
             </View>
             <View
-              className={`px-3 py-1.5 rounded-full ${
-                service.availability ? 'bg-green-500' : 'bg-gray-500'
-              }`}
+              className={`px-3 py-1.5 rounded-full ${service.availability ? 'bg-green-500' : 'bg-gray-500'
+                }`}
             >
               <Text className="text-white text-xs font-semibold">
                 {service.availability ? 'Available' : 'Unavailable'}
@@ -352,42 +356,55 @@ const InquireServiceScreen = () => {
               </View>
 
               {/* Submit Button */}
-              <TouchableOpacity
-                onPress={handleSubmitInquiry}
-                disabled={submitting}
-                className={`rounded-2xl py-4 items-center mb-6 ${
-                  submitting ? 'bg-pink-300' : 'bg-pink-500'
-                }`}
-                style={{
-                  shadowColor: '#ec4899',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 5,
-                }}
-              >
-                {submitting ? (
-                  <View className="flex-row items-center">
-                    <ActivityIndicator color="white" />
-                    <Text className="text-white font-bold text-lg ml-2">
-                      Submitting...
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center">
-                    <Ionicons name="send" size={20} color="white" />
-                    <Text className="text-white font-bold text-lg ml-2">
-                      Submit Inquiry
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+
             </>
           )}
         </View>
       </ScrollView>
 
-      <ChatButton onPress={() => setAssistantModalVisible(true)} bottomOffset={100}/>
+     {isOwner ? null : (
+      <>
+      <View className="bg-white border-t border-gray-200 px-6 py-4 ">
+        <TouchableOpacity
+          onPress={handleSubmitInquiry}
+          disabled={submitting}
+          className={`rounded-2xl py-4 items-center mb-6 ${submitting ? 'bg-pink-300' : 'bg-pink-500'
+            }`}
+          style={{
+            shadowColor: '#ec4899',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          {submitting ? (
+            <View className="flex-row items-center">
+              <ActivityIndicator color="white" />
+              <Text className="text-white font-bold text-lg ml-2">
+                Submitting...
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-row items-center">
+              <Ionicons name="send" size={20} color="white" />
+              <Text className="text-white font-bold text-lg ml-2">
+                Submit Inquiry
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+
+      </View>
+      </>
+
+
+     )}
+      
+
+
+      <ChatButton onPress={() => setAssistantModalVisible(true)} bottomOffset={100} />
 
       <AssistantChatModal
         visible={isAssistantModalVisible}
@@ -395,16 +412,16 @@ const InquireServiceScreen = () => {
         userId={userData?.uid}
         shopId={service.shopId}
       />
- 
+
 
       {/* Toast Notification     */}
-      <CheckoutToast 
-        visible={toastVisible} 
-        onHide={() => setToastVisible(false)} 
-        message={toastMessage} 
-        type={toastType} 
+      <CheckoutToast
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        message={toastMessage}
+        type={toastType}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

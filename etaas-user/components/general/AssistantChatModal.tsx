@@ -104,7 +104,6 @@ const AssistantChatModal: React.FC<AssistantChatModalProps> = ({
     shopId,
   });
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !error) {
       setTimeout(() => {
@@ -129,7 +128,7 @@ const AssistantChatModal: React.FC<AssistantChatModalProps> = ({
     });
   };
 
-  // Extract URLs from message text, including those wrapped in backticks
+
 const extractUrls = (text: string): string[] => {
     // Match URLs - more permissive pattern to catch full URLs
     const urlRegex = /`?(https?:\/\/[^\s`<>'")\]]+)`?/gi;
@@ -154,10 +153,10 @@ const extractUrls = (text: string): string[] => {
            /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(lowerUrl);
   };
 
-  // Render message with images
   const renderMessageContent = (msg: any) => {
     const urls = extractUrls(msg.message);
     const imageUrls = urls.filter(isImage);
+    
     // Remove URLs from text, including those with backticks and trailing periods
    let textWithoutUrls = msg.message.replace(/https?:\/\/[^\s<>"']+/gi, '');
 
