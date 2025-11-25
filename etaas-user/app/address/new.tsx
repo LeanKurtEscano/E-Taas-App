@@ -18,7 +18,8 @@ import { updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import * as Location from 'expo-location';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-
+import useToast from '@/hooks/general/useToast';
+import GeneralToast from '@/components/general/GeneralToast';
 interface AddressForm {
   fullName: string;
   phoneNumber: string;
@@ -30,7 +31,11 @@ interface AddressForm {
   isDefault: boolean;
 }
 
+
+
 export default function AddNewAddressScreen() {
+
+    const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
   const [form, setForm] = useState<AddressForm>({
     fullName: '',
     phoneNumber: '',
@@ -56,7 +61,7 @@ export default function AddNewAddressScreen() {
       // Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please enable location permissions to use this feature');
+        showToast('Please enable location permissions to use this feature', 'error');
         return;
       }
 
@@ -79,11 +84,11 @@ export default function AddNewAddressScreen() {
         updateForm('barangay', address.district || address.street || '');
         updateForm('streetAddress', address.name || address.street || '');
 
-        Alert.alert('Success', 'Location data loaded successfully');
+        showToast('Location data loaded successfully', 'success');
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      Alert.alert('Error', 'Failed to get your current location. Please enter manually.');
+      showToast('Failed to get your current location. Please enter manually.', 'error');
     } finally {
       setLoadingLocation(false);
     }
@@ -91,31 +96,28 @@ export default function AddNewAddressScreen() {
 
   const validateForm = (): boolean => {
     if (!form.fullName.trim()) {
-      Alert.alert('Error', 'Please enter your full name');
+      showToast( 'Please enter your full name', 'error');
       return false;
     }
     if (!form.phoneNumber.trim() || form.phoneNumber.length < 11) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+      showToast('Please enter a valid phone number', 'error');
       return false;
     }
-    if (!form.region.trim()) {
-      Alert.alert('Error', 'Please enter your region');
-      return false;
-    }
+    
     if (!form.province.trim()) {
-      Alert.alert('Error', 'Please enter your province');
+      showToast('Please enter your province', 'error');
       return false;
     }
     if (!form.city.trim()) {
-      Alert.alert('Error', 'Please enter your city/municipality');
+      showToast('Please enter your city/municipality', 'error');
       return false;
     }
     if (!form.barangay.trim()) {
-      Alert.alert('Error', 'Please enter your barangay');
+      showToast('Please enter your barangay', 'error');
       return false;
     }
     if (!form.streetAddress.trim()) {
-      Alert.alert('Error', 'Please enter your street address');
+      showToast('Please enter your street address', 'error');
       return false;
     }
     return true;
@@ -128,7 +130,7 @@ export default function AddNewAddressScreen() {
       setLoading(true);
   
       if (!userData) {
-        Alert.alert('Error', 'You must be logged in to save an address');
+        showToast('You must be logged in to save an address', 'error');
         return;
       }
 
@@ -164,12 +166,11 @@ export default function AddNewAddressScreen() {
         addressesList: updatedAddresses
       });
 
-      Alert.alert('Success', 'Address saved successfully', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      showToast('Address saved successfully', 'success');
+      router.back();
     } catch (error) {
       console.error('Error saving address:', error);
-      Alert.alert('Error', 'Failed to save address. Please try again.');
+      showToast('Failed to save address. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -342,6 +343,12 @@ export default function AddNewAddressScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+        <GeneralToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }

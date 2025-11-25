@@ -332,7 +332,9 @@ export default function RegisterScreen() {
                 onChangeText={(text) => handleInputChange('username', text)}
                 onBlur={() => handleInputBlur('username')}
                 autoCapitalize="none"
-                autoComplete="username"
+                autoComplete="username-new"
+                textContentType="username"
+                importantForAutofill="yes"
                 editable={!loading}
               />
             </View>
@@ -358,6 +360,8 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                textContentType="emailAddress"
+                importantForAutofill="yes"
                 editable={!loading}
               />
             </View>
@@ -381,7 +385,9 @@ export default function RegisterScreen() {
                 onChangeText={(text) => handleInputChange('password', text)}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
-                autoComplete="password"
+                autoComplete="password-new"
+                textContentType="newPassword"
+                importantForAutofill="yes"
                 editable={!loading}
               />
               <TouchableOpacity
@@ -415,7 +421,9 @@ export default function RegisterScreen() {
                 onChangeText={(text) => handleInputChange('confirmPassword', text)}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
-                autoComplete="password"
+                autoComplete="password-new"
+                textContentType="newPassword"
+                importantForAutofill="yes"
                 editable={!loading}
               />
               <TouchableOpacity

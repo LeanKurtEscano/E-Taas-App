@@ -33,7 +33,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
     const [productPrice, setProductPrice] = useState('');
     const [productDescription, setProductDescription] = useState('');
     const [productCategory, setProductCategory] = useState('Clothing');
-    const [productAvailability, setProductAvailability] = useState<'available' | 'sold' | 'reserved'>('available');
+    const [productAvailability, setProductAvailability] = useState<'available' | 'out of stock' | 'unavailable'>(null);
     const [productQuantity, setProductQuantity] = useState(0);
 
 
@@ -150,11 +150,15 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
     const incrementQuantity = () => {
     const MAX_QUANTITY = 9999;
     setProductQuantity(prev => (prev < MAX_QUANTITY ? prev + 1 : prev));
+    setProductAvailability('available');
 };
 
     const decrementQuantity = () => {
         setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
-    };
+        if(productQuantity - 1 == 0) {
+            setProductAvailability('out of stock');
+        }
+    }
 
 
     const handleSaveVariants = (categories: VariantCategory[], variantsList: Variant[]) => {
@@ -241,6 +245,11 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 showToast('All variants must have valid price and stock', 'error');
                 return false;
             }
+        }
+
+        if (productAvailability == null) {
+            showToast('Please select product availability', 'error');
+            return false;
         }
 
         return true;
