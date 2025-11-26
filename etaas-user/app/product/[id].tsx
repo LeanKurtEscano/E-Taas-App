@@ -38,7 +38,7 @@ import { Product, UserData } from '@/types/seller/shop';
 import { getInitials } from '@/utils/general/initials';
 import { fetchShopBySellerId } from '@/services/general/getShop';
 import ProductDetailsModal from '@/components/user/browseProduct/VariantModal';
-import { useCart } from '@/hooks/general/useCart';
+import { generateCartId, useCart } from '@/hooks/general/useCart';
 import CartToast from '@/components/general/CartToast';
 import { ConversationModal } from '@/components/general/ConversationModal';
 import { CheckoutItem } from '@/types/product/product';
@@ -138,13 +138,14 @@ const ViewProductScreen = () => {
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
   };
-
+ 
   const handleBuyDirectly = () => {
     const checkOutData: CheckoutItem[] = [];
     checkOutData.push({
       productId: product?.id,
       variantId: null,
       quantity: 1,
+      cartId: generateCartId(),
       price: product?.price,
       productName: product?.name,
       image: product?.images?.[0] || '',

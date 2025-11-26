@@ -8,4 +8,5 @@ export interface CheckoutItem {
   variantText: string;
   sellerId: string;
   shopName: string;
+  cartId: string;
 }

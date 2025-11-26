@@ -7,6 +7,7 @@ import { db } from "@/config/firebaseConfig";
 import { Product } from "@/types/product/product";
 
 export interface CartItem {
+  cartId: string; // Unique identifier for each cart item
   productId: string;
   sellerId: string;
   hasVariants: boolean;
@@ -28,6 +29,12 @@ interface AddToCartProps {
   variantId?: string | null;
   quantity?: number;
 }
+
+// Helper function to generate unique cartId
+export const generateCartId = (): string => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 15);
+};
+
 export const useCart = () => {
   const [loading, setLoading] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
@@ -57,10 +64,11 @@ export const useCart = () => {
         const cartSnap = await transaction.get(cartRef);
 
         if (!cartSnap.exists()) {
-          // Create new cart
+          // Create new cart with cartId
           const newCart: Cart = {
             items: [
               {
+                cartId: generateCartId(),
                 productId,
                 sellerId,
                 hasVariants,
@@ -87,14 +95,15 @@ export const useCart = () => {
         );
 
         if (existingIndex !== -1) {
-          // Update quantity of existing item
+          // Update quantity of existing item (keep same cartId)
           items[existingIndex] = {
             ...items[existingIndex],
             quantity: items[existingIndex].quantity + quantity,
           };
         } else {
-          // Add new item
+          // Add new item with new cartId
           items.push({
+            cartId: generateCartId(),
             productId,
             sellerId,
             hasVariants,
@@ -187,7 +196,6 @@ export const useCart = () => {
 
   const clearError = () => setCartError(null);
 
-
   const getItemStock = async (
     productId: string,
     variantId?: string
@@ -201,17 +209,14 @@ export const useCart = () => {
 
       const product = productDoc.data() as Product;
 
-    
       if (product.availability !== 'available') {
         return 0;
       }
 
-  
       if (variantId && product.variants) {
         const variant = product.variants.find(v => v.id === variantId);
         return variant?.stock || 0;
       }
-
 
       return product.quantity || 0;
     } catch (error) {
@@ -220,36 +225,20 @@ export const useCart = () => {
     }
   };
 
-
   const updateCartItemQuantity = async (
     userId: string,
-    productId: string,
-    variantId: string | undefined,
+    cartId: string,
     newQuantity: number
   ): Promise<{ success: boolean; message?: string; stock?: number }> => {
     try {
-    
       if (newQuantity < 0) {
         return { success: false, message: 'Invalid quantity' };
       }
 
-     
       if (newQuantity === 0) {
-        return await deleteCartItem(userId, productId, variantId);
+        return await deleteCartItem(userId, cartId);
       }
 
-      const availableStock = await getItemStock(productId, variantId);
-
-    
-      if (newQuantity > availableStock) {
-        return {
-          success: false,
-          message: `Only ${availableStock} items available in stock`,
-          stock: availableStock
-        };
-      }
-
-     
       const cartRef = doc(db, 'carts', userId);
       const cartSnap = await getDoc(cartRef);
 
@@ -259,23 +248,35 @@ export const useCart = () => {
 
       const cartData = cartSnap.data();
       const items = cartData.items as CartItem[];
+      console.log("cartId:", cartId);
+      console.log('Items in cart:', items);
+
+      const item = items.find(i => i.cartId == cartId);
+      if (!item) {
+        return { success: false, message: 'Item not found in cart' };
+      }
+
+      const availableStock = await getItemStock(item.productId, item.variantId || undefined);
+
+      if (newQuantity > availableStock) {
+        return {
+          success: false,
+          message: `Only ${availableStock} items available in stock`,
+          stock: availableStock
+        };
+      }
 
       const updatedItems = items.map((item) => {
-        const isMatch = item.productId === productId &&
-          item.variantId === variantId;
-
-        if (isMatch) {
+        if (item.cartId === cartId) {
           return {
             ...item,
             quantity: newQuantity,
-            updatedAt: new Date()
           };
         }
         return item;
       });
 
-      
-      await updateDoc(cartRef, { items: updatedItems });
+      await updateDoc(cartRef, { items: updatedItems, updatedAt: new Date() });
 
       return { success: true, message: 'Quantity updated successfully' };
     } catch (error) {
@@ -284,17 +285,29 @@ export const useCart = () => {
     }
   };
 
- 
   const incrementCartItemQuantity = async (
     userId: string,
-    productId: string,
-    variantId: string | undefined,
+    cartId: string,
     currentQuantity: number
   ): Promise<{ success: boolean; message?: string; stock?: number }> => {
     try {
-      const availableStock = await getItemStock(productId, variantId);
+      const cartRef = doc(db, 'carts', userId);
+      const cartSnap = await getDoc(cartRef);
 
-    
+      if (!cartSnap.exists()) {
+        return { success: false, message: 'Cart not found' };
+      }
+
+      const cartData = cartSnap.data();
+      const items = cartData.items as CartItem[];
+      const item = items.find(i => i.cartId === cartId);
+
+      if (!item) {
+        return { success: false, message: 'Item not found in cart' };
+      }
+
+      const availableStock = await getItemStock(item.productId, item.variantId || undefined);
+
       if (currentQuantity >= availableStock) {
         return {
           success: false,
@@ -305,8 +318,7 @@ export const useCart = () => {
 
       return await updateCartItemQuantity(
         userId,
-        productId,
-        variantId,
+        cartId,
         currentQuantity + 1
       );
     } catch (error) {
@@ -315,15 +327,12 @@ export const useCart = () => {
     }
   };
 
-
   const decrementCartItemQuantity = async (
     userId: string,
-    productId: string,
-    variantId: string | undefined,
+    cartId: string,
     currentQuantity: number
   ): Promise<{ success: boolean; message?: string }> => {
     try {
-      
       if (currentQuantity <= 1) {
         return {
           success: false,
@@ -333,8 +342,7 @@ export const useCart = () => {
 
       return await updateCartItemQuantity(
         userId,
-        productId,
-        variantId,
+        cartId,
         currentQuantity - 1
       );
     } catch (error) {
@@ -343,11 +351,9 @@ export const useCart = () => {
     }
   };
 
- 
   const deleteCartItem = async (
     userId: string,
-    productId: string,
-    variantId?: string
+    cartId: string
   ): Promise<{ success: boolean; message?: string }> => {
     try {
       const cartRef = doc(db, 'carts', userId);
@@ -360,22 +366,12 @@ export const useCart = () => {
       const cartData = cartSnap.data();
       const items = cartData.items as CartItem[];
 
-    
-      const updatedItems = items.filter((item) => {
-        const isMatch = item.productId === productId &&
-          item.variantId === variantId;
-        return !isMatch;
-      });
+      const updatedItems = items.filter((item) => item.cartId !== cartId);
 
-    
       if (updatedItems.length === 0) {
-        // Option 1: Keep cart with empty items array
-        await updateDoc(cartRef, { items: [] });
-
-        // Option 2: Delete cart document entirely (uncomment if preferred)
-        // await deleteDoc(cartRef);
+        await updateDoc(cartRef, { items: [], updatedAt: new Date() });
       } else {
-        await updateDoc(cartRef, { items: updatedItems });
+        await updateDoc(cartRef, { items: updatedItems, updatedAt: new Date() });
       }
 
       return { success: true, message: 'Item removed from cart' };
@@ -385,10 +381,9 @@ export const useCart = () => {
     }
   };
 
- 
   const deleteMultipleCartItems = async (
     userId: string,
-    itemsToDelete: Array<{ productId: string; variantId?: string }>
+    cartIds: string[]
   ): Promise<{ success: boolean; message?: string }> => {
     try {
       const cartRef = doc(db, 'carts', userId);
@@ -401,25 +396,17 @@ export const useCart = () => {
       const cartData = cartSnap.data();
       const items = cartData.items as CartItem[];
 
-   
-      const updatedItems = items.filter((item) => {
-        return !itemsToDelete.some(
-          (deleteItem) =>
-            deleteItem.productId === item.productId &&
-            deleteItem.variantId === item.variantId
-        );
-      });
+      const updatedItems = items.filter((item) => !cartIds.includes(item.cartId));
 
-      // Update cart
       if (updatedItems.length === 0) {
-        await updateDoc(cartRef, { items: [] });
+        await updateDoc(cartRef, { items: [], updatedAt: new Date() });
       } else {
-        await updateDoc(cartRef, { items: updatedItems });
+        await updateDoc(cartRef, { items: updatedItems, updatedAt: new Date() });
       }
 
       return {
         success: true,
-        message: `${itemsToDelete.length} item(s) removed from cart`
+        message: `${cartIds.length} item(s) removed from cart`
       };
     } catch (error) {
       console.error('Error deleting multiple items:', error);
@@ -427,26 +414,20 @@ export const useCart = () => {
     }
   };
 
-
   const clearCart = async (
     userId: string
   ): Promise<{ success: boolean; message?: string }> => {
     try {
       const cartRef = doc(db, 'carts', userId);
 
-    
-      await updateDoc(cartRef, { items: [] });
+      await updateDoc(cartRef, { items: [], updatedAt: new Date() });
 
-     
       return { success: true, message: 'Cart cleared successfully' };
     } catch (error) {
       console.error('Error clearing cart:', error);
       return { success: false, message: 'Failed to clear cart' };
     }
   };
-
-
- 
 
   return {
     loading,

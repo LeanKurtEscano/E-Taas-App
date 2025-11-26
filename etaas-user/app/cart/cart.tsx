@@ -72,7 +72,7 @@ export default function CartProductScreen() {
     }
   };
 
-  // Silent refresh function for quantity updates
+  
   const handleSilentUpdate = () => {
     fetchCartData(true);
   };
@@ -180,6 +180,7 @@ export default function CartProductScreen() {
               sellerId={sellerId} 
               items={items}
               userId={userData?.uid || ''}
+        
               onUpdate={handleSilentUpdate}
             />
           ))}

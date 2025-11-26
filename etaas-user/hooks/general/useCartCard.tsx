@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 import { router } from 'expo-router';
 import { db } from '@/config/firebaseConfig';
 import { useCart } from './useCart';
-import { CartItem,Product,ProductData,CheckoutItem } from '@/types/product/product';
-import { useMemo } from 'react';
+import { CartItem, Product, ProductData, CheckoutItem } from '@/types/product/product';
+
 export const useCartCard = (
   userId: string,
   sellerId: string,
@@ -21,7 +21,6 @@ export const useCartCard = (
 
   const { incrementCartItemQuantity, decrementCartItemQuantity, deleteCartItem } = useCart();
 
-
   useEffect(() => {
     fetchData();
   }, [sellerId, items]);
@@ -29,22 +28,22 @@ export const useCartCard = (
   useEffect(() => {
     const quantityMap = new Map<string, number>();
     items.forEach(item => {
-      const key = item.productId + (item.variantId || '');
-      quantityMap.set(key, item.quantity);
+      // Use cartId as the key instead of productId + variantId
+      quantityMap.set(item.cartId, item.quantity);
     });
     setLocalQuantities(quantityMap);
   }, [items]);
 
   const fetchData = async () => {
     try {
-     
+    
       const sellerDoc = await getDoc(doc(db, 'users', sellerId));
       if (sellerDoc.exists()) {
         const sellerData = sellerDoc.data() as { sellerInfo?: { shopName: string } };
         setShopName(sellerData.sellerInfo?.shopName || 'Unknown Shop');
       }
 
-    
+      // Fetch product data for each cart item
       const productsMap = new Map<string, ProductData>();
       for (const item of items) {
         const productDoc = await getDoc(doc(db, 'products', item.productId));
@@ -88,7 +87,8 @@ export const useCartCard = (
           };
         }
 
-        productsMap.set(item.productId + (item.variantId || ''), productData);
+        // Use cartId as the key
+        productsMap.set(item.cartId, productData);
       }
 
       setProductsData(productsMap);
@@ -99,23 +99,25 @@ export const useCartCard = (
     }
   };
 
-
   const handleIncrement = async (item: CartItem) => {
-    const key = item.productId + (item.variantId || '');
-    const currentLocalQty = localQuantities.get(key) || item.quantity;
-    setUpdatingQuantity(key);
+    const currentLocalQty = localQuantities.get(item.cartId) || item.quantity;
+    setUpdatingQuantity(item.cartId);
 
-    setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty + 1));
+    // Optimistically update local state
+    setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty + 1));
 
     try {
-      const result = await incrementCartItemQuantity(userId, item.productId, item.variantId, currentLocalQty);
-      if (result.success) onUpdate?.();
-      else {
-        setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty));
+      const result = await incrementCartItemQuantity(userId, item.cartId, currentLocalQty);
+      if (result.success) {
+        onUpdate?.();
+      } else {
+        // Revert on failure
+        setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
         Alert.alert('Stock Limit', result.message || 'Cannot increase quantity');
       }
     } catch (error) {
-      setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty));
+      // Revert on error
+      setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
       Alert.alert('Error', 'Failed to update quantity');
       console.error('Error incrementing quantity:', error);
     } finally {
@@ -124,26 +126,30 @@ export const useCartCard = (
   };
 
   const handleDecrement = async (item: CartItem) => {
-    const key = item.productId + (item.variantId || '');
-    const currentLocalQty = localQuantities.get(key) || item.quantity;
+    const currentLocalQty = localQuantities.get(item.cartId) || item.quantity;
 
     if (currentLocalQty === 1) {
       handleDeleteItem(item);
       return;
     }
 
-    setUpdatingQuantity(key);
-    setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty - 1));
+    setUpdatingQuantity(item.cartId);
+
+    // Optimistically update local state
+    setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty - 1));
 
     try {
-      const result = await decrementCartItemQuantity(userId, item.productId, item.variantId, currentLocalQty);
-      if (result.success) onUpdate?.();
-      else {
-        setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty));
+      const result = await decrementCartItemQuantity(userId, item.cartId, currentLocalQty);
+      if (result.success) {
+        onUpdate?.();
+      } else {
+        // Revert on failure
+        setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
         Alert.alert('Error', result.message || 'Cannot decrease quantity');
       }
     } catch (error) {
-      setLocalQuantities(prev => new Map(prev).set(key, currentLocalQty));
+      // Revert on error
+      setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
       Alert.alert('Error', 'Failed to update quantity');
       console.error('Error decrementing quantity:', error);
     } finally {
@@ -159,9 +165,12 @@ export const useCartCard = (
         style: 'destructive',
         onPress: async () => {
           try {
-            const result = await deleteCartItem(userId, item.productId, item.variantId);
-            if (result.success) onUpdate?.();
-            else Alert.alert('Error', result.message || 'Failed to remove item');
+            const result = await deleteCartItem(userId, item.cartId);
+            if (result.success) {
+              onUpdate?.();
+            } else {
+              Alert.alert('Error', result.message || 'Failed to remove item');
+            }
           } catch (error) {
             Alert.alert('Error', 'Failed to remove item. Please try again.');
             console.error('Error deleting item:', error);
@@ -171,11 +180,10 @@ export const useCartCard = (
     ]);
   };
 
-
-  const toggleItemSelection = (key: string) => {
+  const toggleItemSelection = (cartId: string) => {
     setSelectedItems(prev => {
       const newSet = new Set(prev);
-      newSet.has(key) ? newSet.delete(key) : newSet.add(key);
+      newSet.has(cartId) ? newSet.delete(cartId) : newSet.add(cartId);
       return newSet;
     });
   };
@@ -184,18 +192,17 @@ export const useCartCard = (
     if (selectedItems.size === items.length) {
       setSelectedItems(new Set());
     } else {
-      const allKeys = items.map(item => item.productId + (item.variantId || ''));
-      setSelectedItems(new Set(allKeys));
+      const allCartIds = items.map(item => item.cartId);
+      setSelectedItems(new Set(allCartIds));
     }
   };
 
   const calculateShopTotal = () => {
     let total = 0;
     items.forEach(item => {
-      const key = item.productId + (item.variantId || '');
-      const data = productsData.get(key);
-      const quantity = localQuantities.get(key) || item.quantity;
-      if (data && selectedItems.has(key)) {
+      const data = productsData.get(item.cartId);
+      const quantity = localQuantities.get(item.cartId) || item.quantity;
+      if (data && selectedItems.has(item.cartId)) {
         total += data.price * quantity;
       }
     });
@@ -209,14 +216,14 @@ export const useCartCard = (
     let totalAmount = 0;
 
     items.forEach(item => {
-      const key = item.productId + (item.variantId || '');
-      if (selectedItems.has(key)) {
-        const data = productsData.get(key);
-        const quantity = localQuantities.get(key) || item.quantity;
+      if (selectedItems.has(item.cartId)) {
+        const data = productsData.get(item.cartId);
+        const quantity = localQuantities.get(item.cartId) || item.quantity;
         if (data) {
           const itemTotal = data.price * quantity;
           totalAmount += itemTotal;
           checkoutItems.push({
+            cartId: item.cartId, // Include cartId for reference
             productId: item.productId,
             variantId: item.variantId || null,
             quantity,
@@ -247,13 +254,12 @@ export const useCartCard = (
   const shopTotal = calculateShopTotal();
   const allSelected = selectedItems.size === items.length && items.length > 0;
 
-   const isStockLow = useMemo(() => {
-    return [...productsData].some(([key, data]) => {
-      const localQty = localQuantities.get(key) || 0;
+  const isStockLow = useMemo(() => {
+    return [...productsData].some(([cartId, data]) => {
+      const localQty = localQuantities.get(cartId) || 0;
       return data.stock < localQty;
     });
   }, [productsData, localQuantities]);
-
 
   return {
     shopName,

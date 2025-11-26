@@ -39,6 +39,7 @@ export interface CartItem {
   quantity: number;
   sellerId: string;
   addedAt: any;
+  cartId: string;
   updatedAt: any;
 }
 
@@ -46,6 +47,7 @@ export interface CartCardProps {
   sellerId: string;
   items: CartItem[];
   userId: string;
+  
   onUpdate?: () => void;
 }
 
@@ -63,6 +65,7 @@ export interface ProductData {
 export interface CheckoutItem {
   productId: string;
   variantId?: string;
+  cartId?: string;
   quantity: number;
   price: number;
   productName: string;

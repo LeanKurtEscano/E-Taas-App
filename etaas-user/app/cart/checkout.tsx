@@ -135,8 +135,7 @@ export default function CheckoutScreen() {
         const updatedItems = currentItems.filter((cartItem: any) => {
           return !items.some(
             (checkedItem) =>
-              checkedItem.productId === cartItem.productId &&
-              checkedItem.variantId === cartItem.variantId
+             checkedItem.cartId === cartItem.cartId
           );
         });
 

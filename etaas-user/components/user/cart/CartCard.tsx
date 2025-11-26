@@ -8,7 +8,7 @@ import { ScrollView } from 'react-native';
 import { CartSkeleton } from '@/components/loader/CartSkeleton';
 import { useCartCard } from '@/hooks/general/useCartCard';
 
-export default function CartCard({ sellerId, items, userId, onUpdate }: CartCardProps) {
+export default function CartCard({ sellerId, items, userId, onUpdate}: CartCardProps) {
   const {
     shopName,
     productsData,
@@ -86,7 +86,7 @@ export default function CartCard({ sellerId, items, userId, onUpdate }: CartCard
 
       {/* Products List */}
       {items.map((item, index) => {
-        const key = item.productId + (item.variantId || '');
+        const key = item.cartId;
         const data = productsData.get(key);
         const isSelected = selectedItems.has(key);
         const isUpdating = updatingQuantity === key;
