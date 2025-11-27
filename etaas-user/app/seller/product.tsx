@@ -303,11 +303,25 @@ const ProductScreen: React.FC = () => {
           </Text>
           <View className="flex-row flex-wrap">
             {availabilityOptions.map((option) => {
-         
-               const isDisabled = 
-  (option === "out of stock" || option === "unavailable") &&
-  productQuantity > 0 || (option === "available" && productQuantity === 0);
+              const noVariants = hasVariants && variants.length === 0;
+              const allVariantsOut = hasVariants && variants.length > 0 && variants.every(v => v.stock === 0);
 
+              let isDisabled = false;
+
+              if (noVariants) {
+                // RULE 1: No variants → disable everything
+                isDisabled = true;
+
+              } else if (allVariantsOut) {
+                // RULE 2: All variants stock = 0 → ONLY allow unavailable & out of stock
+                isDisabled = !(option === "unavailable" || option === "out of stock");
+
+              } else {
+                // RULE 3: Normal behavior
+                isDisabled =
+                  ((option === "out of stock" || option === "unavailable") && productQuantity > 0) ||
+                  (option === "available" && productQuantity === 0);
+              }
 
               const isSelected = productAvailability === option;
 

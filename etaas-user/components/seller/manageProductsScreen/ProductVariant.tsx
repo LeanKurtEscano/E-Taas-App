@@ -10,6 +10,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { X, Plus, Trash2, Upload, Edit3, Check, X as XIcon, ChevronDown, ChevronUp, Square, CheckSquare } from 'lucide-react-native';
 import useVariant from '@/hooks/seller/useVariant';
@@ -45,7 +47,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
   initialVariants = [],
   basePrice,
 }) => {
-  const { 
+  const {
     step, setStep, categories, setCategories,
     variants, setVariants, currentCategoryName, setCurrentCategoryName,
     currentCategoryValues, setCurrentCategoryValues,
@@ -56,7 +58,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
     startEditingVariant, saveEditingVariant, cancelEditingVariant,
     pickVariantImage, removeVariantImage, handleSave, showCustomVariant, setShowCustomVariant,
     selectedCategoryValues, setSelectedCategoryValues, handleAddCustomVariant, handleCategoryValueSelect,
- 
+
     selectedVariantIds, isSelectionMode, toggleVariantSelection,
     selectAllVariants, deselectAllVariants, toggleSelectionMode, deleteSelectedVariants
   } = useVariant();
@@ -70,113 +72,129 @@ const VariantModal: React.FC<VariantModalProps> = ({
     }
   }, [visible, initialCategories, initialVariants]);
 
-   const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const renderCategorySetup = () => (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="p-6">
-        <Text className="text-xl font-bold text-gray-900 mb-4">
-          Variant Categories
-        </Text>
-        <Text className="text-sm text-gray-600 mb-6">
-          Add categories like Color, Size, Material, etc.
-        </Text>
+    <KeyboardAvoidingView
+      className="flex-1 bg-white"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="p-6">
+          <Text className="text-xl font-bold text-gray-900 mb-4">
+            Variant Categories
+          </Text>
+          <Text className="text-sm text-gray-600 mb-6">
+            Add categories like Color, Size, Material, etc.
+          </Text>
 
-        {categories.map((category) => (
-          <View
-            key={category.id}
-            className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200"
-          >
-            <View className="flex-row justify-between items-start mb-2">
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-900">
-                  {category.name}
-                </Text>
-                <Text className="text-sm text-gray-600 mt-1">
-                  {category.values.join(', ')}
-                </Text>
-              </View>
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => editCategory(category)}
-                  className="bg-blue-500 rounded-lg px-3 py-1.5"
-                >
-                  <Text className="text-white text-xs font-semibold">Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => removeCategory(category.id)}
-                  className="bg-red-500 rounded-lg p-1.5"
-                >
-                  <Trash2 size={16} color="white" />
-                </TouchableOpacity>
+          {categories.map((category) => (
+            <View
+              key={category.id}
+              className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200"
+            >
+              <View className="flex-row justify-between items-start mb-2">
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-gray-900">
+                    {category.name}
+                  </Text>
+                  <Text className="text-sm text-gray-600 mt-1">
+                    {category.values.join(', ')}
+                  </Text>
+                </View>
+                <View className="flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={() => editCategory(category)}
+                    className="bg-blue-500 rounded-lg px-3 py-1.5"
+                  >
+                    <Text className="text-white text-xs font-semibold">Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => removeCategory(category.id)}
+                    className="bg-red-500 rounded-lg p-1.5"
+                  >
+                    <Trash2 size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        {categories.length < 3 ? (
-          <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
-            <Text className="text-sm font-semibold text-gray-900 mb-3">
-              {editingCategoryId ? 'Edit Category' : 'Add New Category'}
-            </Text>
-            
-            <Text className="text-xs text-gray-600 mb-2">Category Name</Text>
-            <TextInput
-              className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border border-gray-200 mb-4"
-              placeholder="e.g., Color, Size, Material"
-              value={currentCategoryName}
-              onChangeText={setCurrentCategoryName}
-              placeholderTextColor="#9CA3AF"
-            />
+          {categories.length < 3 ? (
+            <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
+              <Text className="text-sm font-semibold text-gray-900 mb-3">
+                {editingCategoryId ? 'Edit Category' : 'Add New Category'}
+              </Text>
 
-            <Text className="text-xs text-gray-600 mb-2">
-              Values (comma-separated)
-            </Text>
-            <TextInput
-              className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border border-gray-200 mb-4"
-              placeholder="e.g., Red, Blue, Green"
-              value={currentCategoryValues}
-              onChangeText={setCurrentCategoryValues}
-              placeholderTextColor="#9CA3AF"
-              multiline
-            />
+              <Text className="text-xs text-gray-600 mb-2">Category Name</Text>
+              <TextInput
+                className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border border-gray-200 mb-4"
+                placeholder="e.g., Color, Size, Material"
+                value={currentCategoryName}
+                onChangeText={setCurrentCategoryName}
+                placeholderTextColor="#9CA3AF"
+              />
 
+              <Text className="text-xs text-gray-600 mb-2">
+                Values (comma-separated)
+              </Text>
+              <TextInput
+                className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border border-gray-200 mb-4"
+                placeholder="e.g., Red, Blue, Green"
+                value={currentCategoryValues}
+                onChangeText={setCurrentCategoryValues}
+                placeholderTextColor="#9CA3AF"
+                multiline
+              />
+
+
+
+
+            </View>
+          ) : null}
+
+          {categories.length > 0 && (
             <TouchableOpacity
-              onPress={handleSaveCategory}
-              className="bg-pink-500 rounded-lg py-3 items-center"
+              onPress={() => variants.length > 0 ? setStep(2) : handleGenerateVariants(basePrice)}
+              className={`${variants.length > 0 ? 'bg-pink-500' : 'bg-green-500'} rounded-xl py-4 items-center mb-4`}
             >
-              <Text className="text-white font-semibold text-sm">
-                {editingCategoryId ? 'Update Category' : 'Add Category'}
+              <Text className="text-white font-bold text-base">
+                {variants.length > 0 ? 'Edit Variants' : `Generate Variants (${generateCombinations(categories).length})`}
               </Text>
             </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
 
-            {editingCategoryId && (
-              <TouchableOpacity
-                onPress={() => {
-                  setCurrentCategoryName('');
-                  setCurrentCategoryValues('');
-                  setEditingCategoryId(null);
-                }}
-                className="mt-2 py-2 items-center"
-              >
-                <Text className="text-gray-600 text-sm">Cancel</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : null}
+      <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
 
-        {categories.length > 0 && (
+
+        <TouchableOpacity
+          onPress={handleSaveCategory}
+          className="bg-pink-500 rounded-lg py-4 items-center"
+        >
+          <Text className="text-white font-semibold text-sm">
+            {editingCategoryId ? 'Update Category' : 'Add Category'}
+          </Text>
+        </TouchableOpacity>
+
+        {editingCategoryId && (
           <TouchableOpacity
-            onPress={() => variants.length > 0 ? setStep(2) : handleGenerateVariants(basePrice)}
-            className={`${variants.length > 0 ? 'bg-pink-500' : 'bg-green-500'} rounded-xl py-4 items-center mb-4`}
+            onPress={() => {
+              setCurrentCategoryName('');
+              setCurrentCategoryValues('');
+              setEditingCategoryId(null);
+            }}
+            className="mt-2 py-2 items-center"
           >
-            <Text className="text-white font-bold text-base">
-              {variants.length > 0 ? 'Edit Variants' : `Generate Variants (${generateCombinations(categories).length})`} 
-            </Text>
+            <Text className="text-gray-600 text-sm">Cancel</Text>
           </TouchableOpacity>
         )}
+
+
       </View>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   const renderCustomVariantForm = () => (
@@ -208,18 +226,16 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <TouchableOpacity
                 key={value}
                 onPress={() => handleCategoryValueSelect(category.id, value)}
-                className={`px-3 py-2 rounded-lg border ${
-                  selectedCategoryValues[category.id] === value
+                className={`px-3 py-2 rounded-lg border ${selectedCategoryValues[category.id] === value
                     ? 'bg-pink-500 border-pink-500'
                     : 'bg-gray-50 border-gray-300'
-                }`}
+                  }`}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    selectedCategoryValues[category.id] === value
+                  className={`text-sm font-medium ${selectedCategoryValues[category.id] === value
                       ? 'text-white'
                       : 'text-gray-700'
-                  }`}
+                    }`}
                 >
                   {value}
                 </Text>
@@ -245,18 +261,16 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
       <TouchableOpacity
         onPress={() => handleAddCustomVariant(basePrice)}
-        className={`rounded-lg py-3 items-center ${
-          categories.every(category => selectedCategoryValues[category.id])
+        className={`rounded-lg py-3 items-center ${categories.every(category => selectedCategoryValues[category.id])
             ? 'bg-pink-500'
             : 'bg-gray-300'
-        }`}
+          }`}
         disabled={!categories.every(category => selectedCategoryValues[category.id])}
       >
-        <Text className={`font-semibold text-sm ${
-          categories.every(category => selectedCategoryValues[category.id])
+        <Text className={`font-semibold text-sm ${categories.every(category => selectedCategoryValues[category.id])
             ? 'text-white'
             : 'text-gray-500'
-        }`}>
+          }`}>
           Add Custom Variant
         </Text>
       </TouchableOpacity>
@@ -399,9 +413,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
           variants.map((variant, index) => (
             <View
               key={variant.id}
-              className={`bg-white rounded-lg p-4 mb-2 border ${
-                selectedVariantIds.has(variant.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
-              } flex-row items-center`}
+              className={`bg-white rounded-lg p-4 mb-2 border ${selectedVariantIds.has(variant.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
+                } flex-row items-center`}
             >
               {isSelectionMode && (
                 <TouchableOpacity
