@@ -1,9 +1,7 @@
-import { View, Text } from 'react-native'
-import React from 'react'
 import { useState } from 'react';
-import { Variant, VariantCategory } from '@/types/product/product';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Variant, VariantCategory } from '@/types/product/product';
 
 const useVariant = () => {
     const [step, setStep] = useState<1 | 2>(1);
@@ -18,7 +16,7 @@ const useVariant = () => {
     const [showCustomVariant, setShowCustomVariant] = useState(false);
     const [selectedCategoryValues, setSelectedCategoryValues] = useState<{[key: string]: string}>({});
     
-    // New states for bulk deletion
+    // Bulk deletion states
     const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
@@ -26,17 +24,44 @@ const useVariant = () => {
 
     const generateCombinations = (cats: VariantCategory[]): string[][] => {
         if (cats.length === 0) return [];
-
         const valueArrays = cats.map(cat => cat.values);
         const combinations = valueArrays.reduce(
             (acc, values) => acc.flatMap(combo => values.map(value => [...combo, value])),
             [[]] as string[][]
         );
-
         return combinations;
     };
 
-    const handleSaveCategory = () => {
+    // 🔥 NEW: Generate only MISSING variants (preserves existing data)
+    const generateMissingVariants = (cats: VariantCategory[], basePrice: number) => {
+        if (cats.length === 0) return;
+
+        const allCombinations = generateCombinations(cats);
+        const existingCombinationsSet = new Set(
+            variants.map(v => JSON.stringify(v.combination))
+        );
+
+        const newVariants: Variant[] = allCombinations
+            .filter(combo => !existingCombinationsSet.has(JSON.stringify(combo)))
+            .map(combo => ({
+                id: generateId(),
+                combination: combo,
+                price: basePrice,
+                stock: 0,
+                image: "",
+            }));
+
+        if (newVariants.length > 0) {
+            setVariants(prev => [...prev, ...newVariants]);
+            Alert.alert(
+                'Variants Added',
+                `${newVariants.length} new variant${newVariants.length !== 1 ? 's' : ''} generated. Existing variants preserved.`
+            );
+        }
+    };
+
+    // 🔥 NEW: Smart category save with incremental variant generation
+    const handleSaveCategory = (basePrice: number, onValueChange?: () => void) => {
         if (!currentCategoryName.trim()) {
             Alert.alert('Error', 'Please enter category name');
             return;
@@ -53,6 +78,27 @@ const useVariant = () => {
         }
 
         if (editingCategoryId) {
+            // Editing existing category
+            const oldCategory = categories.find(cat => cat.id === editingCategoryId);
+            if (!oldCategory) return;
+
+            const oldValues = new Set(oldCategory.values);
+            const newValues = new Set(values);
+            
+            // Find added and removed values
+            const addedValues = values.filter(v => !oldValues.has(v));
+            const removedValues = oldCategory.values.filter(v => !newValues.has(v));
+
+            if (removedValues.length > 0) {
+                // 🔥 Delete variants that use removed values
+                const categoryIndex = categories.findIndex(cat => cat.id === editingCategoryId);
+                setVariants(prev => prev.filter(variant => {
+                    const valueInThisCategory = variant.combination[categoryIndex];
+                    return !removedValues.includes(valueInThisCategory);
+                }));
+            }
+
+            // Update category
             setCategories(prev =>
                 prev.map(cat =>
                     cat.id === editingCategoryId
@@ -60,13 +106,35 @@ const useVariant = () => {
                         : cat
                 )
             );
+
+            // 🔥 Generate ONLY missing variants if values were added
+            if (addedValues.length > 0) {
+                const updatedCategories = categories.map(cat =>
+                    cat.id === editingCategoryId
+                        ? { ...cat, name: currentCategoryName.trim(), values }
+                        : cat
+                );
+                setTimeout(() => {
+                    generateMissingVariants(updatedCategories, basePrice);
+                    onValueChange?.();
+                }, 100);
+            }
+
         } else {
+            // Adding new category
             const newCategory: VariantCategory = {
                 id: generateId(),
                 name: currentCategoryName.trim(),
                 values,
             };
-            setCategories(prev => [...prev, newCategory]);
+            const updatedCategories = [...categories, newCategory];
+            setCategories(updatedCategories);
+
+            // 🔥 Generate ONLY missing variants
+            setTimeout(() => {
+                generateMissingVariants(updatedCategories, basePrice);
+                onValueChange?.();
+            }, 100);
         }
 
         setCurrentCategoryName('');
@@ -74,18 +142,21 @@ const useVariant = () => {
         setEditingCategoryId(null);
     };
 
-    const removeCategory = (id: string) => {
+    // 🔥 NEW: Remove category with confirmation (deletes ALL variants)
+    const removeCategory = (id: string, onConfirm?: () => void) => {
         Alert.alert(
-            'Remove Category',
-            'Are you sure you want to remove this category?',
+            '⚠️ Delete Category',
+            'Deleting this category will remove ALL existing variants because the variant structure will change. You will need to regenerate variants after.\n\nDo you want to continue?',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Remove',
+                    text: 'Delete Category',
                     style: 'destructive',
                     onPress: () => {
                         setCategories(prev => prev.filter(cat => cat.id !== id));
                         setVariants([]);
+                        onConfirm?.();
+                        Alert.alert('Category Deleted', 'All variants have been cleared. Please regenerate variants.');
                     },
                 },
             ]
@@ -98,29 +169,36 @@ const useVariant = () => {
         setEditingCategoryId(category.id);
     };
 
+    // 🔥 MANUAL: Full regeneration (replaces all variants)
     const handleGenerateVariants = (basePrice: number) => {
         if (categories.length === 0) {
             Alert.alert('Error', 'Please add at least one variant category');
             return;
         }
 
-        const combinations = generateCombinations(categories);
-        const newVariants: Variant[] = combinations.map(combo => {
-            const existing = variants.find(v =>
-                JSON.stringify(v.combination) === JSON.stringify(combo)
-            );
-
-            return existing || {
-                id: generateId(),
-                combination: combo,
-                price: basePrice,
-                stock: 0,
-                image: "",
-            };
-        });
-
-        setVariants(newVariants);
-        setStep(2);
+        Alert.alert(
+            'Regenerate All Variants',
+            'This will replace all existing variants with fresh ones. Any custom data (price, stock, images) will be reset.\n\nContinue?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Regenerate',
+                    onPress: () => {
+                        const combinations = generateCombinations(categories);
+                        const newVariants: Variant[] = combinations.map(combo => ({
+                            id: generateId(),
+                            combination: combo,
+                            price: basePrice,
+                            stock: 0,
+                            image: "",
+                        }));
+                        setVariants(newVariants);
+                        setStep(2);
+                        Alert.alert('Success', `Generated ${newVariants.length} variants`);
+                    },
+                },
+            ]
+        );
     };
 
     const updateVariant = (id: string, field: keyof Variant, value: any) => {
@@ -131,6 +209,7 @@ const useVariant = () => {
         );
     };
 
+    // Individual variant deletion
     const deleteVariant = (variantId: string) => {
         Alert.alert(
             'Delete Variant',
@@ -186,7 +265,6 @@ const useVariant = () => {
     const pickVariantImage = async (variantId: string) => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
             if (status !== 'granted') {
                 Alert.alert('Permission needed', 'Please grant camera roll permissions');
                 return;
@@ -268,6 +346,7 @@ const useVariant = () => {
         setVariants(prev => [...prev, newVariant]);
         setSelectedCategoryValues({});
         setShowCustomVariant(false);
+        Alert.alert('Success', 'Custom variant added');
     };
     
     const handleCategoryValueSelect = (categoryId: string, value: string) => {
@@ -277,7 +356,7 @@ const useVariant = () => {
         }));
     };
 
-    // New bulk deletion functions
+    // Bulk deletion functions
     const toggleVariantSelection = (variantId: string) => {
         setSelectedVariantIds(prev => {
             const newSet = new Set(prev);
@@ -368,7 +447,6 @@ const useVariant = () => {
         setShowCustomVariant,
         selectedCategoryValues,
         setSelectedCategoryValues,
-        // Bulk deletion exports
         selectedVariantIds,
         isSelectionMode,
         toggleVariantSelection,
@@ -376,7 +454,8 @@ const useVariant = () => {
         deselectAllVariants,
         toggleSelectionMode,
         deleteSelectedVariants,
+        generateMissingVariants,
     }
 }
 
-export default useVariant
+export default useVariant;

@@ -1,5 +1,5 @@
 // components/VariantModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,12 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { X, Plus, Trash2, Upload, Edit3, Check, X as XIcon, ChevronDown, ChevronUp, Square, CheckSquare } from 'lucide-react-native';
+import { X, Plus, Trash2, Upload, Edit3, Check, X as XIcon, Square, CheckSquare, RefreshCw } from 'lucide-react-native';
 import useVariant from '@/hooks/seller/useVariant';
-import { useRef } from 'react';
+
 export interface VariantCategory {
   id: string;
   name: string;
@@ -53,15 +52,17 @@ const VariantModal: React.FC<VariantModalProps> = ({
     currentCategoryValues, setCurrentCategoryValues,
     editingCategoryId, setEditingCategoryId,
     editingVariantId, setEditingVariantId, editPrice, setEditPrice,
-    editStock, setEditStock, handleSaveCategory, removeCategory, generateCombinations,
+    editStock, setEditStock, handleSaveCategory, removeCategory,
     editCategory, handleGenerateVariants, updateVariant, deleteVariant,
     startEditingVariant, saveEditingVariant, cancelEditingVariant,
     pickVariantImage, removeVariantImage, handleSave, showCustomVariant, setShowCustomVariant,
     selectedCategoryValues, setSelectedCategoryValues, handleAddCustomVariant, handleCategoryValueSelect,
-
     selectedVariantIds, isSelectionMode, toggleVariantSelection,
-    selectAllVariants, deselectAllVariants, toggleSelectionMode, deleteSelectedVariants
+    selectAllVariants, deselectAllVariants, toggleSelectionMode, deleteSelectedVariants,
+    generateCombinations
   } = useVariant();
+
+  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -69,6 +70,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
       setVariants(initialVariants);
       setStep(initialCategories.length > 0 ? 2 : 1);
       setSelectedCategoryValues({});
+      setHasGeneratedOnce(initialVariants.length > 0);
     }
   }, [visible, initialCategories, initialVariants]);
 
@@ -86,7 +88,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             Variant Categories
           </Text>
           <Text className="text-sm text-gray-600 mb-6">
-            Add categories like Color, Size, Material, etc.
+            Add categories like Color, Size, Material, etc. New values will automatically generate missing variants.
           </Text>
 
           {categories.map((category) => (
@@ -121,7 +123,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </View>
           ))}
 
-          {categories.length < 3 ? (
+         {categories.length < 3 || editingCategoryId ? (
             <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
               <Text className="text-sm font-semibold text-gray-900 mb-3">
                 {editingCategoryId ? 'Edit Category' : 'Add New Category'}
@@ -147,53 +149,78 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 placeholderTextColor="#9CA3AF"
                 multiline
               />
-
-
-
-
             </View>
-          ) : null}
+          ) : (
+            null
+          )}
 
-          {categories.length > 0 && (
+          {categories.length > 0 && variants.length > 0 && (
             <TouchableOpacity
-              onPress={() => variants.length > 0 ? setStep(2) : handleGenerateVariants(basePrice)}
-              className={`${variants.length > 0 ? 'bg-pink-500' : 'bg-green-500'} rounded-xl py-4 items-center mb-4`}
+              onPress={() => setStep(2)}
+              className="bg-pink-500 rounded-xl py-4 items-center mb-4"
             >
               <Text className="text-white font-bold text-base">
-                {variants.length > 0 ? 'Edit Variants' : `Generate Variants (${generateCombinations(categories).length})`}
+                View & Edit Variants ({variants.length})
               </Text>
             </TouchableOpacity>
+          )}
+
+          {categories.length > 0 && variants.length === 0 && (
+            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <Text className="text-blue-900 font-semibold mb-2">
+                💡 Ready to Generate Variants
+              </Text>
+              <Text className="text-blue-700 text-sm mb-3">
+                You have {generateCombinations(categories).length} possible combinations. Click below to generate them all.
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleGenerateVariants(basePrice)}
+                className="bg-green-500 rounded-lg py-3 items-center flex-row justify-center"
+              >
+                <RefreshCw size={18} color="white" />
+                <Text className="text-white font-semibold text-sm ml-2">
+                  Generate All Variants ({generateCombinations(categories).length})
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </ScrollView>
 
-      <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
+<View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
 
+  <TouchableOpacity
+    disabled={categories.length >= 3 && !editingCategoryId}
+    onPress={() => handleSaveCategory(basePrice, () => {
+      if (variants.length > 0) {
+        setTimeout(() => setStep(2), 300);
+      }
+    })}
+    className={`rounded-lg py-4 items-center 
+      ${categories.length >= 3 && !editingCategoryId 
+        ? 'bg-gray-300' 
+        : 'bg-pink-500'
+      }`}
+  >
+    <Text className="text-white font-semibold text-sm">
+      {editingCategoryId ? 'Update Category' : 'Add Category'}
+    </Text>
+  </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handleSaveCategory}
-          className="bg-pink-500 rounded-lg py-4 items-center"
-        >
-          <Text className="text-white font-semibold text-sm">
-            {editingCategoryId ? 'Update Category' : 'Add Category'}
-          </Text>
-        </TouchableOpacity>
+  {editingCategoryId && (
+    <TouchableOpacity
+      onPress={() => {
+        setCurrentCategoryName('');
+        setCurrentCategoryValues('');
+        setEditingCategoryId(null);
+      }}
+      className="mt-2 py-2 items-center"
+    >
+      <Text className="text-gray-600 text-sm">Cancel</Text>
+    </TouchableOpacity>
+  )}
+</View>
 
-        {editingCategoryId && (
-          <TouchableOpacity
-            onPress={() => {
-              setCurrentCategoryName('');
-              setCurrentCategoryValues('');
-              setEditingCategoryId(null);
-            }}
-            className="mt-2 py-2 items-center"
-          >
-            <Text className="text-gray-600 text-sm">Cancel</Text>
-          </TouchableOpacity>
-        )}
-
-
-      </View>
     </KeyboardAvoidingView>
   );
 
@@ -294,20 +321,47 @@ const VariantModal: React.FC<VariantModalProps> = ({
             className="bg-gray-200 rounded-lg px-4 py-2"
           >
             <Text className="text-gray-700 font-semibold text-xs">
-              Edit Categories
+              Manage Categories
             </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => setShowCustomVariant(!showCustomVariant)}
-          className="bg-blue-500 rounded-xl py-3 px-4 items-center flex-row justify-center mb-4"
-        >
-          <Plus size={20} color="white" />
-          <Text className="text-white font-semibold text-sm ml-2">
-            {showCustomVariant ? 'Cancel Custom Variant' : 'Add Custom Variant'}
-          </Text>
-        </TouchableOpacity>
+        {categories.length > 0 && (
+          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+            <Text className="text-blue-900 font-semibold text-sm mb-2">
+              ✨ Smart Variant Management
+            </Text>
+            <Text className="text-blue-700 text-xs leading-5">
+              • Adding new values automatically generates missing variants{'\n'}
+              • Existing variant data (price, stock, images) is preserved{'\n'}
+              • Only delete categories if you want to start fresh
+            </Text>
+          </View>
+        )}
+
+        <View className="flex-row gap-2 mb-4">
+          <TouchableOpacity
+            onPress={() => setShowCustomVariant(!showCustomVariant)}
+            className="flex-1 bg-blue-500 rounded-xl py-3 px-4 items-center flex-row justify-center"
+          >
+            <Plus size={20} color="white" />
+            <Text className="text-white font-semibold text-sm ml-2">
+              Custom Variant
+            </Text>
+          </TouchableOpacity>
+
+          {variants.length > 0 && (
+            <TouchableOpacity
+              onPress={() => handleGenerateVariants(basePrice)}
+              className="flex-1 bg-orange-500 rounded-xl py-3 px-4 items-center flex-row justify-center"
+            >
+              <RefreshCw size={18} color="white" />
+              <Text className="text-white font-semibold text-sm ml-2">
+                Regenerate All
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {showCustomVariant && renderCustomVariantForm()}
 
@@ -386,7 +440,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           <View className="bg-gray-100 rounded-lg p-4 mb-2 flex-row border border-gray-200">
             {isSelectionMode && (
               <View className="w-12 ">
-                <Text className="text-xs font-bold text-gray-700  uppercase text-center">Select</Text>
+                <Text className="text-xs font-bold text-gray-700 uppercase text-center">Select</Text>
               </View>
             )}
             <View className="flex-1">
@@ -542,28 +596,30 @@ const VariantModal: React.FC<VariantModalProps> = ({
         ) : (
           <View className="bg-gray-50 rounded-lg p-8 items-center justify-center border border-dashed border-gray-300">
             <Text className="text-gray-500 text-lg font-medium mb-2">
-              No Variants Generated
+              No Variants Yet
             </Text>
             <Text className="text-gray-400 text-sm text-center mb-4">
-              Generate variants from your categories or add custom variants
+              Go back to categories and add values, or generate all variants at once
             </Text>
             <View className="flex-row gap-3">
               <TouchableOpacity
-                onPress={() => setShowCustomVariant(true)}
+                onPress={() => setStep(1)}
                 className="bg-white border border-pink-500 rounded-lg px-6 py-3"
               >
                 <Text className="text-pink-500 font-semibold text-sm">
-                  Add Custom
+                  Manage Categories
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleGenerateVariants(basePrice)}
-                className="bg-pink-500 rounded-lg px-6 py-3"
-              >
-                <Text className="text-white font-semibold text-sm">
-                  Generate All
-                </Text>
-              </TouchableOpacity>
+              {categories.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => handleGenerateVariants(basePrice)}
+                  className="bg-pink-500 rounded-lg px-6 py-3"
+                >
+                  <Text className="text-white font-semibold text-sm">
+                    Generate All
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
