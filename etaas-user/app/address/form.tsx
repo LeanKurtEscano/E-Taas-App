@@ -1,5 +1,5 @@
-// app/address/new.tsx
-import React, { useState, useRef } from 'react';
+// app/address/form.tsx
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,7 +12,7 @@ import {
   Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
@@ -45,7 +45,17 @@ interface Coordinates {
   longitude: number;
 }
 
-export default function AddNewAddressScreen() {
+interface Address extends AddressForm {
+  id: string;
+  coordinates?: Coordinates | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function AddressFormScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEditMode = !!id;
+  
   const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
   const [form, setForm] = useState<AddressForm>({
     fullName: '',
@@ -58,8 +68,11 @@ export default function AddNewAddressScreen() {
     isDefault: false
   });
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
+  const [tempForm, setTempForm] = useState<AddressForm | null>(null);
+  const [tempCoordinates, setTempCoordinates] = useState<Coordinates | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+  const [saving, setSaving] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -69,6 +82,7 @@ export default function AddNewAddressScreen() {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
+  const [originalAddress, setOriginalAddress] = useState<Address | null>(null);
   
   const { userData } = useCurrentUser();
   const inputRefs = {
@@ -78,6 +92,55 @@ export default function AddNewAddressScreen() {
     city: useRef<TextInput>(null),
     barangay: useRef<TextInput>(null),
     streetAddress: useRef<TextInput>(null),
+  };
+
+  useEffect(() => {
+    if (isEditMode && userData?.uid && id) {
+      fetchAddressData();
+    }
+  }, [userData?.uid, id]);
+
+  const fetchAddressData = async () => {
+    try {
+      if (!userData || !id) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const userRef = doc(db, 'users', userData.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const addressList = data.addressesList || [];
+        const address = addressList.find((addr: Address) => addr.id === id);
+
+        if (address) {
+          setOriginalAddress(address);
+          setForm({
+            fullName: address.fullName || '',
+            phoneNumber: address.phoneNumber || '',
+            region: address.region || '',
+            province: address.province || '',
+            city: address.city || '',
+            barangay: address.barangay || '',
+            streetAddress: address.streetAddress || '',
+            isDefault: address.isDefault || false
+          });
+          setCoordinates(address.coordinates || null);
+        } else {
+          showToast('Address not found', 'error');
+          setTimeout(() => router.back(), 1500);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      showToast('Failed to load address data', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateForm = (field: keyof AddressForm, value: string | boolean) => {
@@ -114,7 +177,7 @@ export default function AddNewAddressScreen() {
     }
   };
 
-  const reverseGeocode = async (latitude: number, longitude: number) => {
+  const reverseGeocode = async (latitude: number, longitude: number, isTemp: boolean = false) => {
     try {
       setLoadingAddress(true);
       const [address] = await Location.reverseGeocodeAsync({
@@ -123,11 +186,28 @@ export default function AddNewAddressScreen() {
       });
 
       if (address) {
-        updateForm('region', address.region || '');
-        updateForm('province', address.region || '');
-        updateForm('city', address.city || '');
-        updateForm('barangay', address.district || address.street || '');
-        updateForm('streetAddress', address.name || address.street || '');
+        const addressData = {
+          region: address.region || '',
+          province: address.region || '',
+          city: address.city || '',
+          barangay: address.district || address.street || '',
+          streetAddress: address.name || address.street || ''
+        };
+
+        if (isTemp) {
+          // Update temporary form data
+          setTempForm(prev => ({
+            ...(prev || form),
+            ...addressData
+          }));
+        } else {
+          // Update main form
+          updateForm('region', addressData.region);
+          updateForm('province', addressData.province);
+          updateForm('city', addressData.city);
+          updateForm('barangay', addressData.barangay);
+          updateForm('streetAddress', addressData.streetAddress);
+        }
       }
     } catch (error) {
       console.error('Error reverse geocoding:', error);
@@ -156,14 +236,19 @@ export default function AddNewAddressScreen() {
         longitude: location.coords.longitude
       };
 
-      setCoordinates(coords);
+      // Set temp coordinates for the map
+      setTempCoordinates(coords);
       setMapRegion({
         ...coords,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       });
 
-      await reverseGeocode(coords.latitude, coords.longitude);
+      // Initialize temp form with current form data
+      setTempForm({ ...form });
+      
+      // Fetch address but store in temp
+      await reverseGeocode(coords.latitude, coords.longitude, true);
       setShowMap(true);
       showToast('Location loaded successfully', 'success');
     } catch (error) {
@@ -176,17 +261,38 @@ export default function AddNewAddressScreen() {
 
   const handleMapDragEnd = async (e: any) => {
     const { latitude, longitude } = e.nativeEvent.coordinate;
-    setCoordinates({ latitude, longitude });
-    await reverseGeocode(latitude, longitude);
+    setTempCoordinates({ latitude, longitude });
+    await reverseGeocode(latitude, longitude, true);
   };
 
   const handleConfirmLocation = () => {
-    if (!coordinates) {
+    if (!tempCoordinates) {
       showToast('Please select a location', 'error');
       return;
     }
+    
+    // Apply temp data to main form
+    setCoordinates(tempCoordinates);
+    if (tempForm) {
+      setForm(prev => ({
+        ...prev,
+        region: tempForm.region,
+        province: tempForm.province,
+        city: tempForm.city,
+        barangay: tempForm.barangay,
+        streetAddress: tempForm.streetAddress
+      }));
+    }
+    
     setShowMap(false);
     showToast('Location confirmed', 'success');
+  };
+
+  const handleCancelMap = () => {
+    // Reset temp data
+    setTempForm(null);
+    setTempCoordinates(null);
+    setShowMap(false);
   };
 
   const validateForm = (): boolean => {
@@ -245,7 +351,7 @@ export default function AddNewAddressScreen() {
     if (!validateForm()) return;
 
     try {
-      setLoading(true);
+      setSaving(true);
   
       if (!userData) {
         showToast('You must be logged in to save an address', 'error');
@@ -256,38 +362,90 @@ export default function AddNewAddressScreen() {
       const userSnap = await getDoc(userRef);
       const existingAddresses = userSnap.exists() ? (userSnap.data().addressesList || []) : [];
 
-      let updatedAddresses = existingAddresses;
-      if (form.isDefault) {
-        updatedAddresses = existingAddresses.map((addr: any) => ({
-          ...addr,
-          isDefault: false,
+      let updatedAddresses = [...existingAddresses];
+
+      if (isEditMode && id && originalAddress) {
+        // Edit mode - update existing address
+        updatedAddresses = existingAddresses.map((addr: Address) => {
+          if (addr.id === id) {
+            return {
+              ...addr,
+              ...form,
+              coordinates: coordinates || null,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          // If this address is being set as default, unset others
+          if (form.isDefault && addr.isDefault && addr.id !== id) {
+            return {
+              ...addr,
+              isDefault: false,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return addr;
+        });
+      } else {
+        // Add mode - create new address
+        if (form.isDefault) {
+          updatedAddresses = existingAddresses.map((addr: any) => ({
+            ...addr,
+            isDefault: false,
+            updatedAt: new Date().toISOString()
+          }));
+        }
+
+        const newAddress = {
+          id: Date.now().toString(),
+          ...form,
+          coordinates: coordinates || null,
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        }));
+        };
+
+        updatedAddresses.push(newAddress);
       }
-
-      const newAddress = {
-        id: Date.now().toString(),
-        ...form,
-        coordinates: coordinates || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      updatedAddresses.push(newAddress);
 
       await updateDoc(userRef, {
         addressesList: updatedAddresses
       });
 
-      showToast('Address saved successfully', 'success');
-      router.back();
+      showToast(
+        isEditMode ? 'Address updated successfully' : 'Address saved successfully', 
+        'success'
+      );
+      
+      setTimeout(() => router.back(), 1000);
     } catch (error) {
       console.error('Error saving address:', error);
       showToast('Failed to save address. Please try again.', 'error');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="bg-white px-4 py-3 border-b border-gray-100">
+          <View className="flex-row items-center">
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              className="w-10 h-10 items-center justify-center mr-3"
+            >
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-gray-900">
+              {isEditMode ? 'Edit Address' : 'Add New Address'}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#EC4899" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -300,7 +458,9 @@ export default function AddNewAddressScreen() {
           >
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-900">Add New Address</Text>
+          <Text className="text-xl font-bold text-gray-900">
+            {isEditMode ? 'Edit Address' : 'Add New Address'}
+          </Text>
         </View>
       </View>
 
@@ -365,11 +525,21 @@ export default function AddNewAddressScreen() {
               <>
                 <Ionicons name="location" size={20} color="#EC4899" />
                 <Text className="text-pink-500 font-semibold text-base ml-2">
-                  Use My Current Location
+                  {coordinates ? 'Update Location' : 'Use My Current Location'}
                 </Text>
               </>
             )}
           </TouchableOpacity>
+
+          {/* Show current coordinates if available */}
+          {coordinates && (
+            <View className="bg-blue-50 rounded-lg p-3 mb-3 flex-row items-center">
+              <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+              <Text className="text-blue-700 text-sm ml-2 flex-1">
+                Location coordinates saved
+              </Text>
+            </View>
+          )}
 
           {/* Address Details */}
           <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
@@ -482,89 +652,109 @@ export default function AddNewAddressScreen() {
         <View className="bg-white border-t border-gray-100 px-4 py-3">
           <TouchableOpacity
             onPress={handleSaveAddress}
-            disabled={loading}
+            disabled={saving}
             className="bg-pink-500 py-3.5 rounded-xl shadow-sm"
             activeOpacity={0.8}
           >
-            {loading ? (
+            {saving ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
               <Text className="text-white font-bold text-center text-base">
-                Save Address
+                {isEditMode ? 'Update Address' : 'Save Address'}
               </Text>
             )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
-      {/* Map Modal */}
       <Modal
         visible={showMap}
         animationType="slide"
-        onRequestClose={() => setShowMap(false)}
+        onRequestClose={handleCancelMap}
+        presentationStyle="fullScreen"
       >
-        <SafeAreaView className="flex-1 bg-white">
-          <View className="bg-white px-4 py-3 border-b border-gray-200 flex-row items-center justify-between">
-            <TouchableOpacity onPress={() => setShowMap(false)}>
-              <Ionicons name="close" size={24} color="#1F2937" />
-            </TouchableOpacity>
-            <Text className="text-lg font-bold text-gray-900">Select Location</Text>
-            <TouchableOpacity onPress={handleConfirmLocation}>
-              <Text className="text-pink-500 font-semibold">Confirm</Text>
-            </TouchableOpacity>
-          </View>
+       
+          <SafeAreaView style={{ flex: 1 }}>
+            {/* Header */}
+            <View className="bg-white px-4 py-3 border-b border-gray-200 flex-row items-center justify-between">
+              <TouchableOpacity onPress={handleCancelMap} className="p-2 -ml-2">
+                <Ionicons name="close" size={28} color="#1F2937" />
+              </TouchableOpacity>
+              <Text className="text-lg font-bold text-gray-900">Select Location</Text>
+              <TouchableOpacity onPress={handleConfirmLocation} className="p-2 -mr-2">
+                <Text className="text-pink-500 font-semibold text-base">Confirm</Text>
+              </TouchableOpacity>
+            </View>
 
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            style={{ flex: 1 }}
-            region={mapRegion}
-            onRegionChangeComplete={setMapRegion}
-          >
-            {coordinates && (
-              <Marker
-                coordinate={coordinates}
-                draggable
-                onDragEnd={handleMapDragEnd}
-                title="Your Location"
+            {/* Map Container */}
+            <View style={{ flex: 1 }}>
+              <MapView
+                provider={PROVIDER_GOOGLE}
+                style={{ width: '100%', height: '100%' }}
+                initialRegion={mapRegion}
+                scrollEnabled={true}
+                zoomEnabled={true}
+                pitchEnabled={false}
+                rotateEnabled={false}
+                showsUserLocation={true}
+                showsMyLocationButton={false}
+                toolbarEnabled={false}
+                moveOnMarkerPress={false}
               >
-                <View className="items-center">
-                  <Ionicons name="location-sharp" size={40} color="#EC4899" />
-                </View>
-              </Marker>
-            )}
-          </MapView>
+                {tempCoordinates && (
+                  <Marker
+                    coordinate={tempCoordinates}
+                    draggable
+                    onDragEnd={handleMapDragEnd}
+                    title="Your Location"
+                  >
+                    <View className="items-center">
+                      <Ionicons name="location-sharp" size={40} color="#EC4899" />
+                    </View>
+                  </Marker>
+                )}
+              </MapView>
 
-          {/* Address Info Card */}
-          <View className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-lg">
-            {loadingAddress ? (
-              <View className="flex-row items-center justify-center py-4">
-                <ActivityIndicator size="small" color="#EC4899" />
-                <Text className="text-gray-600 ml-2">Fetching address...</Text>
-              </View>
-            ) : (
-              <>
-                <View className="flex-row items-start">
-                  <Ionicons name="location" size={20} color="#EC4899" style={{ marginTop: 2 }} />
-                  <View className="flex-1 ml-2">
-                    <Text className="text-sm font-semibold text-gray-900">
-                      {form.streetAddress || 'Address not found'}
-                    </Text>
-                    <Text className="text-xs text-gray-500 mt-1">
-                      {[form.barangay, form.city, form.province]
-                        .filter(Boolean)
-                        .join(', ') || 'Move the pin to select location'}
-                    </Text>
+              {/* Address Info Card - Overlay */}
+              <View 
+                style={{ 
+                  position: 'absolute', 
+                  bottom: 0, 
+                  left: 0, 
+                  right: 0 
+                }}
+                className="bg-white p-4 border-t border-gray-200 "
+              >
+                {loadingAddress ? (
+                  <View className="flex-row items-center justify-center py-4">
+                    <ActivityIndicator size="small" color="#EC4899" />
+                    <Text className="text-gray-600 ml-2">Fetching address...</Text>
                   </View>
-                </View>
-                <Text className="text-xs text-gray-400 mt-3 text-center">
-                  Drag the pin to adjust your exact location
-                </Text>
-              </>
-            )}
-          </View>
-        </SafeAreaView>
+                ) : (
+                  <>
+                    <View className="flex-row items-start">
+                      <Ionicons name="location" size={20} color="#EC4899" style={{ marginTop: 2 }} />
+                      <View className="flex-1 ml-2">
+                        <Text className="text-sm font-semibold text-gray-900">
+                          {tempForm?.streetAddress || 'Address not found'}
+                        </Text>
+                        <Text className="text-xs text-gray-500 mt-1">
+                          {[tempForm?.barangay, tempForm?.city, tempForm?.province]
+                            .filter(Boolean)
+                            .join(', ') || 'Move the pin to select location'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-xs text-gray-400 mt-3 text-center">
+                      Drag the pin to adjust your exact location
+                    </Text>
+                  </>
+                )}
+              </View>
+            </View>
+          </SafeAreaView>
+      
       </Modal>
-
       <GeneralToast
         visible={toastVisible}
         message={toastMessage}

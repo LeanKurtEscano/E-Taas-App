@@ -61,7 +61,7 @@ export default function AddressListScreen() {
                     </View>
 
                     <TouchableOpacity
-                        onPress={() => router.push('/address/new')}
+                        onPress={() => router.push('/address/form')}
                         className="flex-row items-center bg-pink-500 rounded-lg"
                         style={{ 
                             paddingHorizontal: isSmallDevice ? wp(2.5) : wp(3),
@@ -123,7 +123,7 @@ export default function AddressListScreen() {
                         Add a shipping address to complete your orders
                     </Text>
                     <TouchableOpacity
-                        onPress={() => router.push('/address/new')}
+                        onPress={() => router.push('/address/form')}
                         className="bg-pink-500 rounded-xl"
                         style={{
                             paddingHorizontal: wp(6),
@@ -244,7 +244,7 @@ export default function AddressListScreen() {
                                 }}
                             >
                                 <TouchableOpacity
-                                    onPress={() => router.push(`/address/edit?id=${address.id}` as any)}
+                                    onPress={() => router.push(`/address/form?id=${address.id}` as any)}
                                     className="flex-row items-center"
                                     style={{ marginRight: wp(4) }}
                                     activeOpacity={0.7}
