@@ -691,6 +691,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
       </View>
+      
+      <GeneralToast
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        message={toastMessage}
+        type={toastType}
+  
+      />
     </ScrollView>
   );
 

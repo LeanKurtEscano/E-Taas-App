@@ -111,7 +111,7 @@ const useVariant = () => {
             showToast(categoryValuesError, 'error');
             return;
         }
-        
+
         const values = currentCategoryValues
             .split(',')
             .map(v => v.trim())
@@ -271,15 +271,23 @@ const useVariant = () => {
             const price = parseFloat(editPrice) || 0;
             const stock = parseInt(editStock) || 0;
 
-            if (price <= 0) {
-                Alert.alert('Error', 'Price must be greater than 0');
+            const priceError = validatePrice(price);
+            const stockError = validateStock(stock);
+
+            if (priceError) {
+                showToast(priceError, 'error');
+                 
+                return;
+            }
+              
+            if (stockError) {
+                showToast(stockError, 'error');
                 return;
             }
 
-            if (stock < 0) {
-                Alert.alert('Error', 'Stock cannot be negative');
-                return;
-            }
+              rowErrorsRef.current[Number(editingVariantId)] = Boolean(priceError || stockError);
+
+   
 
             updateVariant(editingVariantId, 'price', price);
             updateVariant(editingVariantId, 'stock', stock);
@@ -384,7 +392,7 @@ const useVariant = () => {
         );
 
         if (exists) {
-            Alert.alert('Error', 'This variant combination already exists');
+            showToast('This variant combination already exists', 'error');
             return;
         }
 
@@ -399,7 +407,7 @@ const useVariant = () => {
         setVariants(prev => [...prev, newVariant]);
         setSelectedCategoryValues({});
         setShowCustomVariant(false);
-        Alert.alert('Success', 'Custom variant added');
+        showToast('Custom variant added', 'success');
     };
 
     const handleCategoryValueSelect = (categoryId: string, value: string) => {
@@ -440,7 +448,7 @@ const useVariant = () => {
 
     const deleteSelectedVariants = () => {
         if (selectedVariantIds.size === 0) {
-            Alert.alert('Error', 'Please select at least one variant to delete');
+            showToast('Please select at least one variant to delete', 'error');
             return;
         }
 
