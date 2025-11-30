@@ -16,7 +16,8 @@ const useOrder = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'>('all');
-
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const { sendNotification } = useNotification();
   useEffect(() => {
     if (!userData) return;
@@ -72,6 +73,9 @@ const useOrder = () => {
       orderId
     );
 
+    setOrderToCancel(null);
+    setShowCancelModal(false);
+
     showToast('Order cancelled successfully', 'success');
   } catch (error) {
     console.error('Error cancelling order:', error);
@@ -112,7 +116,8 @@ const useOrder = () => {
     selectedTab, setSelectedTab,
      tabs, getTabIcon, 
     handleCancelOrder, toastVisible, toastMessage, toastType, 
-    showToast, setToastMessage, setToastType, setToastVisible };
+    showToast, setToastMessage, setToastType, setToastVisible , 
+    showCancelModal, setShowCancelModal, orderToCancel, setOrderToCancel};
 }
 
 export default useOrder

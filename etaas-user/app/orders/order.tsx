@@ -11,6 +11,7 @@ import { formatDate } from '@/utils/general/formatDate';
 import { getStatusIcon } from '@/utils/general/getStatus';
 
 import useOrder from '@/hooks/general/useOrder';
+import ReusableModal from '@/components/general/Modal';
 
 export default function MyOrdersScreen() {
   const {
@@ -18,7 +19,7 @@ export default function MyOrdersScreen() {
     selectedTab, setSelectedTab,
     tabs, getTabIcon, 
     handleCancelOrder, toastVisible, toastMessage, toastType, 
-    setToastVisible
+    setToastVisible, showCancelModal, setShowCancelModal, orderToCancel, setOrderToCancel
   } = useOrder();
   
   const filteredOrders = selectedTab === 'all' 
@@ -272,7 +273,10 @@ export default function MyOrdersScreen() {
                     
                     {order.status === 'pending' && (
                       <TouchableOpacity
-                        onPress={() => handleCancelOrder(order.id, order.sellerId)}
+                        onPress={() => {
+                          setOrderToCancel(order);
+                          setShowCancelModal(true);
+                        }}
                         className="flex-1 bg-red-500 py-3 rounded-xl"
                         activeOpacity={0.7}
                         style={{
@@ -314,6 +318,17 @@ export default function MyOrdersScreen() {
           </View>
         )}
       </ScrollView>
+
+      {orderToCancel && (
+
+        <ReusableModal
+          isVisible={showCancelModal}
+          onCancel={() => setShowCancelModal(false)}
+          title='Cancel Order'
+          description={`Are you sure you want to cancel your order? This action cannot be undone.`}
+          onConfirm={() => handleCancelOrder(orderToCancel.id, orderToCancel.sellerId)}
+          />
+      )}
 
       {/* Toast Notification */}
       <CheckoutToast
