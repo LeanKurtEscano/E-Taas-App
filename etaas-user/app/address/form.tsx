@@ -674,9 +674,9 @@ export default function AddressFormScreen() {
         presentationStyle="fullScreen"
       >
        
-          <SafeAreaView style={{ flex: 1 }}>
+          <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
             {/* Header */}
-            <View className="bg-white px-4 py-3 border-b border-gray-200 flex-row items-center justify-between">
+            <View className="bg-white px-4 pt-8 border-b border-gray-200 flex-row items-center justify-between">
               <TouchableOpacity onPress={handleCancelMap} className="p-2 -ml-2">
                 <Ionicons name="close" size={28} color="#1F2937" />
               </TouchableOpacity>

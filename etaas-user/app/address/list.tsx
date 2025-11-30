@@ -15,7 +15,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAddresses } from '@/hooks/general/useAddresses';
-
+import GeneralToast from '@/components/general/GeneralToast';
+import ReusableModal from '@/components/general/Modal';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Responsive sizing functions
@@ -28,8 +29,10 @@ const isMediumDevice = SCREEN_WIDTH >= 375 && SCREEN_WIDTH < 414;
 
 export default function AddressListScreen() {
     const { userData } = useCurrentUser();
-    const { addresses, selectedId, loading, handleDeleteAddress, handleSelectAddress } = useAddresses(userData);
-
+    const { addresses, selectedId, loading, handleDeleteAddress, handleSelectAddress, 
+        toastVisible, toastMessage, toastType, setToastVisible, isDeleteModalOpen, setAddressToDelete, addressToDelete,
+        setIsDeleteModalOpen } = useAddresses(userData);
+    
     return (
         <SafeAreaView className="flex-1 bg-gray-50">
             {/* Header */}
@@ -266,20 +269,7 @@ export default function AddressListScreen() {
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        Alert.alert(
-                                            'Delete Address',
-                                            'Are you sure you want to delete this address?',
-                                            [
-                                                { text: 'Cancel', style: 'cancel' },
-                                                { 
-                                                    text: 'Delete', 
-                                                    style: 'destructive',
-                                                    onPress: () => handleDeleteAddress(address)
-                                                }
-                                            ]
-                                        );
-                                    }}
+                                    onPress={() => {setIsDeleteModalOpen(true);setAddressToDelete(address)} }
                                     className="flex-row items-center"
                                     activeOpacity={0.7}
                                 >
@@ -303,6 +293,26 @@ export default function AddressListScreen() {
                     ))}
                 </ScrollView>
             )}
+            <GeneralToast 
+                visible={toastVisible} 
+                message={toastMessage} 
+                type={toastType} 
+                onHide={() => setToastVisible(false)} 
+            />
+            {addressToDelete && (
+             
+             <ReusableModal
+                isVisible={isDeleteModalOpen}
+                onCancel={() => setIsDeleteModalOpen(false)}
+                title="Delete Address"
+                description="Are you sure you want to delete this address? This action cannot be undone."
+                onConfirm={() =>handleDeleteAddress(addressToDelete!)}
+                confirmButtonColor='bg-red-500'
+                confirmText='Delete'
+            />
+
+            )}
+            
         </SafeAreaView>
     );
 }

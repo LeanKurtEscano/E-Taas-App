@@ -5,11 +5,14 @@ import { Alert } from 'react-native';
 import { Address } from '@/types/user/address';
 import { updateDoc,arrayRemove } from 'firebase/firestore';
 import { router } from 'expo-router';
+import useToast from './useToast';
 export const useAddresses = (userData: any) => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
   const [loading, setLoading] = useState(true);
-
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
   useEffect(() => {
     if (!userData) return;
 
@@ -32,8 +35,8 @@ export const useAddresses = (userData: any) => {
         setLoading(false);
       },
       (error) => {
-        console.error('Error fetching addresses:', error);
-        Alert.alert('Error', 'Failed to load addresses');
+       
+        showToast('Failed to load addresses', 'error');
         setLoading(false);
       }
     );
@@ -62,12 +65,10 @@ export const useAddresses = (userData: any) => {
               setAddresses(updatedAddresses);
               setSelectedId(addressId);
               
-              Alert.alert('Success', 'Default address updated', [
-                  { text: 'OK', onPress: () => router.back() }
-              ]);
+              showToast('Default address updated successfully', 'success');
           } catch (error) {
-              console.error('Error updating default address:', error);
-              Alert.alert('Error', 'Failed to update default address');
+        
+              showToast('Failed to update default address', 'error');
           }
       };
   
@@ -90,13 +91,18 @@ export const useAddresses = (userData: any) => {
               if (selectedId === addressToDelete.id) {
                   setSelectedId(null);
               }
+
+              setAddressToDelete(null);
+              setIsDeleteModalOpen(false);
   
-              Alert.alert('Success', 'Address deleted successfully');
+              showToast('Address deleted successfully', 'success');
           } catch (error) {
-              console.error('Error deleting address:', error);
-              Alert.alert('Error', 'Failed to delete address');
+              
+              showToast('Failed to delete address', 'error');
           }
       };
 
-  return { addresses, selectedId, loading, setSelectedId ,handleDeleteAddress, handleSelectAddress};
+  return { addresses, selectedId, loading, setSelectedId ,handleDeleteAddress, handleSelectAddress, toastVisible, toastMessage, toastType, 
+    setToastVisible, isDeleteModalOpen, 
+    setIsDeleteModalOpen, setAddressToDelete, addressToDelete };
 };
