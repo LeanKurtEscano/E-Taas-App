@@ -63,36 +63,35 @@ const useSellerStore = () => {
 
 
 
-    const listenToSellerProducts = (callback: (products: Product[]) => void) => {
+const listenToSellerProducts = (
+  sellerId: string,  // ✅ Accept sellerId as parameter
+  callback: (products: Product[]) => void
+) => {
+  if (!sellerId) {  // ✅ Check sellerId instead of userData
+    console.warn('No sellerId provided — skipping Firestore listener');
+    return () => {};
+  }
 
-        if (!userData?.uid) {
-            console.warn('User not loaded yet — skipping Firestore listener');
-            return () => { };
-        }
+  const productsRef = collection(db, 'products');
+  const q = query(
+    productsRef,
+    where('sellerId', '==', sellerId),  // ✅ Use the passed sellerId
+    orderBy('createdAt', 'desc')
+  );
 
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const products: Product[] = [];
+    snapshot.forEach((doc) => {
+      products.push({
+        id: doc.id,
+        ...doc.data(),
+      } as Product);
+    });
+    callback(products);
+  });
 
-        const productsRef = collection(db, 'products');
-        const q = query(
-            productsRef,
-            where('sellerId', '==', userData?.uid),
-            orderBy('createdAt', 'desc')
-        );
-
-        // Realtime listener
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const products: Product[] = [];
-            snapshot.forEach((doc) => {
-                products.push({
-                    id: doc.id,
-                    ...doc.data(),
-                } as Product);
-            });
-            callback(products);
-        });
-
-        return unsubscribe;
-    };
-
+  return unsubscribe;
+};
 
     const addProduct = async (
         product: Omit<Product, 'id' | 'createdAt'>,

@@ -418,7 +418,7 @@ const ViewProductScreen = () => {
               </View>
 
               <TouchableOpacity
-                onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/shop/${product.sellerId}`)}
+                onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/seller/store?id=${product.sellerId}`)}
                 className="flex-row items-center border border-pink-500 bg-white px-4 py-2 rounded-lg "
                 style={{ elevation: 2 }}
               >

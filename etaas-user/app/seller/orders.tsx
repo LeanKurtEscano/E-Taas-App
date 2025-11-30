@@ -47,6 +47,7 @@ import { getStatusColor } from '@/utils/general/getStatus';
 import { ShippingAddress, ProductVariant, ProductData, Order } from '@/types/order/sellerOrder';
 import { useNotification } from '@/hooks/general/useNotification';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 const ManageOrders = () => {
   const { userData } = useCurrentUser()
   const [orders, setOrders] = useState<Order[]>([]);
@@ -56,6 +57,7 @@ const ManageOrders = () => {
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
   const { sendNotification } = useNotification();
+
   useEffect(() => {
     if (!userData?.uid) return;
 
@@ -107,9 +109,6 @@ const ManageOrders = () => {
 
                 const productData = productSnap.data() as ProductData;
 
-
-
-
                 if (productData.hasVariants) {
                   const variants = productData.variants || [];
 
@@ -142,7 +141,6 @@ const ManageOrders = () => {
                       item.productId
                     );
 
-
                   } else if (isProductLowOnStock) {
 
                     await sendNotification(
@@ -159,13 +157,7 @@ const ManageOrders = () => {
                   } else {
                     variants[variantIndex].stock = newQuantity;
                     await updateDoc(productRef, { variants });
-
                   }
-
-
-
-
-
 
                 } else {
 
@@ -209,8 +201,6 @@ const ManageOrders = () => {
                       quantity: newQuantity
                     });
                   }
-
-
                 }
               }
 
@@ -240,6 +230,81 @@ const ManageOrders = () => {
     );
   };
 
+  const handleCancelOrder = async (order: Order): Promise<void> => {
+    if (processingOrderId) return;
+
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order? The buyer will be notified and may receive a refund.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setProcessingOrderId(order.id);
+            try {
+              // If order was confirmed, restore the inventory
+              if (order.status === 'confirmed') {
+                for (const item of order.items) {
+                  const productRef = doc(db, 'products', item.productId);
+                  const productSnap = await getDoc(productRef);
+
+                  if (productSnap.exists()) {
+                    const productData = productSnap.data() as ProductData;
+
+                    if (productData.hasVariants) {
+                      const variants = productData.variants || [];
+                      const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
+
+                      if (variantIndex !== -1) {
+                        // Restore stock
+                        variants[variantIndex].stock = (variants[variantIndex].stock || 0) + item.quantity;
+                        await updateDoc(productRef, { variants });
+                      }
+                    } else {
+                      // Restore stock for non-variant products
+                      const currentQuantity = productData.quantity || 0;
+                      const newQuantity = currentQuantity + item.quantity;
+                      
+                      await updateDoc(productRef, {
+                        quantity: newQuantity,
+                        ...(productData.availability === 'out of stock' && { availability: 'in stock' })
+                      });
+                    }
+                  }
+                }
+              }
+
+              // Update order status
+              await updateDoc(doc(db, 'orders', order.id), {
+                status: 'cancelled',
+                cancelledAt: serverTimestamp(),
+                cancelledBy: 'seller'
+              });
+
+              // Notify buyer
+              await sendNotification(
+                order.userId,
+                'buyer',
+                'Order Cancelled',
+                `Your order from ${order.shopName} has been cancelled by the seller. You will receive a refund if payment was made.`,
+                order.id
+              );
+
+              Alert.alert('Success', 'Order cancelled successfully. The buyer has been notified.');
+            } catch (error) {
+              console.error('Error cancelling order:', error);
+              Alert.alert('Error', 'Failed to cancel order');
+            } finally {
+              setProcessingOrderId(null);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleAddTracking = async (order: Order): Promise<void> => {
     const trackingLink = trackingLinks[order.id];
 
@@ -258,7 +323,6 @@ const ManageOrders = () => {
         shippedAt: serverTimestamp()
       });
 
-
       for (const item of order.items) {
         await sendShippingMessageNotification(
           order.userId,
@@ -267,9 +331,7 @@ const ManageOrders = () => {
 Track its progress here: ${trackingLink.trim()}`,
           item.image
         );
-
       }
-
 
       await sendNotification(
         order.userId,
@@ -287,8 +349,6 @@ Track its progress here: ${trackingLink.trim()}`,
       setProcessingOrderId(null);
     }
   };
-
-
 
   const getStatusIcon = (status: Order['status']) => {
     const iconProps = { size: 14, strokeWidth: 2.5 };
@@ -328,7 +388,7 @@ Track its progress here: ${trackingLink.trim()}`,
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <View className="bg-white" style={{
-        paddingTop: Platform.OS === 'ios' ? 50 : 20,
+        paddingTop: Platform.OS === 'ios' ? 20 : 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -392,7 +452,6 @@ Track its progress here: ${trackingLink.trim()}`,
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-
       >
         {filteredOrders.length === 0 ? (
           <View className="flex-1 justify-center items-center py-20 px-6">
@@ -603,7 +662,7 @@ Track its progress here: ${trackingLink.trim()}`,
                       <TouchableOpacity
                         onPress={() => handleAddTracking(order)}
                         disabled={processingOrderId === order.id}
-                        className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
+                        className={`py-4 rounded-xl flex-row items-center justify-center mb-3 ${processingOrderId === order.id
                           ? 'bg-gray-300'
                           : 'bg-pink-500'
                           }`}
@@ -623,6 +682,28 @@ Track its progress here: ${trackingLink.trim()}`,
                             <Truck size={18} color="white" strokeWidth={2.5} />
                             <Text className="text-white text-center font-bold text-base ml-2">
                               Add Tracking & Ship Order
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      
+                      {/* Cancel Order Button */}
+                      <TouchableOpacity
+                        onPress={() => handleCancelOrder(order)}
+                        disabled={processingOrderId === order.id}
+                        className={`py-4 rounded-xl flex-row items-center justify-center border-2 ${processingOrderId === order.id
+                          ? 'bg-gray-100 border-gray-300'
+                          : 'bg-white border-red-500'
+                          }`}
+                        activeOpacity={0.8}
+                      >
+                        {processingOrderId === order.id ? (
+                          <ActivityIndicator color="#9ca3af" />
+                        ) : (
+                          <>
+                            <XCircle size={18} color="#ef4444" strokeWidth={2.5} />
+                            <Text className="text-red-500 text-center font-bold text-base ml-2">
+                              Cancel Order
                             </Text>
                           </>
                         )}

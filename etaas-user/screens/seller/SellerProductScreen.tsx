@@ -18,9 +18,11 @@ import { Statistics } from '@/types/seller/manageProducts';
 import { StatCard } from '@/components/seller/manageProductsScreen/StatisticsCard';
 import { ProductCard } from '@/components/seller/manageProductsScreen/ProductCard';
 import ReusableModal from '@/components/general/Modal';
+import useToast from '@/hooks/general/useToast';
 
 const SellerProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
+
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -33,7 +35,7 @@ const SellerProductScreen: React.FC = () => {
   const { listenToSellerProducts } = useSellerStore();
   const { deleteProduct } = useSellerStore();
   useEffect(() => {
-    const unsubscribe = listenToSellerProducts((newProducts: Product[]) => {
+    const unsubscribe = listenToSellerProducts(userData?.uid, (newProducts: Product[]) => {
       setProducts(newProducts);
       setLoading(false);
     });

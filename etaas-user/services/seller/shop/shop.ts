@@ -30,3 +30,39 @@ export const fetchProductData = async (productId: string) => {
     throw new Error("Product not found");
   }
 };
+
+
+
+const updateSellerInfo = async (
+  userId: string,
+  updates: {
+    shopName?: string;
+    businessName?: string;
+    addressLocation?: string;
+    contactNumber?: string;
+    email?: string;
+    description?: string;
+    coverPhotoUrl?: string;
+    profilePhotoUrl?: string;
+  }
+) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    // Build the update object with nested sellerInfo fields
+    const updateData: any = {};
+    
+    Object.keys(updates).forEach((key) => {
+      updateData[`sellerInfo.${key}`] = updates[key as keyof typeof updates];
+    });
+
+    await updateDoc(userRef, updateData);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating seller info:', error);
+    throw error;
+  }
+};
+
+export { updateSellerInfo };
