@@ -49,6 +49,7 @@ import { useNotification } from '@/hooks/general/useNotification';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useToast from '@/hooks/general/useToast';
 import GeneralToast from '@/components/general/GeneralToast';
+import ReusableModal from '@/components/general/Modal';
 
 const ManageOrders = () => {
   const { userData } = useCurrentUser()
@@ -59,7 +60,13 @@ const ManageOrders = () => {
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
   const { sendNotification } = useNotification();
-  const { toastVisible, toastMessage, toastType, showToast,setToastVisible } = useToast();
+  const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelOrder, setCancelOrder] = useState(false);
+  const [confirmOrder, setConfirmOrder] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
 
   useEffect(() => {
     if (!userData?.uid) return;
@@ -91,224 +98,219 @@ const ManageOrders = () => {
 
   const handleConfirmOrder = async (order: Order): Promise<void> => {
     if (processingOrderId) return;
+    setConfirmLoading(true);
 
-    Alert.alert(
-      'Confirm Order',
-      'Are you sure you want to confirm this order? This will deduct the quantities from your inventory.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setProcessingOrderId(order.id);
-            try {
-              for (const item of order.items) {
-                const productRef = doc(db, 'products', item.productId);
-                const productSnap = await getDoc(productRef);
 
-                if (!productSnap.exists()) {
-                  throw new Error(`Product ${item.productName} not found`);
-                }
+    setProcessingOrderId(order.id);
+    try {
+      for (const item of order.items) {
+        const productRef = doc(db, 'products', item.productId);
+        const productSnap = await getDoc(productRef);
 
-                const productData = productSnap.data() as ProductData;
+        if (!productSnap.exists()) {
+          showToast(`Product ${item.productName} not found`, 'error');
 
-                if (productData.hasVariants) {
-                  const variants = productData.variants || [];
+          return;
+        }
 
-                  const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
+        const productData = productSnap.data() as ProductData;
 
-                  if (variantIndex === -1) {
-                    showToast(`Variant ${item.variantText} not found for product ${item.productName}`, 'error');
-                    return;
-                  }
+        if (productData.hasVariants) {
+          const variants = productData.variants || [];
 
-                  const currentQuantity = variants[variantIndex].stock || 0;
+          const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
 
-                  if (currentQuantity < item.quantity) {
-                    showToast(`Insufficient stock for ${item.productName} - ${item.variantText}`, 'error');
-                    return;
-                  }
+          if (variantIndex === -1) {
+            showToast(`Variant ${item.variantText} not found for product ${item.productName}`, 'error');
 
-                  const newQuantity = currentQuantity - item.quantity;
-                  const isOutOfStock = newQuantity <= 0;
-                  const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
+            return;
+          }
 
-                  if (isOutOfStock) {
-                    variants[variantIndex].stock = newQuantity;
-                    await updateDoc(productRef, { variants });
+          const currentQuantity = variants[variantIndex].stock || 0;
 
-                    await sendNotification(
-                      userData!.uid,
-                      'seller',
-                      'Product Variant Out of Stock',
-                      `Your product "${item.productName}" variant "${item.variantText}" is now out of stock after confirming an order.`,
-                      undefined,
-                      item.productId
-                    );
+          if (currentQuantity < item.quantity) {
+            showToast(`Insufficient stock for ${item.productName} - ${item.variantText}`, 'error');
 
-                  } else if (isProductLowOnStock) {
+            return;
+          }
 
-                    await sendNotification(
-                      userData!.uid,
-                      'seller',
-                      'Product Variant Low on Stock',
-                      `Your product "${item.productName}" variant "${item.variantText}" is low on stock after confirming an order.`,
-                      undefined,
-                      item.productId
-                    );
+          const newQuantity = currentQuantity - item.quantity;
+          const isOutOfStock = newQuantity <= 0;
+          const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
 
-                    variants[variantIndex].stock = newQuantity;
-                    await updateDoc(productRef, { variants });
-                  } else {
-                    variants[variantIndex].stock = newQuantity;
-                    await updateDoc(productRef, { variants });
-                  }
+          if (isOutOfStock) {
+            variants[variantIndex].stock = newQuantity;
+            await updateDoc(productRef, { variants });
 
-                } else {
+            await sendNotification(
+              userData!.uid,
+              'seller',
+              'Product Variant Out of Stock',
+              `Your product "${item.productName}" variant "${item.variantText}" is now out of stock after confirming an order.`,
+              undefined,
+              item.productId
+            );
 
-                  const currentQuantity = productData.quantity || 0;
-                  if (currentQuantity < item.quantity) {
-                    showToast(`Insufficient stock for ${item.productName}`, 'error');
-                    return;
-                  }
-                  const newQuantity = currentQuantity - item.quantity;
-                  const isOutOfStock = newQuantity <= 0;
-                  const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
+          } else if (isProductLowOnStock) {
 
-                  if (isOutOfStock) {
-                    await updateDoc(productRef, {
-                      quantity: newQuantity,
-                      availability: "out of stock"
-                    });
+            await sendNotification(
+              userData!.uid,
+              'seller',
+              'Product Variant Low on Stock',
+              `Your product "${item.productName}" variant "${item.variantText}" is low on stock after confirming an order.`,
+              undefined,
+              item.productId
+            );
 
-                    await sendNotification(
-                      userData!.uid,
-                      'seller',
-                      'Product Out of Stock',
-                      `Your product "${item.productName}" is now out of stock after confirming an order.`,
-                      undefined,
-                      item.productId
-                    );
+            variants[variantIndex].stock = newQuantity;
+            await updateDoc(productRef, { variants });
+          } else {
+            variants[variantIndex].stock = newQuantity;
+            await updateDoc(productRef, { variants });
+          }
 
-                  } else if (isProductLowOnStock) {
-                    await sendNotification(
-                      userData!.uid,
-                      'seller',
-                      'Product Low on Stock',
-                      `Your product "${item.productName}" is low on stock after confirming an order.`,
-                      undefined,
-                      item.productId
-                    );
-                    await updateDoc(productRef, {
-                      quantity: newQuantity
-                    });
-                  } else {
-                    await updateDoc(productRef, {
-                      quantity: newQuantity
-                    });
-                  }
-                }
-              }
+        } else {
 
-              await updateDoc(doc(db, 'orders', order.id), {
-                status: 'confirmed',
-                confirmedAt: serverTimestamp()
-              });
+          const currentQuantity = productData.quantity || 0;
+          if (currentQuantity < item.quantity) {
+            showToast(`Insufficient stock for ${item.productName}`, 'error');
+            return;
+          }
+          const newQuantity = currentQuantity - item.quantity;
+          const isOutOfStock = newQuantity <= 0;
+          const isProductLowOnStock = newQuantity <= 10 && newQuantity > 0;
 
-              await sendNotification(
-                order.userId,
-                'buyer',
-                'Order Confirmed',
-                `Your order from ${order.shopName} has been confirmed and is being prepared for shipment.`,
-                order.id
-              );
-              showToast('Order confirmed successfully!', 'success');
-            } catch (error) {
-              
-              const errorMessage = error instanceof Error ? error.message : 'Failed to confirm order';
-              showToast('Something went wrong. Please try again later.', 'error');
-            } finally {
-              setProcessingOrderId(null);
-            }
+          if (isOutOfStock) {
+            await updateDoc(productRef, {
+              quantity: newQuantity,
+              availability: "out of stock"
+            });
+
+            await sendNotification(
+              userData!.uid,
+              'seller',
+              'Product Out of Stock',
+              `Your product "${item.productName}" is now out of stock after confirming an order.`,
+              undefined,
+              item.productId
+            );
+
+          } else if (isProductLowOnStock) {
+            await sendNotification(
+              userData!.uid,
+              'seller',
+              'Product Low on Stock',
+              `Your product "${item.productName}" is low on stock after confirming an order.`,
+              undefined,
+              item.productId
+            );
+            await updateDoc(productRef, {
+              quantity: newQuantity
+            });
+          } else {
+            await updateDoc(productRef, {
+              quantity: newQuantity
+            });
           }
         }
-      ]
-    );
+      }
+
+      await updateDoc(doc(db, 'orders', order.id), {
+        status: 'confirmed',
+        confirmedAt: serverTimestamp()
+      });
+
+      await sendNotification(
+        order.userId,
+        'buyer',
+        'Order Confirmed',
+        `Your order from ${order.shopName} has been confirmed and is being prepared for shipment.`,
+        order.id
+      );
+      showToast('Order confirmed successfully!', 'success');
+    } catch (error) {
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to confirm order';
+      showToast('Something went wrong. Please try again later.', 'error');
+    } finally {
+      setProcessingOrderId(null);
+      setConfirmOrder(false);
+      setConfirmLoading(false);
+      setSelectedOrder(null);
+
+    }
+
+
+
   };
 
   const handleCancelOrder = async (order: Order): Promise<void> => {
     if (processingOrderId) return;
+    setCancelLoading(true);
 
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order? The buyer will be notified and may receive a refund.',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            setProcessingOrderId(order.id);
-            try {
-              // If order was confirmed, restore the inventory
-              if (order.status === 'confirmed') {
-                for (const item of order.items) {
-                  const productRef = doc(db, 'products', item.productId);
-                  const productSnap = await getDoc(productRef);
 
-                  if (productSnap.exists()) {
-                    const productData = productSnap.data() as ProductData;
+    setProcessingOrderId(order.id);
+    try {
+      // If order was confirmed, restore the inventory
+      if (order.status === 'confirmed') {
+        for (const item of order.items) {
+          const productRef = doc(db, 'products', item.productId);
+          const productSnap = await getDoc(productRef);
 
-                    if (productData.hasVariants) {
-                      const variants = productData.variants || [];
-                      const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
+          if (productSnap.exists()) {
+            const productData = productSnap.data() as ProductData;
 
-                      if (variantIndex !== -1) {
-                        // Restore stock
-                        variants[variantIndex].stock = (variants[variantIndex].stock || 0) + item.quantity;
-                        await updateDoc(productRef, { variants });
-                      }
-                    } else {
-                      // Restore stock for non-variant products
-                      const currentQuantity = productData.quantity || 0;
-                      const newQuantity = currentQuantity + item.quantity;
-                      
-                      await updateDoc(productRef, {
-                        quantity: newQuantity,
-                        ...(productData.availability === 'out of stock' && { availability: 'in stock' })
-                      });
-                    }
-                  }
-                }
+            if (productData.hasVariants) {
+              const variants = productData.variants || [];
+              const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
+
+              if (variantIndex !== -1) {
+                // Restore stock
+                variants[variantIndex].stock = (variants[variantIndex].stock || 0) + item.quantity;
+                await updateDoc(productRef, { variants });
               }
+            } else {
+              // Restore stock for non-variant products
+              const currentQuantity = productData.quantity || 0;
+              const newQuantity = currentQuantity + item.quantity;
 
-              // Update order status
-              await updateDoc(doc(db, 'orders', order.id), {
-                status: 'cancelled',
-                cancelledAt: serverTimestamp(),
-                cancelledBy: 'seller'
+              await updateDoc(productRef, {
+                quantity: newQuantity,
+                ...(productData.availability === 'out of stock' && { availability: 'in stock' })
               });
-
-              // Notify buyer
-              await sendNotification(
-                order.userId,
-                'buyer',
-                'Order Cancelled',
-                `Your order from ${order.shopName} has been cancelled by the seller. You will receive a refund if payment was made.`,
-                order.id
-              );
-
-              showToast('Order cancelled successfully. The buyer has been notified.', 'success');
-            } catch (error) {
-              console.error('Error cancelling order:', error);
-              showToast('Failed to cancel order', 'error');
-            } finally {
-              setProcessingOrderId(null);
             }
           }
         }
-      ]
-    );
+      }
+
+      // Update order status
+      await updateDoc(doc(db, 'orders', order.id), {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+        cancelledBy: 'seller'
+      });
+
+      // Notify buyer
+      await sendNotification(
+        order.userId,
+        'buyer',
+        'Order Cancelled',
+        `Your order from ${order.shopName} has been cancelled by the seller. You will receive a refund if payment was made.`,
+        order.id
+      );
+
+      showToast('Order cancelled successfully. The buyer has been notified.', 'success');
+    } catch (error) {
+
+      showToast('Failed to cancel order', 'error');
+    } finally {
+      setProcessingOrderId(null);
+      setCancelOrder(false);
+      setSelectedOrder(null);
+      setCancelLoading(false);
+    }
+
+
   };
 
   const handleAddTracking = async (order: Order): Promise<void> => {
@@ -349,7 +351,7 @@ Track its progress here: ${trackingLink.trim()}`,
       setTrackingLinks(prev => ({ ...prev, [order.id]: '' }));
       showToast('Tracking link added and buyer notified!', 'success');
     } catch (error) {
-      console.error('Error adding tracking:', error);
+
       showToast('Failed to add tracking link', 'error');
     } finally {
       setProcessingOrderId(null);
@@ -611,7 +613,7 @@ Track its progress here: ${trackingLink.trim()}`,
                 <View className="px-5 py-4">
                   {order.status === 'pending' && (
                     <TouchableOpacity
-                      onPress={() => handleConfirmOrder(order)}
+                      onPress={() => { setConfirmOrder(true); setSelectedOrder(order); }}
                       disabled={processingOrderId === order.id}
                       className={`py-4 rounded-xl flex-row items-center justify-center ${processingOrderId === order.id
                         ? 'bg-gray-300'
@@ -692,10 +694,10 @@ Track its progress here: ${trackingLink.trim()}`,
                           </>
                         )}
                       </TouchableOpacity>
-                      
+
                       {/* Cancel Order Button */}
                       <TouchableOpacity
-                        onPress={() => handleCancelOrder(order)}
+                        onPress={() => { setCancelOrder(true); setSelectedOrder(order); }}
                         disabled={processingOrderId === order.id}
                         className={`py-4 rounded-xl flex-row items-center justify-center border-2 ${processingOrderId === order.id
                           ? 'bg-gray-100 border-gray-300'
@@ -752,6 +754,36 @@ Track its progress here: ${trackingLink.trim()}`,
         )}
       </ScrollView>
       <GeneralToast visible={toastVisible} message={toastMessage} type={toastType} onHide={() => setToastVisible(false)} />
+      {confirmOrder && selectedOrder && (
+        <ReusableModal
+          isVisible={confirmOrder}
+          onCancel={() => {
+            setConfirmOrder(false);
+            setSelectedOrder(null);
+          }}
+          title="Confirm Order"
+          description="Are you sure you want to confirm this order?"
+          onConfirm={() => handleConfirmOrder(selectedOrder)}
+          isLoading={confirmLoading}
+        />
+      )}
+
+
+      {cancelOrder && selectedOrder && (
+        <ReusableModal
+          isVisible={cancelOrder}
+          onCancel={() => {
+            setCancelOrder(false);
+            setSelectedOrder(null);
+          }}
+          title="Cancel Order"
+          description="Are you sure you want to cancel this order?"
+          onConfirm={() => handleCancelOrder(selectedOrder)}
+          isLoading={cancelLoading}
+        />
+      )}
+
+
     </SafeAreaView>
   );
 }
