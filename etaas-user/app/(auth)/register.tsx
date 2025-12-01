@@ -110,7 +110,7 @@ export default function RegisterScreen() {
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
     } catch (error) {
-      console.error('Error checking email:', error);
+    
       return false;
     }
   };
@@ -122,7 +122,7 @@ export default function RegisterScreen() {
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
     } catch (error) {
-      console.error('Error checking username:', error);
+     
       return false;
     }
   };
@@ -148,7 +148,7 @@ export default function RegisterScreen() {
       });
       console.log('User document created successfully');
     } catch (error) {
-      console.error('Error creating user document:', error);
+     
       throw error;
     }
   };
@@ -240,7 +240,7 @@ export default function RegisterScreen() {
     });
 
   } catch (error: any) {
-    console.error('Sign-up error:', error);
+    
 
     if (error.code === 'auth/email-already-in-use') {
       setEmailError('This email is already registered');
@@ -283,7 +283,7 @@ export default function RegisterScreen() {
       Alert.alert('Success', `Signed in with ${provider === 'google' ? 'Google' : 'Facebook'}!`);
       router.push('/(tabs)');
     } catch (error: any) {
-      console.error(`${provider} sign-in error:`, error);
+    
       Alert.alert('Error', error.message || `Failed to sign in with ${provider}`);
     } finally {
       setLoading(false);

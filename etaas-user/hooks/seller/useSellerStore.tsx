@@ -49,7 +49,7 @@ const useSellerStore = () => {
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error('Error uploading to Cloudinary:', error);
+
             throw error;
         }
     };
@@ -142,7 +142,7 @@ const listenToSellerProducts = (
 
             return docRef.id;
         } catch (error) {
-            console.error('Error adding product:', error);
+            
             throw error;
         }
     };
@@ -190,7 +190,7 @@ const listenToSellerProducts = (
             });
 
         } catch (error) {
-            console.error('Error adding product:', error);
+          
             throw error;
         }
     };
@@ -224,7 +224,7 @@ const listenToSellerProducts = (
                             console.log('Deleting public_id:', publicId);
                         }
                     } catch (error) {
-                        console.error('Error deleting Cloudinary image:', imageUrl, error);
+                    
                     }
                 });
                 await Promise.all(deletePromises);
@@ -279,7 +279,7 @@ const listenToSellerProducts = (
             console.log('Product updated successfully');
 
         } catch (error) {
-            console.error('Error updating product:', error);
+           
             throw error;
         }
     };
@@ -293,7 +293,7 @@ const listenToSellerProducts = (
             const response = await ingestApi.delete(`/shops/${userData?.sellerInfo?.sellerId}/products/${productId}`);
             await deleteDoc(productRef);
         } catch (error) {
-            console.error('Error deleting product:', error);
+          
             throw error;
         }
     };
@@ -327,7 +327,7 @@ const listenToSellerProducts = (
                 updatedAt: Timestamp.now(),
             });
         } catch (error) {
-            console.error('Error updating shop info:', error);
+          
             throw error;
         }
     };

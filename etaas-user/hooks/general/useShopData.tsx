@@ -29,7 +29,7 @@ export const useShopData = (sellerId: string | string[]) => {
           setError('Shop not found');
         }
       } catch (err) {
-        console.error('Error fetching shop info:', err);
+       
         setError('Failed to load shop information');
       }
     };
@@ -55,7 +55,7 @@ export const useShopData = (sellerId: string | string[]) => {
         setLoading(false);
       },
       (err) => {
-        console.error('Error listening to products:', err);
+      
         setError('Failed to load products');
         setLoading(false);
       }

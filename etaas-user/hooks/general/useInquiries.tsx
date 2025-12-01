@@ -66,7 +66,7 @@ export const useInquiries = (serviceId: string) => {
         return null;
       }
     } catch (error) {
-      console.error('Error fetching service:', error);
+    
       showToast('Failed to load service details', 'error');
       return null;
     } finally {
@@ -115,7 +115,7 @@ export const useInquiries = (serviceId: string) => {
       showToast('Inquiry submitted successfully!', 'success');
       return true;
     } catch (error) {
-      console.error('Error submitting inquiry:', error);
+  
       showToast('Failed to submit inquiry. Please try again.', 'error');
       return false;
     } finally {

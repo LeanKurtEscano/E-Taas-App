@@ -85,7 +85,7 @@ const MyShopScreen: React.FC = () => {
             router.back();
           }
         } catch (error) {
-          console.error('Error fetching seller data:', error);
+         
           showToast('Failed to load shop data', 'error');
         } finally {
           setLoading(false);

@@ -42,7 +42,7 @@ const useOrder = () => {
         setRefreshing(false);
       },
       (error) => {
-        console.error('Error fetching orders:', error);
+      
         setLoading(false);
         setRefreshing(false);
       }
@@ -78,7 +78,7 @@ const useOrder = () => {
 
     showToast('Order cancelled successfully', 'success');
   } catch (error) {
-    console.error('Error cancelling order:', error);
+  
     showToast('Failed to cancel order. Please try again.', 'error');
   }
 };

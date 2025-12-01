@@ -107,7 +107,7 @@ const ViewProductScreen = () => {
       }
     } catch (err) {
       setError('Unable to load product details');
-      console.error(err);
+
     }
   };
 

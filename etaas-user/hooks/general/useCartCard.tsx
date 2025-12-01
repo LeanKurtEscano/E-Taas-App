@@ -93,7 +93,7 @@ export const useCartCard = (
 
       setProductsData(productsMap);
     } catch (error) {
-      console.error('Error fetching cart data:', error);
+    
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export const useCartCard = (
       // Revert on error
       setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
       Alert.alert('Error', 'Failed to update quantity');
-      console.error('Error incrementing quantity:', error);
+   
     } finally {
       setUpdatingQuantity(null);
     }
@@ -151,7 +151,7 @@ export const useCartCard = (
       // Revert on error
       setLocalQuantities(prev => new Map(prev).set(item.cartId, currentLocalQty));
       Alert.alert('Error', 'Failed to update quantity');
-      console.error('Error decrementing quantity:', error);
+    
     } finally {
       setUpdatingQuantity(null);
     }
@@ -173,7 +173,7 @@ export const useCartCard = (
             }
           } catch (error) {
             Alert.alert('Error', 'Failed to remove item. Please try again.');
-            console.error('Error deleting item:', error);
+            
           }
         }
       }

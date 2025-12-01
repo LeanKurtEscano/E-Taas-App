@@ -66,7 +66,7 @@ const ManageInquiriesScreen = () => {
 
       setServices(servicesData);
     } catch (error) {
-      console.error('Error fetching services:', error);
+   
       setToastMessage('Failed to load services');
       setToastType('error');
       setToastVisible(true);
@@ -99,7 +99,7 @@ const ManageInquiriesScreen = () => {
               setToastType('success');
               setToastVisible(true);
             } catch (error) {
-              console.error('Error deleting service:', error);
+            
               setToastMessage('Failed to delete service');
               setToastType('error');
               setToastVisible(true);

@@ -19,7 +19,7 @@ export const switchToRole = async (
       });
     }
   } catch (error) {
-    console.error('Error switching mode:', error);
+   
   } finally {
     setSwitching(false);
   }

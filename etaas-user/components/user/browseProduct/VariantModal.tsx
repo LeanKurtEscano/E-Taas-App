@@ -363,7 +363,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             <TouchableOpacity
               onPress={() => {
                 if (!currentUser?.uid || !product?.id || !product?.sellerId) {
-                  console.error('Missing required data');
+                 
                   return;
                 }
 

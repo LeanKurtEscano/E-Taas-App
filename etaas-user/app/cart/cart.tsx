@@ -66,7 +66,7 @@ export default function CartProductScreen() {
         setCartData({});
       }
     } catch (error) {
-      console.error('Error fetching cart:', error);
+
     } finally {
       if (!silent) {
         setLoading(false);

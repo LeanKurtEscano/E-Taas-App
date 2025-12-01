@@ -36,7 +36,7 @@ const AllInquriesScreen = () => {
 
       setInquiries(fetchedInquiries);
     } catch (error) {
-      console.error('Error fetching inquiries:', error);
+
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -68,7 +68,7 @@ export const ProductModal: React.FC<AddProductModalProps> = ({
         setImageUris(prev => [...prev, ...newUris]);
       }
     } catch (error) {
-      console.error('Error picking images:', error);
+     
       Alert.alert('Error', 'Failed to pick images');
     }
   };
@@ -121,7 +121,7 @@ export const ProductModal: React.FC<AddProductModalProps> = ({
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Error saving product:', error);
+     
       Alert.alert('Error', 'Failed to save product');
     } finally {
       setLoading(false);

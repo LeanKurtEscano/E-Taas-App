@@ -81,7 +81,7 @@ const BrowseServicesScreen = () => {
       setServices(servicesData);
       setFilteredServices(servicesData);
     } catch (error) {
-      console.error('Error fetching services:', error);
+     
       Alert.alert('Error', 'Failed to load services. Please try again.');
     } finally {
       setLoading(false);
@@ -94,7 +94,7 @@ const BrowseServicesScreen = () => {
     try {
       await fetchServices();
     } catch (error) {
-      console.error('Error refreshing services:', error);
+    
     } finally {
       setRefreshing(false);
     }

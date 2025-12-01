@@ -15,7 +15,7 @@ export const fetchShopBySellerId = async (sellerId: string) => {
       return null;
     }
   } catch (error) {
-    console.error("Error fetching shop:", error);
+   
     throw error;
   }
 };

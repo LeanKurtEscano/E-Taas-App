@@ -25,7 +25,7 @@ export const createApi = (
       },
       (error) => {
 
-          console.error("❌ API Error:", error.response?.status, error.response?.data || error.message);
+         
           Promise.reject(error)
       }
     );

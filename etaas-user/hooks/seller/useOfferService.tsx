@@ -82,7 +82,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
         showToast('Service not found', 'error');
       }
     } catch (error) {
-      console.error('Error fetching service:', error);
+     
       showToast('Failed to load service data', 'error');
     } finally {
       setFetchingService(false);
@@ -266,7 +266,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
         resetForm();
       }
     } catch (error) {
-      console.error('Error saving service:', error);
+
       showToast(
         isEditMode ? 'Failed to update service. Please try again.' : 'Failed to add service. Please try again.',
         'error'

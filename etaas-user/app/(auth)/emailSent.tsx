@@ -43,7 +43,7 @@ const CheckEmailScreen = () => {
       setResendSuccess(true);
       setTimeout(() => setResendSuccess(false), 3000);
     } catch (error) {
-      console.error("Resend failed:", error);
+      
       setError(error.message || "Failed to send email. Please try again.");
     } finally {
       setIsResending(false);

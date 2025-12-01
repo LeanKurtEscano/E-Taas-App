@@ -25,7 +25,7 @@ const BrowseProductsScreen = () => {
     try {
       await fetchProducts();
     } catch (error) {
-      console.error('Error refreshing products:', error);
+     
     } finally {
       setRefreshing(false);
     }

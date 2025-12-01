@@ -71,7 +71,7 @@ const NotificationScreen = () => {
         }
       },
       (error) => {
-        console.error('Error fetching notifications:', error)
+
         setLoading(false)
         setRefreshing(false)
       }

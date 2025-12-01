@@ -178,7 +178,7 @@ export const useSellerDashboard = () => {
         fetchChartData()
       ]);
     } catch (error) {
-      console.error("Error refreshing dashboard:", error);
+     
     } finally {
       setRefreshing(false);
     }

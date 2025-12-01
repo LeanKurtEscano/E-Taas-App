@@ -61,7 +61,7 @@ const MyShopScreen: React.FC = () => {
       const fetchedProducts = await fetchSellerProducts(userData.uid);
       setProducts(fetchedProducts);
     } catch (error) {
-      console.error('Error loading products:', error);
+  
       Alert.alert('Error', 'Failed to load products');
     } finally {
       setLoading(false);

@@ -71,7 +71,7 @@ export default function CheckoutScreen() {
         setLoading(false);
       },
       (error) => {
-        console.error('Error listening to address changes:', error);
+
         setLoading(false);
       }
     );
@@ -164,7 +164,7 @@ export default function CheckoutScreen() {
         router.replace('/orders/order');
       }, 2000);
     } catch (error) {
-      console.error('Error placing order:', error);
+     
       showToast('Failed to place order. Please try again.', 'error');
     } finally {
       setCheckOutLoading(false);

@@ -60,7 +60,7 @@ const updateSellerInfo = async (
     
     return { success: true };
   } catch (error) {
-    console.error('Error updating seller info:', error);
+   
     throw error;
   }
 };

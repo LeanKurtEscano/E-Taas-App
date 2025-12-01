@@ -119,7 +119,7 @@ export const useCart = () => {
         });
       });
     } catch (err: any) {
-      console.error("Add to cart error:", err);
+     
       throw new Error(err.message || "Failed to add item to cart");
     }
   };
@@ -220,7 +220,7 @@ export const useCart = () => {
 
       return product.quantity || 0;
     } catch (error) {
-      console.error('Error getting stock:', error);
+    
       return 0;
     }
   };
@@ -280,7 +280,7 @@ export const useCart = () => {
 
       return { success: true, message: 'Quantity updated successfully' };
     } catch (error) {
-      console.error('Error updating quantity:', error);
+     
       return { success: false, message: 'Failed to update quantity' };
     }
   };
@@ -322,7 +322,7 @@ export const useCart = () => {
         currentQuantity + 1
       );
     } catch (error) {
-      console.error('Error incrementing quantity:', error);
+     
       return { success: false, message: 'Failed to increment quantity' };
     }
   };
@@ -346,7 +346,7 @@ export const useCart = () => {
         currentQuantity - 1
       );
     } catch (error) {
-      console.error('Error decrementing quantity:', error);
+      
       return { success: false, message: 'Failed to decrement quantity' };
     }
   };
@@ -376,7 +376,7 @@ export const useCart = () => {
 
       return { success: true, message: 'Item removed from cart' };
     } catch (error) {
-      console.error('Error deleting item:', error);
+     
       return { success: false, message: 'Failed to remove item' };
     }
   };
@@ -409,7 +409,7 @@ export const useCart = () => {
         message: `${cartIds.length} item(s) removed from cart`
       };
     } catch (error) {
-      console.error('Error deleting multiple items:', error);
+     
       return { success: false, message: 'Failed to remove items' };
     }
   };
@@ -424,7 +424,7 @@ export const useCart = () => {
 
       return { success: true, message: 'Cart cleared successfully' };
     } catch (error) {
-      console.error('Error clearing cart:', error);
+     
       return { success: false, message: 'Failed to clear cart' };
     }
   };

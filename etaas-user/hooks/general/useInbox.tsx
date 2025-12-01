@@ -84,13 +84,13 @@ export const useInbox = () => {
           setConversations(fetchedConversations);
           setLoading(false);
         } catch (err) {
-          console.error('Error fetching conversations:', err);
+        
           setError('Failed to load conversations');
           setLoading(false);
         }
       },
       (err) => {
-        console.error('Error in snapshot listener:', err);
+       
         setError('Failed to load conversations');
         setLoading(false);
       }

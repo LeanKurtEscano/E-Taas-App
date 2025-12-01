@@ -28,7 +28,7 @@ const ProfileScreen: React.FC = () => {
             await signOut(auth);
             router.push('/(auth)');
         } catch (error: any) {
-            console.error('Error during logout:', error);
+          
             Alert.alert(
                 'Logout Error',
                 error.message || 'Failed to logout. Please try again.'

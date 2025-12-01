@@ -91,7 +91,7 @@ export const useCurrentUser = () => {
         setTotalUnreadCount(total);
       },
       (err) => {
-        console.error('Error listening to unread counts:', err);
+
       }
     );
 

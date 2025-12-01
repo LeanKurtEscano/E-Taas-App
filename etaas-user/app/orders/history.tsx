@@ -31,7 +31,7 @@ const HistoryScreen = () => {
       setOrders(ordersData)
       setLoading(false)
     }, (error) => {
-      console.error('Error fetching orders:', error)
+
       setLoading(false)
     })
 

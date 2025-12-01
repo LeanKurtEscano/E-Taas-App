@@ -83,7 +83,7 @@ const ToReceiveScreen = () => {
 
               Alert.alert('Success', 'Order marked as received!');
             } catch (error) {
-              console.error('Error marking order as received:', error);
+             
               Alert.alert('Error', 'Failed to mark order as received');
             } finally {
               setProcessingOrderId(null);

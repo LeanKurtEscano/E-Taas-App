@@ -86,7 +86,7 @@ export const useServiceInquiries = (serviceId: string) => {
 
       setInquiries(inquiriesData);
     } catch (error) {
-      console.error('Error fetching inquiries:', error);
+     
       showToast('Failed to load inquiries', 'error');
     } finally {
       setLoading(false);
@@ -107,7 +107,7 @@ export const useServiceInquiries = (serviceId: string) => {
       showToast('Inquiry deleted successfully', 'success');
       return true;
     } catch (error) {
-      console.error('Error deleting inquiry:', error);
+     
       showToast('Failed to delete inquiry', 'error');
       return false;
     } finally {

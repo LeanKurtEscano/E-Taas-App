@@ -136,7 +136,7 @@ export default function AddressFormScreen() {
         }
       }
     } catch (error) {
-      console.error('Error fetching address:', error);
+
       showToast('Failed to load address data', 'error');
     } finally {
       setLoading(false);
@@ -210,7 +210,7 @@ export default function AddressFormScreen() {
         }
       }
     } catch (error) {
-      console.error('Error reverse geocoding:', error);
+
       showToast('Failed to fetch address details', 'error');
     } finally {
       setLoadingAddress(false);
@@ -252,7 +252,7 @@ export default function AddressFormScreen() {
       setShowMap(true);
       showToast('Location loaded successfully', 'success');
     } catch (error) {
-      console.error('Error getting location:', error);
+     
       showToast('Failed to get your current location. Please try again.', 'error');
     } finally {
       setLoadingLocation(false);
@@ -417,7 +417,7 @@ export default function AddressFormScreen() {
       
       setTimeout(() => router.back(), 1000);
     } catch (error) {
-      console.error('Error saving address:', error);
+     
       showToast('Failed to save address. Please try again.', 'error');
     } finally {
       setSaving(false);

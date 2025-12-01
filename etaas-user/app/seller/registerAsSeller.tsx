@@ -181,7 +181,7 @@ const RegisterAsSeller = () => {
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
-      console.error('Error checking email:', error);
+     
       return false;
     }
   };
@@ -199,7 +199,7 @@ const RegisterAsSeller = () => {
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
-      console.error('Error checking contact number:', error);
+      
       return false;
     }
   };
@@ -222,7 +222,7 @@ const RegisterAsSeller = () => {
         );
       });
     } catch (error) {
-      console.error('Error checking shop name:', error);
+      
       return false;
     }
   };
@@ -367,7 +367,7 @@ const RegisterAsSeller = () => {
         router.replace('/(tabs)/profile');
       }, 1500);
     } catch (error) {
-      console.error('Error registering as seller:', error);
+      
       showToast('Failed to register as seller. Please try again.', 'error');
     } finally {
       setLoading(false);

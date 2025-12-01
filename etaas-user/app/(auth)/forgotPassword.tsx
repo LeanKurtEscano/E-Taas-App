@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
     } catch (error) {
-      console.error('Error checking email:', error);
+     
       return false;
     }
   };
@@ -85,7 +85,7 @@ export default function ForgotPasswordScreen() {
 
       setEmail('');
     } catch (error: any) {
-      console.error('Password reset error:', error);
+
       if (error.code === 'auth/user-not-found') {
         Alert.alert('Error', 'No account found with this email address');
       } else if (error.code === 'auth/invalid-email') {

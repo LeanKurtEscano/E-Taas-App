@@ -101,7 +101,7 @@ export default function AddProductModal({
       Alert.alert('Success', 'Product added successfully!');
       onClose();
     } catch (error) {
-      console.error('Error adding product:', error);
+     
       Alert.alert('Error', 'Failed to add product. Please try again.');
     } finally {
       setLoading(false);

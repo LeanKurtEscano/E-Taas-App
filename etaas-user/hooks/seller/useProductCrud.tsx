@@ -90,7 +90,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                     router.back();
                 }
             } catch (error) {
-                console.error('Error fetching product:', error);
+               
                 showToast('Failed to load product data', 'error');
                 router.back();
             } finally {
@@ -129,7 +129,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 setImageError('');
             }
         } catch (error) {
-            console.error('Error picking images:', error);
+           
             showToast('Failed to pick images', 'error');
         }
 
@@ -318,7 +318,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
 
             router.back();
         } catch (error) {
-            console.error('Error saving product:', error);
+          
             showToast('Failed to save product. Please try again.', 'error');
         } finally {
             setLoading(false);

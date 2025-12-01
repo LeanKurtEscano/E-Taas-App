@@ -35,7 +35,7 @@ export const useNotification = () => {
 
       console.log(`✅ Notification sent to user ${userId}`);
     } catch (error) {
-      console.error('❌ Error sending notification:', error);
+    
       throw error;
     }
   };
@@ -96,7 +96,7 @@ export const useNotification = () => {
               { merge: true }
             );
           } catch (error) {
-            console.error('Error sending message:', error);
+           
             throw error;
           }
 

@@ -64,7 +64,7 @@ const OrderDetailsScreen = () => {
         setOrderData(orderSnap.data() as OrderData)
       }
     } catch (error) {
-      console.error('Error fetching order:', error)
+      
     } finally {
       setLoading(false)
     }

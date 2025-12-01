@@ -57,7 +57,7 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
         setLoading(false);
       },
       (error) => {
-        console.error('Error fetching messages:', error);
+       
         setLoading(false);
       }
     );
@@ -126,7 +126,7 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
       const data = await response.json();
       return data.secure_url;
     } catch (error) {
-      console.error('Error uploading to Cloudinary:', error);
+   
       throw error;
     }
   };
@@ -186,7 +186,7 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
         { merge: true }
       );
     } catch (error) {
-      console.error('Error sending message:', error);
+    
       throw error;
     } finally {
       setSendingMessage(false);
@@ -216,7 +216,7 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
 
       return result.assets[0].uri;
     } catch (error) {
-      console.error('Error picking image:', error);
+      
       alert('Failed to pick image. Please try again.');
       return null;
     } finally {

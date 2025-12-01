@@ -32,7 +32,7 @@ const useCloudinary = () => {
       const data = await response.json();
       return data.secure_url;
     } catch (error) {
-      console.error('Error uploading to Cloudinary:', error);
+     
       throw error;
     }
   };
