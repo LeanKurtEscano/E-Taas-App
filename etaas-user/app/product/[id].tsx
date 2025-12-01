@@ -138,7 +138,7 @@ const ViewProductScreen = () => {
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
   };
- 
+
   const handleBuyDirectly = () => {
     const checkOutData: CheckoutItem[] = [];
     checkOutData.push({
@@ -409,21 +409,24 @@ const ViewProductScreen = () => {
           </View>
 
           <View className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-4 mb-4 border border-pink-100">
-            <View className="flex-row items-center justify-between mb-4">
-              <View className="flex-row items-center">
+            <View className="flex-row items-center justify-between mb-4 gap-2">
+              <View className="flex-row items-center flex-shrink">
                 <Store size={18} color="#EC4899" strokeWidth={2.5} />
-                <Text className="text-base font-bold text-gray-800 ml-2">
+                <Text className="text-base font-bold text-gray-800 ml-2" numberOfLines={1}>
                   Shop Information
                 </Text>
               </View>
 
               <TouchableOpacity
                 onPress={() => isOwner ? router.push(`/seller/store`) : router.push(`/seller/store?id=${product.sellerId}`)}
-                className="flex-row items-center border border-pink-500 bg-white px-4 py-2 rounded-lg "
+                className="flex-row items-center border border-pink-500 bg-white px-3 py-2 rounded-lg flex-shrink-0"
                 style={{ elevation: 2 }}
               >
                 <Store size={14} color="#EC4899" strokeWidth={2.5} />
-                <Text className="text-pink-500 font-semibold text-sm ml-1.5">
+                <Text
+                  className="text-pink-500 font-semibold text-sm mx-1.5"
+                  numberOfLines={1}
+                >
                   {isOwner ? 'View My Shop' : 'Visit Shop'}
                 </Text>
                 <ChevronRight size={14} color="#EC4899" strokeWidth={2.5} />
@@ -431,7 +434,7 @@ const ViewProductScreen = () => {
             </View>
 
             <View className="flex-row items-start mb-4">
-              <View className="w-16 h-16 bg-pink-500 rounded-full items-center justify-center mr-3  ">
+              <View className="w-16 h-16 bg-pink-500 rounded-full items-center justify-center mr-3">
                 <Text className="text-white font-bold text-xl">
                   {shopInitials}
                 </Text>
@@ -508,10 +511,10 @@ const ViewProductScreen = () => {
 
         <View className="h-24" />
 
-        
+
       </ScrollView>
 
-      
+
 
       <SafeAreaView edges={['bottom']} className="bg-white border-t border-gray-200 ">
         <View className="px-4 py-3">
@@ -544,8 +547,8 @@ const ViewProductScreen = () => {
                 onPress={() => !isStockEmpty && (product.hasVariants ? setShowVariantModal(true) : handleAddToCartDirect({ userId: userData?.uid, productId: product.id, sellerId: product.sellerId }))}
                 disabled={isStockEmpty}
                 className={`flex-1 py-4 rounded-xl flex-row items-center justify-center ${isStockEmpty
-                    ? 'bg-gray-200 border-2 border-gray-300'
-                    : 'bg-white border-2 border-pink-500'
+                  ? 'bg-gray-200 border-2 border-gray-300'
+                  : 'bg-white border-2 border-pink-500'
                   }`}
                 style={!isStockEmpty ? { elevation: 3 } : {}}
               >
@@ -608,10 +611,10 @@ const ViewProductScreen = () => {
         />
       </SafeAreaView>
 
-      
+
       <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData} />
-       
-       <ChatButton />
+
+      <ChatButton />
     </SafeAreaView>
   );
 };

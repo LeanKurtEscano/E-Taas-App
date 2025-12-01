@@ -54,13 +54,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         />
 
         {/* Availability Badge */}
-        {isOutOfStock && (
-          <View className="absolute inset-0 bg-black/70 justify-center items-center">
-            <View className="bg-white/95 px-4 py-2 rounded-full">
-              <Text className="text-gray-900 text-xs font-bold">OUT OF STOCK</Text>
-            </View>
-          </View>
-        )}
+     {isOutOfStock && (
+  <View className="absolute inset-0 bg-black/70 justify-center items-center">
+    <View className="bg-white/95 px-6 py-2 rounded-full" style={{ minWidth: 120 }}>
+      <Text 
+        className="text-gray-900 text-xs font-bold text-center"
+        numberOfLines={1}
+      >
+        OUT OF STOCK
+      </Text>
+    </View>
+  </View>
+)}
 
         {/* 🆕 New Product Badge */}
         {isNewProduct && isAvailable && (

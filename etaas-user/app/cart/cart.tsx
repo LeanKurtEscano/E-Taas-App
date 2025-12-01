@@ -1,6 +1,6 @@
 // screens/CartProductScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +28,8 @@ interface CartItem {
 interface GroupedCart {
   [sellerId: string]: CartItem[];
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function CartProductScreen() {
   const { userData } = useCurrentUser();
@@ -136,8 +138,10 @@ export default function CartProductScreen() {
               <Ionicons name="arrow-back" size={22} color="#1F2937" />
             </TouchableOpacity>
             
-            <View>
-              <Text className="text-2xl font-bold text-gray-800">My Cart</Text>
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-gray-800" numberOfLines={1}>
+                My Cart
+              </Text>
               {totalItems > 0 && (
                 <Text className="text-sm text-gray-500 mt-0.5">
                   {totalItems} {totalItems === 1 ? 'item' : 'items'}
@@ -147,7 +151,7 @@ export default function CartProductScreen() {
           </View>
 
           {totalItems > 0 && (
-            <View className="bg-pink-500 px-3 py-1.5 rounded-full">
+            <View className="bg-pink-500 px-3 py-1.5 rounded-full ml-2">
               <Text className="text-white text-xs font-bold">{totalItems}</Text>
             </View>
           )}
@@ -155,22 +159,44 @@ export default function CartProductScreen() {
       </View>
 
       {!hasItems ? (
-        // Empty Cart State
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="w-32 h-32 bg-gray-100 rounded-full items-center justify-center mb-6">
-            <Ionicons name="cart-outline" size={64} color="#D1D5DB" />
+        // Empty Cart State - Responsive
+        <View 
+          className="flex-1 items-center justify-center px-6"
+          style={{ minHeight: SCREEN_HEIGHT * 0.6 }}
+        >
+          <View className="items-center" style={{ maxWidth: 400 }}>
+            <View className="w-28 h-28 bg-gray-100 rounded-full items-center justify-center mb-6">
+              <Ionicons name="cart-outline" size={56} color="#D1D5DB" />
+            </View>
+            
+            <Text 
+              className="text-xl font-bold text-gray-800 mb-2 text-center"
+              style={{ fontSize: SCREEN_HEIGHT > 700 ? 24 : 20 }}
+            >
+              Your cart is empty
+            </Text>
+            
+            <Text 
+              className="text-gray-500 text-center mb-8 leading-relaxed"
+              style={{ 
+                fontSize: SCREEN_HEIGHT > 700 ? 15 : 14,
+                paddingHorizontal: 16 
+              }}
+            >
+              Looks like you haven't added anything to your cart yet
+            </Text>
+            
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)')}
+              className="bg-pink-500 px-8 py-4 rounded-xl shadow-sm"
+              style={{ minWidth: 180 }}
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-bold text-base text-center">
+                Start Shopping
+              </Text>
+            </TouchableOpacity>
           </View>
-          <Text className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</Text>
-          <Text className="text-gray-500 text-center mb-8">
-            Looks like you haven't added anything to your cart yet
-          </Text>
-          <TouchableOpacity 
-            onPress={() => router.push('/(tabs)')}
-            className="bg-pink-500 px-8 py-4 rounded-xl shadow-sm"
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-bold text-base">Start Shopping</Text>
-          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView className="flex-1 pt-4" showsVerticalScrollIndicator={false}>

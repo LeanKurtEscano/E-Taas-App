@@ -47,6 +47,8 @@ import { getStatusColor } from '@/utils/general/getStatus';
 import { ShippingAddress, ProductVariant, ProductData, Order } from '@/types/order/sellerOrder';
 import { useNotification } from '@/hooks/general/useNotification';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import useToast from '@/hooks/general/useToast';
+import GeneralToast from '@/components/general/GeneralToast';
 
 const ManageOrders = () => {
   const { userData } = useCurrentUser()
@@ -57,6 +59,7 @@ const ManageOrders = () => {
   const [trackingLinks, setTrackingLinks] = useState<Record<string, string>>({});
   const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered'>('all');
   const { sendNotification } = useNotification();
+  const { toastVisible, toastMessage, toastType, showToast,setToastVisible } = useToast();
 
   useEffect(() => {
     if (!userData?.uid) return;
@@ -115,13 +118,15 @@ const ManageOrders = () => {
                   const variantIndex = variants.findIndex((v: ProductVariant) => v.id === item.variantId);
 
                   if (variantIndex === -1) {
-                    throw new Error(`Variant not found for ${item.productName}`);
+                    showToast(`Variant ${item.variantText} not found for product ${item.productName}`, 'error');
+                    return;
                   }
 
                   const currentQuantity = variants[variantIndex].stock || 0;
 
                   if (currentQuantity < item.quantity) {
-                    throw new Error(`Insufficient stock for ${item.productName} - ${item.variantText}`);
+                    showToast(`Insufficient stock for ${item.productName} - ${item.variantText}`, 'error');
+                    return;
                   }
 
                   const newQuantity = currentQuantity - item.quantity;
@@ -163,7 +168,8 @@ const ManageOrders = () => {
 
                   const currentQuantity = productData.quantity || 0;
                   if (currentQuantity < item.quantity) {
-                    throw new Error(`Insufficient stock for ${item.productName}`);
+                    showToast(`Insufficient stock for ${item.productName}`, 'error');
+                    return;
                   }
                   const newQuantity = currentQuantity - item.quantity;
                   const isOutOfStock = newQuantity <= 0;
@@ -216,11 +222,11 @@ const ManageOrders = () => {
                 `Your order from ${order.shopName} has been confirmed and is being prepared for shipment.`,
                 order.id
               );
-              Alert.alert('Success', 'Order confirmed successfully!');
+              showToast('Order confirmed successfully!', 'success');
             } catch (error) {
               
               const errorMessage = error instanceof Error ? error.message : 'Failed to confirm order';
-              Alert.alert('Error', errorMessage);
+              showToast('Something went wrong. Please try again later.', 'error');
             } finally {
               setProcessingOrderId(null);
             }
@@ -292,10 +298,10 @@ const ManageOrders = () => {
                 order.id
               );
 
-              Alert.alert('Success', 'Order cancelled successfully. The buyer has been notified.');
+              showToast('Order cancelled successfully. The buyer has been notified.', 'success');
             } catch (error) {
               console.error('Error cancelling order:', error);
-              Alert.alert('Error', 'Failed to cancel order');
+              showToast('Failed to cancel order', 'error');
             } finally {
               setProcessingOrderId(null);
             }
@@ -309,7 +315,7 @@ const ManageOrders = () => {
     const trackingLink = trackingLinks[order.id];
 
     if (!trackingLink || !trackingLink.trim()) {
-      Alert.alert('Error', 'Please enter a tracking link');
+      showToast('Please enter a tracking link', 'error');
       return;
     }
 
@@ -341,10 +347,10 @@ Track its progress here: ${trackingLink.trim()}`,
         order.id
       );
       setTrackingLinks(prev => ({ ...prev, [order.id]: '' }));
-      Alert.alert('Success', 'Tracking link added and buyer notified!');
+      showToast('Tracking link added and buyer notified!', 'success');
     } catch (error) {
       console.error('Error adding tracking:', error);
-      Alert.alert('Error', 'Failed to add tracking link');
+      showToast('Failed to add tracking link', 'error');
     } finally {
       setProcessingOrderId(null);
     }
@@ -745,6 +751,7 @@ Track its progress here: ${trackingLink.trim()}`,
           </View>
         )}
       </ScrollView>
+      <GeneralToast visible={toastVisible} message={toastMessage} type={toastType} onHide={() => setToastVisible(false)} />
     </SafeAreaView>
   );
 }
