@@ -40,6 +40,8 @@ export interface UserData {
     addressLocation: string;
     addressOfOwner: string;
     contactNumber: string;
+    coverPhotoUrl?: string;
+    profilePhotoUrl?: string;
     email: string;
     name: string;
     registeredAt: string;

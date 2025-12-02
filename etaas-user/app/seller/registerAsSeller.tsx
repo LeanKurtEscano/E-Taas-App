@@ -376,7 +376,7 @@ const RegisterAsSeller = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header - Outside KeyboardAvoidingView to keep it fixed */}
+   
       <View className="bg-white border-b border-gray-100">
         <View className="px-4 py-3 flex-row items-center gap-3 pt-12">
           <TouchableOpacity

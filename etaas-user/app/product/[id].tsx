@@ -231,6 +231,7 @@ const ViewProductScreen = () => {
   const shopName = shopData?.sellerInfo?.shopName || 'Shop';
   const businessName = shopData?.sellerInfo?.businessName || '';
   const shopInitials = getInitials(shopName);
+  const profilePhotoUrl = shopData?.sellerInfo?.profilePhotoUrl || '';
 
   const descriptionLength = product.description?.length || 0;
   const shouldTruncate = descriptionLength > 150;
@@ -434,10 +435,18 @@ const ViewProductScreen = () => {
             </View>
 
             <View className="flex-row items-start mb-4">
-              <View className="w-16 h-16 bg-pink-500 rounded-full items-center justify-center mr-3">
-                <Text className="text-white font-bold text-xl">
-                  {shopInitials}
-                </Text>
+              <View className="w-16 h-16 bg-pink-500 rounded-full items-center justify-center mr-3 overflow-hidden">
+                {profilePhotoUrl ? (
+                  <Image
+                    source={{ uri: profilePhotoUrl }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text className="text-white font-bold text-xl">
+                    {shopInitials}
+                  </Text>
+                )}
               </View>
               <View className="flex-1">
                 <Text className="text-lg font-bold text-gray-900 mb-1">

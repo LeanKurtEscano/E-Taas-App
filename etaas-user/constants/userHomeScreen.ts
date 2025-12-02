@@ -205,5 +205,5 @@ export const profileOptions: ProfileOption[] = [
        // { id: 4, title: 'To Pay', icon: Wallet,route:'/orders/to-pay' },
         { id: 4, title: 'My Purchase History', icon: Clock, route:'/orders/history' },
         { id: 5, title: 'Help & Support', icon: HelpCircle,route:'/support/help' },
-        { id: 6, title: 'Settings', icon: Settings, route:'/settings' },
+        { id: 6, title: 'Settings', icon: Settings, route:'/settings/settings' },
     ];
