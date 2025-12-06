@@ -278,7 +278,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 }),
             };
 
-
+           /* 
             const ragProductData = {
                 name: productName.trim(),
                 price: Number(productPrice),
@@ -293,6 +293,8 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                     variants,
                 }),
             };
+
+            */
 
 
             if (productId) {
@@ -309,10 +311,11 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 );
                 showToast('Product updated successfully!', 'success');
             } else {
-                console.log('Submitting new product with data:', ragProductData);
+              
                 const uid = await sellerStore.addProduct(productData, imageUris);
+                /*
                 await sellerStore.addRagProduct({ ...ragProductData, uid: uid }, imageUris);
-
+                  */
                 showToast('Product added successfully!', 'success');
             }
 

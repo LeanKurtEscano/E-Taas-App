@@ -43,13 +43,13 @@ import CartToast from '@/components/general/CartToast';
 import { ConversationModal } from '@/components/general/ConversationModal';
 import { CheckoutItem } from '@/types/product/product';
 import ChatButton from '@/components/general/ChatButton';
-
+import AssistantChatModal from '@/components/general/AssistantChatModal';
 const ViewProductScreen = () => {
   const router = useRouter();
   const { userData } = useCurrentUser();
   const { id } = useLocalSearchParams();
   const productId = id as string | undefined;
-
+  const [isAssistantModalVisible, setAssistantModalVisible] = useState(false);
   const [showConversationModal, setShowConversationModal] = useState(false);
   const {
     loading: cartLoading,
@@ -623,7 +623,19 @@ const ViewProductScreen = () => {
 
       <ConversationModal visible={showConversationModal} onClose={() => setShowConversationModal(false)} sellerData={shopData} />
 
-      <ChatButton />
+       {/* <ChatButton 
+          onPress={() => setAssistantModalVisible(true)} 
+       
+        />
+
+
+       <AssistantChatModal
+          visible={isAssistantModalVisible}
+          onClose={() => setAssistantModalVisible(false)}
+          userId={userData?.uid}
+          shopId={shopData?.sellerInfo?.sellerId || ''}
+        /> */}
+       
     </SafeAreaView>
   );
 };

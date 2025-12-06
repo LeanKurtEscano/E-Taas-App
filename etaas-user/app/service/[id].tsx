@@ -623,8 +623,7 @@ const InquireServiceScreen = () => {
           onPress={() => setAssistantModalVisible(true)} 
           bottomOffset={isTablet ? 120 : 100} 
         />
-
-        <AssistantChatModal
+        {/*  <AssistantChatModal
           visible={isAssistantModalVisible}
           onClose={() => setAssistantModalVisible(false)}
           userId={userData?.uid}
@@ -636,7 +635,8 @@ const InquireServiceScreen = () => {
           onHide={() => setToastVisible(false)}
           message={toastMessage}
           type={toastType}
-        />
+        /> */}
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

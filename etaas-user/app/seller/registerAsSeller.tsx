@@ -28,6 +28,7 @@ import { router } from 'expo-router';
 import useToast from '@/hooks/general/useToast';
 import GeneralToast from '@/components/general/GeneralToast';
 import { sellerApi } from '@/config/apiConfig';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 interface SellerFormData {
   name: string;
   businessName: string;
@@ -181,7 +182,7 @@ const RegisterAsSeller = () => {
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
-     
+
       return false;
     }
   };
@@ -199,7 +200,7 @@ const RegisterAsSeller = () => {
       // Check if any document exists and it's not the current user
       return querySnapshot.docs.some(doc => doc.id !== userData?.uid);
     } catch (error) {
-      
+
       return false;
     }
   };
@@ -222,7 +223,7 @@ const RegisterAsSeller = () => {
         );
       });
     } catch (error) {
-      
+
       return false;
     }
   };
@@ -335,8 +336,10 @@ const RegisterAsSeller = () => {
       }
 
       try {
+        /*
         const response = await sellerApi.post('/sellers', sellerInfo)
         const sellerId = response.data.id;
+        */
         const userRef = doc(db, 'users', userData?.uid);
         await updateDoc(userRef, {
           sellerInfo: {
@@ -347,7 +350,7 @@ const RegisterAsSeller = () => {
             addressOfOwner: formData.addressOfOwner.trim(),
             contactNumber: formData.contactNumber.trim(),
             email: formData.email.trim().toLowerCase(),
-            sellerId: sellerId,
+            //sellerId: sellerId,
             registeredAt: new Date().toISOString(),
           },
           isSeller: true,
@@ -367,7 +370,7 @@ const RegisterAsSeller = () => {
         router.replace('/(tabs)/profile');
       }, 1500);
     } catch (error) {
-      
+
       showToast('Failed to register as seller. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -376,7 +379,7 @@ const RegisterAsSeller = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-   
+
       <View className="bg-white border-b border-gray-100">
         <View className="px-4 py-3 flex-row items-center gap-3 pt-12">
           <TouchableOpacity
@@ -396,257 +399,253 @@ const RegisterAsSeller = () => {
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-        keyboardVerticalOffset={0}
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={80}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 32 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Hero Section */}
-          <View className="bg-pink-500 mx-4 mt-6 rounded-2xl p-6">
-            <View className="flex-row items-center gap-3 mb-3">
-              <View className="bg-white/20 p-3 rounded-full">
-                <Store size={24} color="white" strokeWidth={2} />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-bold text-lg">
-                  Become a Seller
-                </Text>
-                <Text className="text-pink-50 text-sm mt-0.5">
-                  Join E-Taas marketplace
-                </Text>
-              </View>
+        {/* Hero Section */}
+        <View className="bg-pink-500 mx-4 mt-6 rounded-2xl p-6">
+          <View className="flex-row items-center gap-3 mb-3">
+            <View className="bg-white/20 p-3 rounded-full">
+              <Store size={24} color="white" strokeWidth={2} />
             </View>
-            <View className="bg-white/10 rounded-xl p-3 mt-2">
-              <Text className="text-white text-xs leading-5">
-                Complete the form below to register your business and start reaching thousands of customers on our platform.
+            <View className="flex-1">
+              <Text className="text-white font-bold text-lg">
+                Become a Seller
+              </Text>
+              <Text className="text-pink-50 text-sm mt-0.5">
+                Join E-Taas marketplace
               </Text>
             </View>
           </View>
-
-          {/* Form Section */}
-          <View className="px-4 mt-6">
-            <Text className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Personal Information
-            </Text>
-
-            {/* Name */}
-            <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <User size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Full Name *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.name}
-                onChangeText={(value) => handleInputChange('name', value)}
-                onBlur={() => handleBlur('name')}
-                placeholder="John Doe"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.name ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.name ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.name}</Text>
-              ) : null}
-            </View>
-
-            {/* Email */}
-            <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <Mail size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Email Address *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                onBlur={() => handleBlur('email')}
-                placeholder="john.doe@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.email ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.email ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.email}</Text>
-              ) : null}
-            </View>
-
-            {/* Contact Number */}
-            <View className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <Phone size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Contact Number *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.contactNumber}
-                onChangeText={(value) => handleInputChange('contactNumber', value)}
-                onBlur={() => handleBlur('contactNumber')}
-                placeholder="09123456789"
-                keyboardType="phone-pad"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.contactNumber ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.contactNumber}</Text>
-              ) : null}
-            </View>
-
-            <Text className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-2">
-              Business Information
-            </Text>
-
-            {/* Business Name */}
-            <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <Building2 size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Business Name *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.businessName}
-                onChangeText={(value) => handleInputChange('businessName', value)}
-                onBlur={() => handleBlur('businessName')}
-                placeholder="ABC Trading Company"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.businessName ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.businessName}</Text>
-              ) : null}
-            </View>
-
-            {/* Shop Name */}
-            <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <Store size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-sm font-semibold text-gray-700">
-                    Shop Display Name *
-                  </Text>
-                  <Text className="text-xs text-gray-500 mt-0.5">
-                    This is how your shop will appear to customers
-                  </Text>
-                </View>
-              </View>
-              <TextInput
-                value={formData.shopName}
-                onChangeText={(value) => handleInputChange('shopName', value)}
-                onBlur={() => handleBlur('shopName')}
-                placeholder="John's Amazing Store"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.shopName ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.shopName}</Text>
-              ) : null}
-            </View>
-
-            {/* Business Address */}
-            <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <MapPin size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Business Address *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.addressLocation}
-                onChangeText={(value) => handleInputChange('addressLocation', value)}
-                onBlur={() => handleBlur('addressLocation')}
-                placeholder="123 Main Street, City, Province"
-                multiline
-                numberOfLines={2}
-                textAlignVertical="top"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.addressLocation ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressLocation}</Text>
-              ) : null}
-            </View>
-
-            {/* Owner Address */}
-            <View className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="bg-pink-50 p-2 rounded-lg">
-                  <MapPin size={18} color="#DB2777" strokeWidth={2} />
-                </View>
-                <Text className="text-sm font-semibold text-gray-700">
-                  Owner's Address *
-                </Text>
-              </View>
-              <TextInput
-                value={formData.addressOfOwner}
-                onChangeText={(value) => handleInputChange('addressOfOwner', value)}
-                onBlur={() => handleBlur('addressOfOwner')}
-                placeholder="456 Home Street, City, Province"
-                multiline
-                numberOfLines={2}
-                textAlignVertical="top"
-                className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-                  }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.addressOfOwner ? (
-                <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressOfOwner}</Text>
-              ) : null}
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          <View className="px-4">
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={loading}
-              className="bg-pink-600 rounded-xl py-4 flex-row items-center justify-center shadow-lg active:bg-pink-700 disabled:bg-gray-300"
-            >
-              {loading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <>
-                  <CheckCircle size={22} color="white" strokeWidth={2.5} />
-                  <Text className="text-white font-bold text-base ml-2">
-                    Complete Registration
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <Text className="text-center text-xs text-gray-500 mt-4 px-4">
-              By registering, you agree to our Terms of Service and Privacy Policy
+          <View className="bg-white/10 rounded-xl p-3 mt-2">
+            <Text className="text-white text-xs leading-5">
+              Complete the form below to register your business and start reaching thousands of customers on our platform.
             </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+
+        {/* Form Section */}
+        <View className="px-4 mt-6">
+          <Text className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Personal Information
+          </Text>
+
+          {/* Name */}
+          <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <User size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Full Name *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.name}
+              onChangeText={(value) => handleInputChange('name', value)}
+              onBlur={() => handleBlur('name')}
+              placeholder="John Doe"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.name ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.name ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.name}</Text>
+            ) : null}
+          </View>
+
+          {/* Email */}
+          <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <Mail size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Email Address *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.email}
+              onChangeText={(value) => handleInputChange('email', value)}
+              onBlur={() => handleBlur('email')}
+              placeholder="john.doe@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.email ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.email ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.email}</Text>
+            ) : null}
+          </View>
+
+          {/* Contact Number */}
+          <View className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <Phone size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Contact Number *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.contactNumber}
+              onChangeText={(value) => handleInputChange('contactNumber', value)}
+              onBlur={() => handleBlur('contactNumber')}
+              placeholder="09123456789"
+              keyboardType="phone-pad"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.contactNumber ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.contactNumber}</Text>
+            ) : null}
+          </View>
+
+          <Text className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-2">
+            Business Information
+          </Text>
+
+          {/* Business Name */}
+          <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <Building2 size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Business Name *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.businessName}
+              onChangeText={(value) => handleInputChange('businessName', value)}
+              onBlur={() => handleBlur('businessName')}
+              placeholder="ABC Trading Company"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.businessName ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.businessName}</Text>
+            ) : null}
+          </View>
+
+          {/* Shop Name */}
+          <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <Store size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-gray-700">
+                  Shop Display Name *
+                </Text>
+                <Text className="text-xs text-gray-500 mt-0.5">
+                  This is how your shop will appear to customers
+                </Text>
+              </View>
+            </View>
+            <TextInput
+              value={formData.shopName}
+              onChangeText={(value) => handleInputChange('shopName', value)}
+              onBlur={() => handleBlur('shopName')}
+              placeholder="John's Amazing Store"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.shopName ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.shopName}</Text>
+            ) : null}
+          </View>
+
+          {/* Business Address */}
+          <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <MapPin size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Business Address *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.addressLocation}
+              onChangeText={(value) => handleInputChange('addressLocation', value)}
+              onBlur={() => handleBlur('addressLocation')}
+              placeholder="123 Main Street, City, Province"
+              multiline
+              numberOfLines={2}
+              textAlignVertical="top"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.addressLocation ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressLocation}</Text>
+            ) : null}
+          </View>
+
+          {/* Owner Address */}
+          <View className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-pink-50 p-2 rounded-lg">
+                <MapPin size={18} color="#DB2777" strokeWidth={2} />
+              </View>
+              <Text className="text-sm font-semibold text-gray-700">
+                Owner's Address *
+              </Text>
+            </View>
+            <TextInput
+              value={formData.addressOfOwner}
+              onChangeText={(value) => handleInputChange('addressOfOwner', value)}
+              onBlur={() => handleBlur('addressOfOwner')}
+              placeholder="456 Home Street, City, Province"
+              multiline
+              numberOfLines={2}
+              textAlignVertical="top"
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
+              placeholderTextColor="#9CA3AF"
+            />
+            {errors.addressOfOwner ? (
+              <Text className="text-red-500 text-xs mt-2 ml-1">{errors.addressOfOwner}</Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Submit Button */}
+        <View className="px-4">
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={loading}
+            className="bg-pink-600 rounded-xl py-4 flex-row items-center justify-center shadow-lg active:bg-pink-700 disabled:bg-gray-300"
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <CheckCircle size={22} color="white" strokeWidth={2.5} />
+                <Text className="text-white font-bold text-base ml-2">
+                  Complete Registration
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <Text className="text-center text-xs text-gray-500 mt-4 px-4">
+            By registering, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </View>
+      </KeyboardAwareScrollView>
+
 
       <GeneralToast
         visible={toastVisible}

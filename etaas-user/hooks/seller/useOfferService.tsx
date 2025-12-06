@@ -240,11 +240,13 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
       
         const docRef = await updateDoc(doc(db, 'services', serviceId), serviceData);
         const uid = serviceId;
+        /*
         const response = await ingestApi.put(`/shops/${shopId}/service`, {
           ...serviceData,
           uid: uid,
           images: uploadedImageUrls,
       });
+      */
         showToast('Service updated successfully!', 'success');
       } else {
        
@@ -254,11 +256,13 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
         });
 
         const uid = docRef.id;
+        /*
         const response = await ingestApi.post(`/shops/${shopId}/service`, {
           ...serviceData,
           uid: uid,
           images: uploadedImageUrls,
       }); 
+      */
 
          router.push('/(tabs)/services');
       

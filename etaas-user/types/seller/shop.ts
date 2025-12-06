@@ -44,6 +44,7 @@ export interface UserData {
     profilePhotoUrl?: string;
     email: string;
     name: string;
+    sellerId: number;
     registeredAt: string;
     uid: string;
   };

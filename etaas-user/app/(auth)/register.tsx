@@ -9,7 +9,7 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
+  ActivityIndicator,Keyboard
 } from 'react-native';
 import { Lock, Mail, User, Eye, EyeOff } from 'lucide-react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -28,7 +28,8 @@ import { Image } from 'react-native';
 import { auth, db } from '../../config/firebaseConfig';
 import { router } from 'expo-router';
 import { validateEmail, validateUsername } from '@/utils/validation/authValidation';
-
+import { useRef,useEffect } from 'react';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -291,16 +292,18 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-         className="flex-1 bg-pink-500"
-         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-         keyboardVerticalOffset={0}
-       >
+
+    <View className="flex-1 bg-pink-500">
+
+     <KeyboardAwareScrollView
+      enableOnAndroid
+    
+      extraScrollHeight={80}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       <StatusBar barStyle="light-content" />
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
+     
         <View className="rounded-b-[40px] pt-20 pb-8 items-center px-6">
           <View className="w-28 h-28 rounded-full bg-white items-center justify-center mb-6">
             <View className="w-24 h-24 rounded-full overflow-hidden">
@@ -507,7 +510,8 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      </View>
+
   );
 }

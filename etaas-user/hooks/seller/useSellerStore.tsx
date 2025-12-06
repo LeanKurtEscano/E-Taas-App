@@ -271,11 +271,13 @@ const listenToSellerProducts = (
             }
 
             await updateDoc(productRef, updateData);
+            /*
             const response = await ingestApi.put(`/shops/${userData?.sellerInfo?.sellerId}/products`, {
                 ...backendUpdateData,
                 uid: productId,
 
             });
+            */
             console.log('Product updated successfully');
 
         } catch (error) {
