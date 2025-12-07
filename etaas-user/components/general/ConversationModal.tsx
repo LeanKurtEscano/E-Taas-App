@@ -18,7 +18,7 @@ import { useConversation } from '@/hooks/general/useConversation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { UserData } from '@/hooks/useCurrentUser';
 import { formatTime, formatDateMessage } from '@/utils/general/formatDate';
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 interface ConversationModalProps {
   visible: boolean;
   onClose: () => void;
@@ -74,15 +74,15 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   } = useConversation(userData?.uid || '', sellerData.uid || sellerData.id || '');
 
   // Determine if the other person is a seller or regular user
-  const isOtherPersonASeller = sellerData.sellerInfo && 
+  const isOtherPersonASeller = sellerData.sellerInfo &&
     Object.keys(sellerData.sellerInfo).length > 0;
 
   // Get display name based on who they are
   const otherPersonName = isOtherPersonASeller
     ? sellerData.sellerInfo.shopName
-    : (sellerData.addressesList?.[0]?.fullName || 
-       sellerData.email?.split('@')[0] || 
-       'User');
+    : (sellerData.addressesList?.[0]?.fullName ||
+      sellerData.email?.split('@')[0] ||
+      'User');
 
   const otherPersonRole = isOtherPersonASeller ? 'Shop' : 'Customer';
 
@@ -96,13 +96,13 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
   const handleSendMessage = async () => {
     if ((!messageText.trim() && !selectedImage) || sendingMessage) return;
-    
+
     const text = messageText;
     const imageUri = selectedImage; // This is now a local URI
-    
+
     setMessageText('');
     setSelectedImage(null);
-    
+
     // sendMessage will handle the Cloudinary upload
     await sendMessage(text, imageUri || '');
   };
@@ -161,11 +161,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               >
                 <ChevronLeft size={24} color="#ec4899" />
               </TouchableOpacity>
-              
+
               <View className="bg-pink-500 w-12 h-12 rounded-full items-center justify-center mr-3">
                 <Store size={24} color="#fff" />
               </View>
-              
+
               <View className="flex-1">
                 <Text className="text-gray-900 font-bold text-xl">
                   {otherPersonName}
@@ -183,87 +183,84 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               <X size={24} color="#ec4899" />
             </TouchableOpacity>
           </View>
-
-      
         </View>
 
-        {/* Messages */}
-        <View className="flex-1 bg-gray-50">
-          <ScrollView
-            ref={scrollViewRef}
-            className="flex-1"
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {loading ? (
-              <View className="flex-1 items-center justify-center py-20">
-                <ActivityIndicator size="large" color="#ec4899" />
-                <Text className="text-gray-600 mt-4 text-lg">Loading messages...</Text>
+        {/* Messages - Separate ScrollView */}
+        <KeyboardAwareScrollView
+          ref={scrollViewRef}
+          className="flex-1 bg-gray-50"
+          enableOnAndroid
+          extraScrollHeight={20}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {loading ? (
+            <View className="flex-1 items-center justify-center py-20">
+              <ActivityIndicator size="large" color="#ec4899" />
+              <Text className="text-gray-600 mt-4 text-lg">Loading messages...</Text>
+            </View>
+          ) : messages.length === 0 ? (
+            <View className="flex-1 items-center justify-center py-20">
+              <View className="bg-pink-100 w-24 h-24 rounded-full items-center justify-center mb-4">
+                <Text className="text-4xl">💬</Text>
               </View>
-            ) : messages.length === 0 ? (
-              <View className="flex-1 items-center justify-center py-20">
-                <View className="bg-pink-100 w-24 h-24 rounded-full items-center justify-center mb-4">
-                  <Text className="text-4xl">💬</Text>
-                </View>
-                <Text className="text-gray-900 font-bold text-2xl mb-2">
-                  No messages yet
-                </Text>
-                <Text className="text-gray-600 text-center text-lg">
-                  Start the conversation with {otherPersonName}!
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {messages.map((message, index) => {
-                  const isCurrentUser = message.senderId === userData.uid;
-                  const previousMessage = index > 0 ? messages[index - 1] : null;
-                  
-                  return (
-                    <View key={message.id}>
-                      {renderDateSeparator(message, previousMessage)}
-                      <View
-                        className={`mb-3 ${
-                          isCurrentUser ? 'items-end' : 'items-start'
+              <Text className="text-gray-900 font-bold text-2xl mb-2">
+                No messages yet
+              </Text>
+              <Text className="text-gray-600 text-center text-lg">
+                Start the conversation with {otherPersonName}!
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {messages.map((message, index) => {
+                const isCurrentUser = message.senderId === userData.uid;
+                const previousMessage = index > 0 ? messages[index - 1] : null;
+
+                return (
+                  <View key={message.id}>
+                    {renderDateSeparator(message, previousMessage)}
+                    <View
+                      className={`mb-3 ${isCurrentUser ? 'items-end' : 'items-start'
                         }`}
-                      >
-                        <View
-                          className={`max-w-[85%] rounded-2xl ${
-                            isCurrentUser
-                              ? 'bg-pink-500 rounded-br-md'
-                              : 'bg-white rounded-bl-md shadow-sm border border-gray-100'
+                    >
+                      <View
+                        className={`max-w-[85%] rounded-2xl ${isCurrentUser
+                            ? 'bg-pink-500 rounded-br-md'
+                            : 'bg-white rounded-bl-md shadow-sm border border-gray-100'
                           }`}
-                        >
-                          {message.imageUrl ? (
-                            <View className="p-1.5">
-                              <Image
-                                source={{ uri: message.imageUrl }}
-                                className="w-56 h-56 rounded-xl"
-                                resizeMode="cover"
-                              />
-                            </View>
-                          ) : null}
-                          {message.text ? (
-                            <View className={message.imageUrl ? 'px-3 pb-3 pt-1' : 'px-3 py-2.5'}>
-                              <MessageText
-                                text={message.text}
-                                isCurrentUser={isCurrentUser}
-                              />
-                            </View>
-                          ) : null}
-                        </View>
-                        <Text className="text-xs text-gray-500 mt-1 px-1">
-                          {formatTime(message.createdAt)}
-                        </Text>
+                      >
+                        {message.imageUrl ? (
+                          <View className="p-1.5">
+                            <Image
+                              source={{ uri: message.imageUrl }}
+                              className="w-56 h-56 rounded-xl"
+                              resizeMode="cover"
+                            />
+                          </View>
+                        ) : null}
+                        {message.text ? (
+                          <View className={message.imageUrl ? 'px-3 pb-3 pt-1' : 'px-3 py-2.5'}>
+                            <MessageText
+                              text={message.text}
+                              isCurrentUser={isCurrentUser}
+                            />
+                          </View>
+                        ) : null}
                       </View>
+                      <Text className="text-xs text-gray-500 mt-1 px-1">
+                        {formatTime(message.createdAt)}
+                      </Text>
                     </View>
-                  );
-                })}
-              </View>
-            )}
-          </ScrollView>
-        </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </KeyboardAwareScrollView>
 
-        {/* Input Area */}
+        {/* Input Area - Fixed at bottom, wraps with KeyboardAvoidingView */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
@@ -313,7 +310,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   multiline
                   maxLength={500}
                   editable={!sendingMessage && !uploadingImage}
-                  style={{ 
+                  style={{
                     paddingTop: Platform.OS === 'ios' ? 12 : 12,
                     paddingBottom: Platform.OS === 'ios' ? 12 : 12,
                   }}
@@ -323,11 +320,10 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               <TouchableOpacity
                 onPress={handleSendMessage}
                 disabled={!hasContent || sendingMessage || uploadingImage}
-                className={`w-12 h-12 rounded-full items-center justify-center ${
-                  hasContent && !sendingMessage && !uploadingImage
+                className={`w-12 h-12 rounded-full items-center justify-center ${hasContent && !sendingMessage && !uploadingImage
                     ? 'bg-pink-500'
                     : 'bg-gray-100'
-                }`}
+                  }`}
               >
                 {sendingMessage ? (
                   <ActivityIndicator size="small" color="#fff" />

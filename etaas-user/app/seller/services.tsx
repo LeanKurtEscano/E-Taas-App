@@ -17,15 +17,16 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import useToast from '@/hooks/general/useToast';
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const OfferServiceScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const serviceId = params.serviceId as string | undefined;
-  
+
   const { userData } = useCurrentUser();
   const { toastVisible, toastMessage, toastType, showToast, setToastVisible } = useToast();
-  
+
   const {
     formData,
     loading,
@@ -40,11 +41,11 @@ const OfferServiceScreen = () => {
     pickImages,
     removeImage,
     submitService,
-  } = useOfferService({ 
-    userId: userData?.uid || '', 
+  } = useOfferService({
+    userId: userData?.uid || '',
     shopId: userData?.sellerInfo.sellerId || "",
     serviceId,
-    showToast 
+    showToast
   });
 
   const handleSubmit = async () => {
@@ -64,14 +65,12 @@ const OfferServiceScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-          className="flex-1 bg-white"
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
-        >
+    <View
+      className="flex-1 bg-white"
+    >
       {/* Header with Back Button */}
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           className="mr-4 p-2 rounded-full "
         >
@@ -82,17 +81,22 @@ const OfferServiceScreen = () => {
             {isEditMode ? 'Edit Service' : 'Offer a Service'}
           </Text>
           <Text className="text-sm text-gray-500 mt-1">
-            {isEditMode 
-              ? 'Update your service details' 
+            {isEditMode
+              ? 'Update your service details'
               : 'Fill in the details to list your service'}
           </Text>
         </View>
       </View>
 
-      <ScrollView 
-        className="flex-1" 
+      <KeyboardAwareScrollView
+        className="flex-1"
+        enableOnAndroid
+        extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        enableAutomaticScroll={true}
+        enableResetScrollToCoords={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
         <View className="px-6 pt-6">
           {/* Banner Image Section */}
@@ -103,7 +107,7 @@ const OfferServiceScreen = () => {
             <Text className="text-xs text-gray-500 mb-3">
               Upload a high-quality banner image to showcase your service
             </Text>
-            
+
             {formData.bannerImage ? (
               <View className="relative">
                 <Image
@@ -220,18 +224,16 @@ const OfferServiceScreen = () => {
                 <TouchableOpacity
                   key={cat}
                   onPress={() => selectCategory(cat)}
-                  className={`px-4 py-2 rounded-full border ${
-                    formData.category === cat
+                  className={`px-4 py-2 rounded-full border ${formData.category === cat
                       ? 'bg-pink-500 border-pink-500'
                       : 'bg-white border-gray-300'
-                  }`}
+                    }`}
                 >
                   <Text
-                    className={`text-sm font-medium ${
-                      formData.category === cat
+                    className={`text-sm font-medium ${formData.category === cat
                         ? 'text-white'
                         : 'text-gray-700'
-                    }`}
+                      }`}
                   >
                     {cat}
                   </Text>
@@ -343,51 +345,47 @@ const OfferServiceScreen = () => {
               )}
             </View>
           </View>
-
-      
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-
-        <View className="bg-white border-t border-gray-200 px-6 py-4 ">
-          
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={loading || uploadingImages}
-            className={`rounded-2xl py-4 items-center mb-6 ${
-              loading || uploadingImages ? 'bg-pink-300' : 'bg-pink-500'
+      {/* Fixed Submit Button - Not affected by keyboard */}
+      <View className="bg-white border-t border-gray-200 px-6 py-4">
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={loading || uploadingImages}
+          className={`rounded-2xl py-4 items-center ${loading || uploadingImages ? 'bg-pink-300' : 'bg-pink-500'
             }`}
-            style={{
-              shadowColor: '#ec4899',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 5,
-            }}
-          >
-            {loading || uploadingImages ? (
-              <View className="flex-row items-center">
-                <ActivityIndicator color="white" />
-                <Text className="text-white font-bold text-lg ml-2">
-                  {uploadingImages ? 'Uploading Images...' : isEditMode ? 'Updating...' : 'Submitting...'}
-                </Text>
-              </View>
-            ) : (
-              <Text className="text-white font-bold text-lg">
-                {isEditMode ? 'Update Service' : 'Submit Service'}
+          style={{
+            shadowColor: '#ec4899',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          {loading || uploadingImages ? (
+            <View className="flex-row items-center">
+              <ActivityIndicator color="white" />
+              <Text className="text-white font-bold text-lg ml-2">
+                {uploadingImages ? 'Uploading Images...' : isEditMode ? 'Updating...' : 'Submitting...'}
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            </View>
+          ) : (
+            <Text className="text-white font-bold text-lg">
+              {isEditMode ? 'Update Service' : 'Submit Service'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Toast Notification */}
-      <CheckoutToast 
-        visible={toastVisible} 
-        onHide={() => setToastVisible(false)} 
-        message={toastMessage} 
-        type={toastType} 
+      <CheckoutToast
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        message={toastMessage}
+        type={toastType}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

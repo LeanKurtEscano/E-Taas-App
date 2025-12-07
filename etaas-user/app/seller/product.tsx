@@ -20,7 +20,7 @@ import GeneralToast from '@/components/general/GeneralToast';
 import useToast from '@/hooks/general/useToast';
 import { useProductCrud } from '@/hooks/seller/useProductCrud';
 import { useState } from 'react';
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 const ProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
   const params = useLocalSearchParams();
@@ -115,12 +115,8 @@ const ProductScreen: React.FC = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-white"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
-      {/* Header */}
+    <View className="flex-1 bg-white">
+      {/* Header - Fixed at top */}
       <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6 flex-row items-center shadow-sm">
         <TouchableOpacity
           onPress={() => router.back()}
@@ -134,11 +130,16 @@ const ProductScreen: React.FC = () => {
         </Text>
       </View>
 
-      <ScrollView
-        className="flex-1 px-6"
-        showsVerticalScrollIndicator={false}
+      {/* Main Content - Use KeyboardAwareScrollView */}
+      <KeyboardAwareScrollView
+        className="flex-1"
+        enableOnAndroid
+        extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+        enableAutomaticScroll={true}
+        enableResetScrollToCoords={false}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
       >
         {/* Product Images */}
         <View className="mt-6">
@@ -226,7 +227,6 @@ const ProductScreen: React.FC = () => {
         </View>
 
         {/* Quantity - Hide when variants are enabled */}
-        {/* Quantity - Hide when variants are enabled */}
         {!hasVariants && (
           <View className="mt-5">
             <Text className="text-base font-semibold text-gray-900 mb-3">
@@ -295,8 +295,7 @@ const ProductScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-
-
+        {/* Availability */}
         <View className="mt-5">
           <Text className="text-base font-semibold text-gray-900 mb-3">
             Availability
@@ -309,15 +308,10 @@ const ProductScreen: React.FC = () => {
               let isDisabled = false;
 
               if (noVariants) {
-                // RULE 1: No variants → disable everything
                 isDisabled = true;
-
               } else if (allVariantsOut) {
-                // RULE 2: All variants stock = 0 → ONLY allow unavailable & out of stock
                 isDisabled = !(option === "unavailable" || option === "out of stock");
-
               } else {
-                // RULE 3: Normal behavior
                 isDisabled =
                   ((option === "out of stock" || option === "unavailable") && productQuantity > 0) ||
                   (option === "available" && productQuantity === 0);
@@ -331,26 +325,20 @@ const ProductScreen: React.FC = () => {
                   disabled={isDisabled}
                   onPress={() => setProductAvailability(option)}
                   activeOpacity={0.7}
-                  className={`
-          px-5 py-3 rounded-full mr-2 mb-2 
-          ${isDisabled
-                      ? "bg-gray-300 border border-gray-300 opacity-50"
-                      : isSelected
-                        ? "bg-pink-500"
-                        : "bg-gray-50 border border-gray-200"
-                    }
-        `}
+                  className={`px-5 py-3 rounded-full mr-2 mb-2 ${isDisabled
+                    ? "bg-gray-300 border border-gray-300 opacity-50"
+                    : isSelected
+                      ? "bg-pink-500"
+                      : "bg-gray-50 border border-gray-200"
+                    }`}
                 >
                   <Text
-                    className={`
-            font-semibold text-sm capitalize 
-            ${isDisabled
-                        ? "text-gray-500"
-                        : isSelected
-                          ? "text-white"
-                          : "text-gray-700"
-                      }
-          `}
+                    className={`font-semibold text-sm capitalize ${isDisabled
+                      ? "text-gray-500"
+                      : isSelected
+                        ? "text-white"
+                        : "text-gray-700"
+                      }`}
                   >
                     {option.charAt(0).toUpperCase() + option.slice(1)}
                   </Text>
@@ -436,9 +424,9 @@ const ProductScreen: React.FC = () => {
             style={{ minHeight: 100 }}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      {/* Submit Button */}
+      {/* Fixed Submit Button */}
       <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
         <TouchableOpacity
           onPress={handleSubmit}
@@ -479,7 +467,7 @@ const ProductScreen: React.FC = () => {
         type={toastType}
         onHide={() => setToastVisible(false)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

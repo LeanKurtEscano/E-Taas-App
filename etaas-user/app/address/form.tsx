@@ -30,6 +30,7 @@ import {
   validateBarangay,
   validateStreetBuildingHouse 
 } from '@/utils/validation/user/addressValidation';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 interface FormErrors {
   fullName?: string;
@@ -449,318 +450,327 @@ export default function AddressFormScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-100">
-        <View className="flex-row items-center">
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center mr-3"
-          >
-            <Ionicons name="arrow-back" size={24} color="#1F2937" />
-          </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-900">
-            {isEditMode ? 'Edit Address' : 'Add New Address'}
+  {/* Header */}
+  <View className="bg-white px-4 py-3 border-b border-gray-100">
+    <View className="flex-row items-center">
+      <TouchableOpacity 
+        onPress={() => router.back()}
+        className="w-10 h-10 items-center justify-center mr-3"
+      >
+        <Ionicons name="arrow-back" size={24} color="#1F2937" />
+      </TouchableOpacity>
+      <Text className="text-xl font-bold text-gray-900">
+        {isEditMode ? 'Edit Address' : 'Add New Address'}
+      </Text>
+    </View>
+  </View>
+
+  <KeyboardAwareScrollView
+    className="flex-1"
+    enableOnAndroid
+    extraScrollHeight={Platform.OS === 'ios' ? 40 : 120}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+    enableAutomaticScroll={true}
+    enableResetScrollToCoords={false}
+    contentContainerStyle={{ 
+      paddingHorizontal: 16, 
+      paddingTop: 16, 
+      paddingBottom: Platform.OS === 'ios' ? 100 : 120 
+    }}
+  >
+    {/* Contact Information */}
+    <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
+      <Text className="text-base font-bold text-gray-900 mb-3">Contact Information</Text>
+      
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">Full Name *</Text>
+        <TextInput
+          ref={inputRefs.fullName}
+          value={form.fullName}
+          onChangeText={(text) => updateForm('fullName', text)}
+          onBlur={() => handleBlur('fullName')}
+          placeholder="Enter your full name"
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.fullName ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.fullName && (
+          <Text className="text-red-500 text-xs mt-1">{errors.fullName}</Text>
+        )}
+      </View>
+
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">Phone Number *</Text>
+        <TextInput
+          ref={inputRefs.phoneNumber}
+          value={form.phoneNumber}
+          onChangeText={(text) => updateForm('phoneNumber', text)}
+          onBlur={() => handleBlur('phoneNumber')}
+          placeholder="09XX XXX XXXX"
+          keyboardType="phone-pad"
+          maxLength={11}
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.phoneNumber ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.phoneNumber && (
+          <Text className="text-red-500 text-xs mt-1">{errors.phoneNumber}</Text>
+        )}
+      </View>
+    </View>
+
+    {/* Location Button */}
+    <TouchableOpacity
+      onPress={handleUseCurrentLocation}
+      disabled={loadingLocation}
+      className="bg-white rounded-xl p-4 mb-3 border border-gray-200 flex-row items-center justify-center"
+      activeOpacity={0.7}
+    >
+      {loadingLocation ? (
+        <ActivityIndicator size="small" color="#EC4899" />
+      ) : (
+        <>
+          <Ionicons name="location" size={20} color="#EC4899" />
+          <Text className="text-pink-500 font-semibold text-base ml-2">
+            {coordinates ? 'Update Location' : 'Use My Current Location'}
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
+
+    {/* Show current coordinates if available */}
+    {coordinates && (
+      <View className="bg-blue-50 rounded-lg p-3 mb-3 flex-row items-center">
+        <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+        <Text className="text-blue-700 text-sm ml-2 flex-1">
+          Location coordinates saved
+        </Text>
+      </View>
+    )}
+
+    {/* Address Details */}
+    <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
+      <Text className="text-base font-bold text-gray-900 mb-3">Address Details</Text>
+      
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">Province *</Text>
+        <TextInput
+          ref={inputRefs.province}
+          value={form.province}
+          onChangeText={(text) => updateForm('province', text)}
+          onBlur={() => handleBlur('province')}
+          placeholder="e.g., Metro Manila"
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.province ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.province && (
+          <Text className="text-red-500 text-xs mt-1">{errors.province}</Text>
+        )}
+      </View>
+
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">City/Municipality *</Text>
+        <TextInput
+          ref={inputRefs.city}
+          value={form.city}
+          onChangeText={(text) => updateForm('city', text)}
+          onBlur={() => handleBlur('city')}
+          placeholder="e.g., Quezon City"
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.city ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.city && (
+          <Text className="text-red-500 text-xs mt-1">{errors.city}</Text>
+        )}
+      </View>
+
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">Barangay *</Text>
+        <TextInput
+          ref={inputRefs.barangay}
+          value={form.barangay}
+          onChangeText={(text) => updateForm('barangay', text)}
+          onBlur={() => handleBlur('barangay')}
+          placeholder="e.g., Barangay Commonwealth"
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.barangay ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.barangay && (
+          <Text className="text-red-500 text-xs mt-1">{errors.barangay}</Text>
+        )}
+      </View>
+
+      <View>
+        <Text className="text-sm font-medium text-gray-700 mb-2">
+          Street Name / Building / House No. *
+        </Text>
+        <TextInput
+          ref={inputRefs.streetAddress}
+          value={form.streetAddress}
+          onChangeText={(text) => updateForm('streetAddress', text)}
+          onBlur={() => handleBlur('streetAddress')}
+          placeholder="e.g., 123 Main St, Building A, Unit 101"
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+          className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
+            errors.streetAddress ? 'border-red-500' : 'border-gray-200'
+          }`}
+          placeholderTextColor="#9CA3AF"
+        />
+        {errors.streetAddress && (
+          <Text className="text-red-500 text-xs mt-1">{errors.streetAddress}</Text>
+        )}
+      </View>
+    </View>
+
+    {/* Set as Default */}
+    <TouchableOpacity
+      onPress={() => updateForm('isDefault', !form.isDefault)}
+      className="bg-white rounded-xl p-4 mb-4 border border-gray-200 flex-row items-center justify-between"
+      activeOpacity={0.7}
+    >
+      <View className="flex-row items-center flex-1">
+        <View className="w-10 h-10 bg-pink-100 rounded-full items-center justify-center mr-3">
+          <Ionicons name="star" size={20} color="#EC4899" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-semibold text-gray-900">Set as default address</Text>
+          <Text className="text-xs text-gray-500 mt-0.5">
+            This will be used for all your orders
           </Text>
         </View>
       </View>
+      <View className={`w-12 h-7 rounded-full items-center ${
+        form.isDefault ? 'bg-pink-500 justify-end' : 'bg-gray-300 justify-start'
+      } flex-row px-1`}>
+        <View className="w-5 h-5 bg-white rounded-full shadow-sm" />
+      </View>
+    </TouchableOpacity>
+  </KeyboardAwareScrollView>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+  {/* Save Button - Fixed at bottom with SafeAreaView for notch */}
+  <SafeAreaView  edges={["top"]} className="bg-gray-50 border-t border-gray-200">
+    <View className="px-4 py-3">
+      <TouchableOpacity
+        onPress={handleSaveAddress}
+        disabled={saving}
+        className="bg-pink-500 py-3.5 rounded-xl shadow-sm"
+        activeOpacity={0.8}
       >
-        <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
-          {/* Contact Information */}
-          <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
-            <Text className="text-base font-bold text-gray-900 mb-3">Contact Information</Text>
-            
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">Full Name *</Text>
-              <TextInput
-                ref={inputRefs.fullName}
-                value={form.fullName}
-                onChangeText={(text) => updateForm('fullName', text)}
-                onBlur={() => handleBlur('fullName')}
-                placeholder="Enter your full name"
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.fullName ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.fullName && (
-                <Text className="text-red-500 text-xs mt-1">{errors.fullName}</Text>
-              )}
-            </View>
+        {saving ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Text className="text-white font-bold text-center text-base">
+            {isEditMode ? 'Update Address' : 'Save Address'}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  </SafeAreaView>
 
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">Phone Number *</Text>
-              <TextInput
-                ref={inputRefs.phoneNumber}
-                value={form.phoneNumber}
-                onChangeText={(text) => updateForm('phoneNumber', text)}
-                onBlur={() => handleBlur('phoneNumber')}
-                placeholder="09XX XXX XXXX"
-                keyboardType="phone-pad"
-                maxLength={11}
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.phoneNumber ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.phoneNumber && (
-                <Text className="text-red-500 text-xs mt-1">{errors.phoneNumber}</Text>
-              )}
-            </View>
-          </View>
+  <Modal
+    visible={showMap}
+    animationType="slide"
+    onRequestClose={handleCancelMap}
+    presentationStyle="fullScreen"
+  >
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      {/* Header */}
+      <View className="bg-white px-4 pt-8 border-b border-gray-200 flex-row items-center justify-between">
+        <TouchableOpacity onPress={handleCancelMap} className="p-2 -ml-2">
+          <Ionicons name="close" size={28} color="#1F2937" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-gray-900">Select Location</Text>
+        <TouchableOpacity onPress={handleConfirmLocation} className="p-2 -mr-2">
+          <Text className="text-pink-500 font-semibold text-base">Confirm</Text>
+        </TouchableOpacity>
+      </View>
 
-          {/* Location Button */}
-          <TouchableOpacity
-            onPress={handleUseCurrentLocation}
-            disabled={loadingLocation}
-            className="bg-white rounded-xl p-4 mb-3 border border-gray-200 flex-row items-center justify-center"
-            activeOpacity={0.7}
-          >
-            {loadingLocation ? (
-              <ActivityIndicator size="small" color="#EC4899" />
-            ) : (
-              <>
-                <Ionicons name="location" size={20} color="#EC4899" />
-                <Text className="text-pink-500 font-semibold text-base ml-2">
-                  {coordinates ? 'Update Location' : 'Use My Current Location'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Show current coordinates if available */}
-          {coordinates && (
-            <View className="bg-blue-50 rounded-lg p-3 mb-3 flex-row items-center">
-              <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-              <Text className="text-blue-700 text-sm ml-2 flex-1">
-                Location coordinates saved
-              </Text>
-            </View>
+      {/* Map Container */}
+      <View style={{ flex: 1 }}>
+        <MapView
+          provider={PROVIDER_GOOGLE}
+          style={{ width: '100%', height: '100%' }}
+          initialRegion={mapRegion}
+          scrollEnabled={true}
+          zoomEnabled={true}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          showsUserLocation={true}
+          showsMyLocationButton={false}
+          toolbarEnabled={false}
+          moveOnMarkerPress={false}
+        >
+          {tempCoordinates && (
+            <Marker
+              coordinate={tempCoordinates}
+              draggable
+              onDragEnd={handleMapDragEnd}
+              title="Your Location"
+            >
+              <View className="items-center">
+                <Ionicons name="location-sharp" size={40} color="#EC4899" />
+              </View>
+            </Marker>
           )}
+        </MapView>
 
-          {/* Address Details */}
-          <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
-            <Text className="text-base font-bold text-gray-900 mb-3">Address Details</Text>
-            
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">Province *</Text>
-              <TextInput
-                ref={inputRefs.province}
-                value={form.province}
-                onChangeText={(text) => updateForm('province', text)}
-                onBlur={() => handleBlur('province')}
-                placeholder="e.g., Metro Manila"
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.province ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.province && (
-                <Text className="text-red-500 text-xs mt-1">{errors.province}</Text>
-              )}
+        {/* Address Info Card - Overlay */}
+        <View 
+          style={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0 
+          }}
+          className="bg-white p-4 border-t border-gray-200 "
+        >
+          {loadingAddress ? (
+            <View className="flex-row items-center justify-center py-4">
+              <ActivityIndicator size="small" color="#EC4899" />
+              <Text className="text-gray-600 ml-2">Fetching address...</Text>
             </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">City/Municipality *</Text>
-              <TextInput
-                ref={inputRefs.city}
-                value={form.city}
-                onChangeText={(text) => updateForm('city', text)}
-                onBlur={() => handleBlur('city')}
-                placeholder="e.g., Quezon City"
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.city ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.city && (
-                <Text className="text-red-500 text-xs mt-1">{errors.city}</Text>
-              )}
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">Barangay *</Text>
-              <TextInput
-                ref={inputRefs.barangay}
-                value={form.barangay}
-                onChangeText={(text) => updateForm('barangay', text)}
-                onBlur={() => handleBlur('barangay')}
-                placeholder="e.g., Barangay Commonwealth"
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.barangay ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.barangay && (
-                <Text className="text-red-500 text-xs mt-1">{errors.barangay}</Text>
-              )}
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Street Name / Building / House No. *
-              </Text>
-              <TextInput
-                ref={inputRefs.streetAddress}
-                value={form.streetAddress}
-                onChangeText={(text) => updateForm('streetAddress', text)}
-                onBlur={() => handleBlur('streetAddress')}
-                placeholder="e.g., 123 Main St, Building A, Unit 101"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                className={`bg-gray-50 border rounded-lg px-4 py-3 text-gray-900 ${
-                  errors.streetAddress ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholderTextColor="#9CA3AF"
-              />
-              {errors.streetAddress && (
-                <Text className="text-red-500 text-xs mt-1">{errors.streetAddress}</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Set as Default */}
-          <TouchableOpacity
-            onPress={() => updateForm('isDefault', !form.isDefault)}
-            className="bg-white rounded-xl p-4 mb-4 border border-gray-200 flex-row items-center justify-between"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center flex-1">
-              <View className="w-10 h-10 bg-pink-100 rounded-full items-center justify-center mr-3">
-                <Ionicons name="star" size={20} color="#EC4899" />
+          ) : (
+            <>
+              <View className="flex-row items-start">
+                <Ionicons name="location" size={20} color="#EC4899" style={{ marginTop: 2 }} />
+                <View className="flex-1 ml-2">
+                  <Text className="text-sm font-semibold text-gray-900">
+                    {tempForm?.streetAddress || 'Address not found'}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-1">
+                    {[tempForm?.barangay, tempForm?.city, tempForm?.province]
+                      .filter(Boolean)
+                      .join(', ') || 'Move the pin to select location'}
+                  </Text>
+                </View>
               </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-gray-900">Set as default address</Text>
-                <Text className="text-xs text-gray-500 mt-0.5">
-                  This will be used for all your orders
-                </Text>
-              </View>
-            </View>
-            <View className={`w-12 h-7 rounded-full items-center ${
-              form.isDefault ? 'bg-pink-500 justify-end' : 'bg-gray-300 justify-start'
-            } flex-row px-1`}>
-              <View className="w-5 h-5 bg-white rounded-full shadow-sm" />
-            </View>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Save Button */}
-        <View className="bg-white border-t border-gray-100 px-4 py-3">
-          <TouchableOpacity
-            onPress={handleSaveAddress}
-            disabled={saving}
-            className="bg-pink-500 py-3.5 rounded-xl shadow-sm"
-            activeOpacity={0.8}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text className="text-white font-bold text-center text-base">
-                {isEditMode ? 'Update Address' : 'Save Address'}
+              <Text className="text-xs text-gray-400 mt-3 text-center">
+                Drag the pin to adjust your exact location
               </Text>
-            )}
-          </TouchableOpacity>
+            </>
+          )}
         </View>
-      </KeyboardAvoidingView>
-
-      <Modal
-        visible={showMap}
-        animationType="slide"
-        onRequestClose={handleCancelMap}
-        presentationStyle="fullScreen"
-      >
-       
-          <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-            {/* Header */}
-            <View className="bg-white px-4 pt-8 border-b border-gray-200 flex-row items-center justify-between">
-              <TouchableOpacity onPress={handleCancelMap} className="p-2 -ml-2">
-                <Ionicons name="close" size={28} color="#1F2937" />
-              </TouchableOpacity>
-              <Text className="text-lg font-bold text-gray-900">Select Location</Text>
-              <TouchableOpacity onPress={handleConfirmLocation} className="p-2 -mr-2">
-                <Text className="text-pink-500 font-semibold text-base">Confirm</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Map Container */}
-            <View style={{ flex: 1 }}>
-              <MapView
-                provider={PROVIDER_GOOGLE}
-                style={{ width: '100%', height: '100%' }}
-                initialRegion={mapRegion}
-                scrollEnabled={true}
-                zoomEnabled={true}
-                pitchEnabled={false}
-                rotateEnabled={false}
-                showsUserLocation={true}
-                showsMyLocationButton={false}
-                toolbarEnabled={false}
-                moveOnMarkerPress={false}
-              >
-                {tempCoordinates && (
-                  <Marker
-                    coordinate={tempCoordinates}
-                    draggable
-                    onDragEnd={handleMapDragEnd}
-                    title="Your Location"
-                  >
-                    <View className="items-center">
-                      <Ionicons name="location-sharp" size={40} color="#EC4899" />
-                    </View>
-                  </Marker>
-                )}
-              </MapView>
-
-              {/* Address Info Card - Overlay */}
-              <View 
-                style={{ 
-                  position: 'absolute', 
-                  bottom: 0, 
-                  left: 0, 
-                  right: 0 
-                }}
-                className="bg-white p-4 border-t border-gray-200 "
-              >
-                {loadingAddress ? (
-                  <View className="flex-row items-center justify-center py-4">
-                    <ActivityIndicator size="small" color="#EC4899" />
-                    <Text className="text-gray-600 ml-2">Fetching address...</Text>
-                  </View>
-                ) : (
-                  <>
-                    <View className="flex-row items-start">
-                      <Ionicons name="location" size={20} color="#EC4899" style={{ marginTop: 2 }} />
-                      <View className="flex-1 ml-2">
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {tempForm?.streetAddress || 'Address not found'}
-                        </Text>
-                        <Text className="text-xs text-gray-500 mt-1">
-                          {[tempForm?.barangay, tempForm?.city, tempForm?.province]
-                            .filter(Boolean)
-                            .join(', ') || 'Move the pin to select location'}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text className="text-xs text-gray-400 mt-3 text-center">
-                      Drag the pin to adjust your exact location
-                    </Text>
-                  </>
-                )}
-              </View>
-            </View>
-          </SafeAreaView>
-      
-      </Modal>
-      <GeneralToast
-        visible={toastVisible}
-        message={toastMessage}
-        type={toastType}
-        onHide={() => setToastVisible(false)}
-      />
+      </View>
     </SafeAreaView>
+  </Modal>
+
+  <GeneralToast
+    visible={toastVisible}
+    message={toastMessage}
+    type={toastType}
+    onHide={() => setToastVisible(false)}
+  />
+</SafeAreaView>
   );
 }

@@ -283,8 +283,7 @@ export default function CheckoutScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* GCash Option */}
-          <TouchableOpacity
+          {/*  <TouchableOpacity
             onPress={() => setSelectedPaymentMethod('gcash')}
             className={`flex-row items-center justify-between p-3 rounded-lg ${
               selectedPaymentMethod === 'gcash' ? 'bg-pink-50 border-2 border-pink-500' : 'bg-gray-50 border border-gray-200'
@@ -311,7 +310,8 @@ export default function CheckoutScreen() {
                 <Ionicons name="checkmark" size={14} color="white" />
               )}
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+        
         </View>
 
         {/* Order Summary */}
