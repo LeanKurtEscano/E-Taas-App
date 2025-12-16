@@ -12,14 +12,15 @@ export type SellerInfo = {
 };
 
 export type AppUser = {
-  uid: string;
+  id: string;
   email: string;
-  authProvider: string;
-  emailVerified: boolean;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  address?: string;
+  contactNumber?: string;
+  isAdmin: boolean;
   isSeller: boolean;
-  profileComplete: boolean;
-  createdAt?: string;
-  updatedAt?: string;
   username?: string;
   sellerInfo?: SellerInfo | null;
 };

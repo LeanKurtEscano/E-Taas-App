@@ -1,10 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { authApiClient } from '@/config/general/auth';
+
+type OtpParams = {
+  email?: string;
+  username?: string;
+  password?: string;
+  type?: 'registration' | 'forgot-password';
+};
 
 export default function OTPScreen() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  
+  const { email, username, password, type } = useLocalSearchParams<OtpParams>();
 
   // Timer countdown
   useEffect(() => {
@@ -32,6 +55,9 @@ export default function OTPScreen() {
     // Only allow numbers
     if (text && !/^\d+$/.test(text)) return;
 
+    // Clear error state when user starts typing
+    if (hasError) setHasError(false);
+
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
@@ -51,55 +77,120 @@ export default function OTPScreen() {
 
   const handleVerifyOTP = async () => {
     const otpCode = otp.join('');
-    
+
     if (otpCode.length !== 6) {
-      alert('Please enter the complete OTP');
+      setHasError(true);
+      Alert.alert('Invalid OTP', 'Please enter the complete 6-digit OTP');
       return;
     }
 
-    // TODO: Send OTP to server for verification
-    // try {
-    //   const response = await fetch('YOUR_API_ENDPOINT/verify-otp', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //       otp: otpCode,
-    //       // Add other required fields like email, phone, etc.
-    //     }),
-    //   });
-    //   const data = await response.json();
-    //   if (data.success) {
-    //     // Navigate to next screen or show success message
-    //   }
-    // } catch (error) {
-    //   console.error('OTP verification failed:', error);
-    // }
+    if (!email || !username || !password) {
+      setHasError(true);
+      Alert.alert('Error', 'Missing registration information. Please start over.');
+      router.replace('/(auth)/register');
+      return;
+    }
 
-    console.log('Verifying OTP:', otpCode);
+    setLoading(true);
+    setHasError(false);
+    try {
+      const response = await authApiClient.post('/verify-email-otp', {
+        email: email,
+        username: username,
+        password: password,
+        otp: otpCode,
+      });
+
+      console.log('OTP verification response:', response.data);
+
+      // Show success message
+      Alert.alert(
+        'Success!',
+        'Your account has been created successfully. Please log in.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate to login screen
+              router.replace('/(auth)');
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+    
+      setHasError(true);
+
+      if (error.response) {
+        const { status, data } = error.response;
+
+        if (status === 400) {
+          // Invalid or expired OTP
+          Alert.alert('Invalid OTP', data.detail || 'The OTP is invalid or has expired');
+        } else if (status === 500) {
+          // Server error
+          Alert.alert(
+            'Error',
+            data.detail || 'An error occurred while creating your account'
+          );
+        } else {
+          Alert.alert('Error', data.detail || 'Failed to verify OTP');
+        }
+      } else if (error.request) {
+        // Network error
+        Alert.alert(
+          'Network Error',
+          'Unable to connect to the server. Please check your internet connection.'
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to verify OTP');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResendOTP = async () => {
-    // TODO: Resend OTP functionality
-    // try {
-    //   const response = await fetch('YOUR_API_ENDPOINT/resend-otp', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //       // Add required fields like email, phone, etc.
-    //     }),
-    //   });
-    // } catch (error) {
-    //   console.error('Resend OTP failed:', error);
-    // }
+    if (!email) {
+      Alert.alert('Error', 'Email not found. Please start over.');
+      router.replace('/(auth)/register');
+      return;
+    }
 
-    setTimer(300); // Reset timer
-    setOtp(['', '', '', '', '', '']); // Clear OTP inputs
-    inputRefs.current[0]?.focus();
-    console.log('Resending OTP...');
+    setResendLoading(true);
+    try {
+      // Call the register endpoint again to resend OTP
+      const response = await authApiClient.post('/register', {
+        email: email,
+        username: username,
+        password: password,
+      });
+
+      console.log('Resend OTP response:', response.data);
+
+      // Reset timer and OTP inputs
+      setTimer(300);
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+
+      Alert.alert('Success', 'A new OTP has been sent to your email');
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+
+      if (error.response) {
+        const { data } = error.response;
+        Alert.alert('Error', data.detail || 'Failed to resend OTP');
+      } else if (error.request) {
+        Alert.alert(
+          'Network Error',
+          'Unable to connect to the server. Please check your internet connection.'
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to resend OTP');
+      }
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -116,9 +207,7 @@ export default function OTPScreen() {
         </View>
 
         {/* Title */}
-        <Text className="text-white text-3xl font-bold mb-2">
-          E-Taas App
-        </Text>
+        <Text className="text-white text-3xl font-bold mb-2">E-Taas App</Text>
 
         {/* Subtitle */}
         <Text className="text-white text-lg font-semibold mb-2">
@@ -127,7 +216,7 @@ export default function OTPScreen() {
 
         {/* Description */}
         <Text className="text-white/90 text-center text-sm mb-2">
-          We've sent a 6-digit code to your email
+          We've sent a 6-digit code to {email}
         </Text>
 
         {/* Timer */}
@@ -141,13 +230,18 @@ export default function OTPScreen() {
             <TextInput
               key={index}
               ref={(ref) => (inputRefs.current[index] = ref)}
-              className="w-12 h-14 bg-white rounded-lg text-center text-2xl font-bold text-pink-500"
+              className={`w-12 h-14 rounded-lg text-center text-2xl font-bold ${
+                hasError
+                  ? 'bg-red-100 text-red-500 border-2 border-red-500'
+                  : 'bg-white text-pink-500'
+              }`}
               value={digit}
               onChangeText={(text) => handleChange(text, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
               keyboardType="number-pad"
               maxLength={1}
               selectTextOnFocus
+              editable={!loading && !resendLoading}
             />
           ))}
         </View>
@@ -155,11 +249,18 @@ export default function OTPScreen() {
         {/* Verify Button */}
         <TouchableOpacity
           onPress={handleVerifyOTP}
-          className="bg-white rounded-full py-4 px-12 mb-4 w-full max-w-sm"
+          disabled={loading || resendLoading}
+          className={`bg-white rounded-full py-4 px-12 mb-4 w-full max-w-sm ${
+            loading || resendLoading ? 'opacity-50' : ''
+          }`}
         >
-          <Text className="text-pink-500 text-center font-bold text-lg">
-            Verify
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#ec4899" />
+          ) : (
+            <Text className="text-pink-500 text-center font-bold text-lg">
+              Verify
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Resend OTP */}
@@ -167,22 +268,33 @@ export default function OTPScreen() {
           <Text className="text-white/90 text-sm">
             Didn't receive the code?{' '}
           </Text>
-          <TouchableOpacity onPress={handleResendOTP} disabled={timer > 0}>
-            <Text
-              className={`font-bold text-sm ${
-                timer > 0 ? 'text-white/50' : 'text-white underline'
-              }`}
-            >
-              Resend
-            </Text>
+          <TouchableOpacity
+            onPress={handleResendOTP}
+            disabled={timer > 0 || loading || resendLoading}
+          >
+            {resendLoading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text
+                className={`font-bold text-sm ${
+                  timer > 0 || loading
+                    ? 'text-white/50'
+                    : 'text-white underline'
+                }`}
+              >
+                Resend
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Back to Login */}
-        <TouchableOpacity className="mt-6">
-          <Text className="text-white/80 text-sm underline">
-            Back to Login
-          </Text>
+        <TouchableOpacity
+          className="mt-6"
+          onPress={() => router.replace('/(auth)')}
+          disabled={loading || resendLoading}
+        >
+          <Text className="text-white/80 text-sm underline">Back to Login</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

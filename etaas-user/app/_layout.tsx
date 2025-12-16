@@ -2,46 +2,33 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import "../global.css";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useCurrentUser } from "@/store/useCurrentUserStore";
 
 function RootLayoutNav() {
-  const { user, loading } = useAuth();
+  const { userData, loading, fetchCurrentUser } = useCurrentUser();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+     if (!userData) {
+      fetchCurrentUser();
+    }
+  }, []);
+
 
   useEffect(() => {
     if (loading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
-
-    // Reload user to get fresh emailVerified status
-    const checkEmailVerification = async () => {
-      if (user && !user.emailVerified) {
-        await user.reload();
-      }
-    };
-
-    checkEmailVerification();
-
-    if (!user && !inAuthGroup) {
+     const inTabsGroup = segments[0] === "(tabs)";
+    if (!userData && !inAuthGroup) {
       // No user, redirect to auth
       router.replace("/(auth)");
-    } else if (user && inAuthGroup) {
-      // User exists and is in auth group
-      // Only redirect to tabs if email is verified
-      if (user.emailVerified) {
-        router.replace("/(tabs)");
-      }
-      // If email is NOT verified, stay in auth group (don't redirect)
-    } else if (user && !user.emailVerified && !inAuthGroup) {
-      // User is not verified but trying to access non-auth screens
-      // Keep them in auth
-      router.replace({
-        pathname: '/(auth)/emailSent',
-        params: { email: user.email, type: 'verification' }
-      });
+    } else if (userData && !inTabsGroup && inAuthGroup) {
+      // User exists and is in auth group, redirect to main app
+      router.replace("/(tabs)");
     }
-  }, [user, loading, segments]);
+  }, [userData, loading, segments]);
 
   if (loading) {
     return (
@@ -50,7 +37,7 @@ function RootLayoutNav() {
       </View>
     );
   }
-  
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -60,9 +47,5 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
-  );
+  return <RootLayoutNav />;
 }

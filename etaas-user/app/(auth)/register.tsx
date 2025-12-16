@@ -5,33 +5,15 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Alert,
-  ActivityIndicator,Keyboard
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Lock, Mail, User, Eye, EyeOff } from 'lucide-react-native';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import * as Facebook from 'expo-auth-session/providers/facebook';
-import { Image } from 'react-native';
-import { auth, db } from '../../config/firebaseConfig';
 import { router } from 'expo-router';
 import { validateEmail, validateUsername } from '@/utils/validation/authValidation';
-import { useRef,useEffect } from 'react';
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
-WebBrowser.maybeCompleteAuthSession();
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { authApiClient } from '@/config/general/auth';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
@@ -48,28 +30,11 @@ export default function RegisterScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
-    clientId: 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com',
-  });
 
-  const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-    clientId: 'YOUR_FACEBOOK_APP_ID',
-  });
-
-  React.useEffect(() => {
-    if (googleResponse?.type === 'success') {
-      handleSocialSignIn('google', googleResponse.params.id_token);
-    }
-  }, [googleResponse]);
-
-  React.useEffect(() => {
-    if (fbResponse?.type === 'success') {
-      handleSocialSignIn('facebook', fbResponse.params.access_token);
-    }
-  }, [fbResponse]);
-
-  // Combined input change handler
-  const handleInputChange = (field: 'username' | 'email' | 'password' | 'confirmPassword', value: string) => {
+  const handleInputChange = (
+    field: 'username' | 'email' | 'password' | 'confirmPassword',
+    value: string
+  ) => {
     switch (field) {
       case 'username':
         setUsername(value);
@@ -94,221 +59,136 @@ export default function RegisterScreen() {
   const handleInputBlur = (field: 'username' | 'email') => {
     switch (field) {
       case 'username':
-        const usernameError = validateUsername(username);
-        if (usernameError) setUsernameError(usernameError);
+        const usernameValidationError = validateUsername(username);
+        if (usernameValidationError) setUsernameError(usernameValidationError);
         break;
       case 'email':
-        const emailError = validateEmail(email);
-        if (emailError) setEmailError(emailError);
+        const emailValidationError = validateEmail(email);
+        if (emailValidationError) setEmailError(emailValidationError);
         break;
     }
   };
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email.toLowerCase().trim()));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-    
-      return false;
+  const handleEmailSignUp = async () => {
+    // Clear previous errors
+    setUsernameError('');
+    setEmailError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+    let hasError = false;
+
+    // Validate username
+    const usernameValidationError = validateUsername(username);
+    if (usernameValidationError) {
+      setUsernameError(usernameValidationError);
+      hasError = true;
     }
-  };
 
-  const checkUsernameExists = async (username: string): Promise<boolean> => {
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username.toLowerCase().trim()));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-     
-      return false;
+    // Validate email
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      hasError = true;
     }
-  };
 
-  const createUserDocument = async (
-    userId: string, 
-    email: string, 
-    username: string,
-    provider: string = 'email', 
-    userUId: string
-  ) => {
-    try {
-      const userDocRef = doc(db, 'users', userUId);
-      await setDoc(userDocRef, {
-        uid: userId,
-        username: username.toLowerCase().trim(),
-        email: email.toLowerCase(),
-        authProvider: provider,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        emailVerified: false,
-        profileComplete: false,
-      });
-      console.log('User document created successfully');
-    } catch (error) {
-     
-      throw error;
+    // Validate password
+    if (!password) {
+      setPasswordError('Password is required.');
+      hasError = true;
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters long.');
+      hasError = true;
     }
-  };
 
- const handleEmailSignUp = async () => {
-  setUsernameError('');
-  setEmailError('');
-  setPasswordError('');
-  setConfirmPasswordError('');
+    // Validate confirm password
+    if (!confirmPassword) {
+      setConfirmPasswordError('Please confirm your password.');
+      hasError = true;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError('Passwords do not match.');
+      hasError = true;
+    }
 
-  let hasError = false;
-
-  // Validate username
-  const usernameValidationError = validateUsername(username);
-  if (usernameValidationError) {
-    setUsernameError(usernameValidationError);
-    hasError = true;
-  }
-
-  // Validate email
-  const emailValidationError = validateEmail(email);
-  if (emailValidationError) {
-    setEmailError(emailValidationError);
-    hasError = true;
-  }
-
-  // Validate password
-  if (!password) {
-    setPasswordError('Password is required.');
-    hasError = true;
-  } else if (password.length < 6) {
-    setPasswordError('Password must be at least 6 characters long.');
-    hasError = true;
-  }
-
-  // Validate confirm password
-  if (!confirmPassword) {
-    setConfirmPasswordError('Please confirm your password.');
-    hasError = true;
-  } else if (password !== confirmPassword) {
-    setConfirmPasswordError('Passwords does not match.');
-    hasError = true;
-  }
-
-  if (hasError) {
-    return;
-  }
-
-  setLoading(true);
-  try {
-    // Check if username already exists
-    const usernameExists = await checkUsernameExists(username);
-    if (usernameExists) {
-      setUsernameError('This username is already taken');
-      setLoading(false);
+    if (hasError) {
       return;
     }
 
-    // Check if email already exists
-    const emailExists = await checkEmailExists(email);
-    if (emailExists) {
-      setEmailError('An account with this email already exists');
-      setLoading(false);
-      return;
-    }
-
-    // Create user account
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    console.log('User created successfully:', userCredential.user);
-
-    // Send verification email
-    await sendEmailVerification(userCredential.user);
-    console.log('Verification email sent');
-
-    // Create user document with username
-    await createUserDocument(
-      userCredential.user.uid,
-      email,
-      username,
-      'email',
-      userCredential.user.uid
-    );
-
-
-    // Then navigate
-    router.replace({
-      pathname: '/(auth)/emailSent',
-      params: { email: email, type: 'verification' }
-    });
-
-  } catch (error: any) {
-    
-
-    if (error.code === 'auth/email-already-in-use') {
-      setEmailError('This email is already registered');
-    } else if (error.code === 'auth/invalid-email') {
-      setEmailError('Invalid email address');
-    } else if (error.code === 'auth/weak-password') {
-      setPasswordError('Password is too weak');
-    } else {
-      Alert.alert('Error', error.message || 'Failed to create account');
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-  const handleSocialSignIn = async (provider: 'google' | 'facebook', token: string) => {
     setLoading(true);
     try {
-      const credential = provider === 'google'
-        ? GoogleAuthProvider.credential(token)
-        : FacebookAuthProvider.credential(token);
+      // Send registration request to backend
+      const response = await authApiClient.post('/register', {
+        email: email.toLowerCase().trim(),
+        username: username.toLowerCase().trim(),
+        password: password,
+      });
 
-      const result = await signInWithCredential(auth, credential);
-      const user = result.user;
+      // Backend sends OTP to email and returns success message
+      console.log('Registration response:', response.data);
 
-      const emailExists = await checkEmailExists(user.email!);
+      // Navigate to OTP verification screen
+      router.replace({
+        pathname: '/(auth)/otp',
+        params: {
+          email: email.toLowerCase().trim(),
+          username: username.toLowerCase().trim(),
+          password: password,
+          type: 'registration',
+        },
+      });
+    } catch (error: any) {
+   
 
-      if (!emailExists) {
-        // Generate a username from email for social sign-in
-        const generatedUsername = user.email!.split('@')[0].toLowerCase();
+
+      if (error.response) {
+        const { status, data } = error.response;
+
+        if (status === 409) {
         
-        await createUserDocument(
-          user.uid,
-          user.email!,
-          generatedUsername,
-          provider,
-          user.uid
+          setEmailError(data.detail || 'Email already registered');
+        } else if (status === 422) {
+        
+          Alert.alert('Validation Error', data.detail || 'Invalid input data');
+        } else if (status === 500) {
+        
+          Alert.alert(
+            'Error',
+            data.detail || 'An error occurred. Please try again later.'
+          );
+        } else {
+          Alert.alert('Error', data.detail || 'Failed to create account');
+        }
+      } else if (error.request) {
+       
+        Alert.alert(
+          'Network Error',
+          'Unable to connect to the server. Please check your internet connection.'
         );
+      } else {
+      
+        Alert.alert('Error', error.message || 'Failed to create account');
       }
 
-      Alert.alert('Success', `Signed in with ${provider === 'google' ? 'Google' : 'Facebook'}!`);
-      router.push('/(tabs)');
-    } catch (error: any) {
-    
-      Alert.alert('Error', error.message || `Failed to sign in with ${provider}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-
     <View className="flex-1 bg-pink-500">
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={80}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <StatusBar barStyle="light-content" />
 
-     <KeyboardAwareScrollView
-      enableOnAndroid
-    
-      extraScrollHeight={80}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
-      <StatusBar barStyle="light-content" />
-     
         <View className="rounded-b-[40px] pt-20 pb-8 items-center px-6">
           <View className="w-28 h-28 rounded-lg bg-white items-center justify-center mb-6">
-            <View className="w-24 h-24  overflow-hidden">
+            <View className="w-24 h-24 overflow-hidden">
               <Image
-                source={require("../../assets/images/etaas.png")}
+                source={require('../../assets/images/etaas.png')}
                 className="w-full h-full p-1"
                 resizeMode="cover"
               />
@@ -323,9 +203,11 @@ export default function RegisterScreen() {
           {/* Username Input */}
           <View className="mb-4">
             <Text className="text-gray-700 text-sm font-medium mb-2">Username</Text>
-            <View className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
-              usernameError ? 'border-red-500' : 'border-gray-200'
-            }`}>
+            <View
+              className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
+                usernameError ? 'border-red-500' : 'border-gray-200'
+              }`}
+            >
               <User size={20} color={usernameError ? '#ef4444' : '#9ca3af'} />
               <TextInput
                 className="flex-1 ml-3 text-gray-700 text-base"
@@ -337,7 +219,6 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoComplete="username-new"
                 textContentType="username"
-                importantForAutofill="yes"
                 editable={!loading}
               />
             </View>
@@ -349,9 +230,11 @@ export default function RegisterScreen() {
           {/* Email Input */}
           <View className="mb-4">
             <Text className="text-gray-700 text-sm font-medium mb-2">Email</Text>
-            <View className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
-              emailError ? 'border-red-500' : 'border-gray-200'
-            }`}>
+            <View
+              className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
+                emailError ? 'border-red-500' : 'border-gray-200'
+              }`}
+            >
               <Mail size={20} color={emailError ? '#ef4444' : '#9ca3af'} />
               <TextInput
                 className="flex-1 ml-3 text-gray-700 text-base"
@@ -364,7 +247,6 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 textContentType="emailAddress"
-                importantForAutofill="yes"
                 editable={!loading}
               />
             </View>
@@ -376,9 +258,11 @@ export default function RegisterScreen() {
           {/* Password Input */}
           <View className="mb-4">
             <Text className="text-gray-700 text-sm font-medium mb-2">Password</Text>
-            <View className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
-              passwordError ? 'border-red-500' : 'border-gray-200'
-            }`}>
+            <View
+              className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
+                passwordError ? 'border-red-500' : 'border-gray-200'
+              }`}
+            >
               <Lock size={20} color={passwordError ? '#ef4444' : '#9ca3af'} />
               <TextInput
                 className="flex-1 ml-3 text-gray-700 text-base"
@@ -390,7 +274,6 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoComplete="password-new"
                 textContentType="newPassword"
-                importantForAutofill="yes"
                 editable={!loading}
               />
               <TouchableOpacity
@@ -412,9 +295,11 @@ export default function RegisterScreen() {
           {/* Confirm Password Input */}
           <View className="mb-6">
             <Text className="text-gray-700 text-sm font-medium mb-2">Confirm Password</Text>
-            <View className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
-              confirmPasswordError ? 'border-red-500' : 'border-gray-200'
-            }`}>
+            <View
+              className={`flex-row items-center bg-gray-50 rounded-xl px-4 py-3 border ${
+                confirmPasswordError ? 'border-red-500' : 'border-gray-200'
+              }`}
+            >
               <Lock size={20} color={confirmPasswordError ? '#ef4444' : '#9ca3af'} />
               <TextInput
                 className="flex-1 ml-3 text-gray-700 text-base"
@@ -426,7 +311,6 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoComplete="password-new"
                 textContentType="newPassword"
-                importantForAutofill="yes"
                 editable={!loading}
               />
               <TouchableOpacity
@@ -461,48 +345,7 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
-          {/*<View className="flex-row items-center mb-6">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-gray-400 text-sm">OR</Text>
-            <View className="flex-1 h-px bg-gray-300" />
-          </View>
-
-
-          <TouchableOpacity
-            onPress={() => googlePromptAsync()}
-            disabled={loading || !googleRequest}
-            className="flex-row items-center justify-center pr-5 bg-white border border-gray-300 rounded-xl py-3 mb-3"
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/google.png')}
-              className="w-6 h-6 mr-3"
-              resizeMode="contain"
-            />
-            <Text className="text-gray-700 text-base font-medium">
-              Continue with Google
-            </Text>
-          </TouchableOpacity>
-
-        
-          <TouchableOpacity
-            onPress={() => fbPromptAsync()}
-            disabled={loading || !fbRequest}
-            className="flex-row items-center justify-center bg-white border border-gray-300 rounded-xl py-3 mb-6"
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/facebook.png')}
-              className="w-6 h-6 mr-3"
-              resizeMode="contain"
-            />
-            <Text className="text-gray-700 text-base font-medium">
-              Continue with Facebook
-            </Text>
-          </TouchableOpacity> */}
-          
-
-          {/* Log In Link */}
+          {/* Sign In Link */}
           <View className="flex-row justify-center items-center mb-8">
             <Text className="text-gray-600 text-sm">Already have an account? </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)')}>
@@ -511,7 +354,6 @@ export default function RegisterScreen() {
           </View>
         </View>
       </KeyboardAwareScrollView>
-      </View>
-
+    </View>
   );
 }
