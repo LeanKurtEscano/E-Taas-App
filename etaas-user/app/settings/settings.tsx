@@ -102,30 +102,11 @@ export default function SettingsScreen() {
         {
           icon: Bell,
           label: 'Notifications',
-          onPress: () => console.log('Navigate to notifications'),
+          onPress: () => router.push('/(tabs)/notification'),
         },
       ],
     },
-    {
-      title: 'Security',
-      options: [
-        {
-          icon: Lock,
-          label: 'Change Password',
-          onPress: () => console.log('Navigate to change password'),
-        },
-      ],
-    },
-    {
-      title: 'Support',
-      options: [
-        {
-          icon: HelpCircle,
-          label: 'Help Center',
-          onPress: () => console.log('Navigate to help'),
-        },
-      ],
-    },
+    
   ];
 
   return (

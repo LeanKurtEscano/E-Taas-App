@@ -337,9 +337,10 @@ const RegisterAsSeller = () => {
 
       try {
         /*
+       
+        */
         const response = await sellerApi.post('/sellers', sellerInfo)
         const sellerId = response.data.id;
-        */
         const userRef = doc(db, 'users', userData?.uid);
         await updateDoc(userRef, {
           sellerInfo: {
@@ -350,7 +351,7 @@ const RegisterAsSeller = () => {
             addressOfOwner: formData.addressOfOwner.trim(),
             contactNumber: formData.contactNumber.trim(),
             email: formData.email.trim().toLowerCase(),
-            //sellerId: sellerId,
+            sellerId: sellerId,
             registeredAt: new Date().toISOString(),
           },
           isSeller: true,

@@ -25,3 +25,25 @@ export interface AddressForm {
   isDefault: boolean;
 }
 
+
+export interface FormErrors {
+  fullName?: string;
+  phoneNumber?: string;
+  province?: string;
+  city?: string;
+  barangay?: string;
+  streetAddress?: string;
+}
+
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+export interface UserAddress extends AddressForm {
+  id: string;
+  coordinates?: Coordinates | null;
+  createdAt: string;
+  updatedAt: string;
+}
+

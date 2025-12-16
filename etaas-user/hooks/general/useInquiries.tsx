@@ -48,6 +48,8 @@ export const useInquiries = (serviceId: string) => {
     message: '',
   });
 
+  const {sendInquiryNotification} = useNotification();  
+
   useEffect(() => {
     fetchServiceDetails();
   }, [serviceId]);
@@ -110,7 +112,7 @@ export const useInquiries = (serviceId: string) => {
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
-      sendNotification(service?.userId,'seller','New Inquiry Received',`You have received a new inquiry for your service "${service?.serviceName}" from ${inquiryData.customerName}.`,undefined,serviceId);
+      sendInquiryNotification(userData?.uid || '', service?.userId || '', inquiryData.message);
 
       showToast('Inquiry submitted successfully!', 'success');
       return true;

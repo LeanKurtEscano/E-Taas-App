@@ -22,7 +22,7 @@ const InboxScreen = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   console.log('Conversations:', conversations);
-  
+
   const formatTimestamp = (timestamp: any) => {
     if (!timestamp) return '';
     
@@ -66,7 +66,7 @@ const InboxScreen = () => {
     return prefix + conversation.lastMessage;
   };
 
-  if (loading && conversations.length === 0) {
+  if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
         <View className="flex-1 items-center justify-center">

@@ -34,6 +34,7 @@ export const useInbox = () => {
       setLoading(false);
       return;
     }
+    setLoading(true);
 
     const conversationsRef = collection(db, 'conversations');
     const q = query(

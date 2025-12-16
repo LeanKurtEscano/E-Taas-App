@@ -292,7 +292,7 @@ const listenToSellerProducts = (
     const deleteProduct = async (productId: string): Promise<void> => {
         try {
             const productRef = doc(db, 'products', productId);
-            const response = await ingestApi.delete(`/shops/${userData?.sellerInfo?.sellerId}/products/${productId}`);
+           // const response = await ingestApi.delete(`/shops/${userData?.sellerInfo?.sellerId}/products/${productId}`);
             await deleteDoc(productRef);
         } catch (error) {
           

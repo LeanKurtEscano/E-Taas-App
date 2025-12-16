@@ -247,6 +247,14 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
           images: uploadedImageUrls,
       });
       */
+
+       const response = await ingestApi.put(`/shops/${shopId}/service`, {
+          ...serviceData,
+          uid: uid,
+          images: uploadedImageUrls,
+      });
+
+      
         showToast('Service updated successfully!', 'success');
       } else {
        
@@ -263,6 +271,12 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
           images: uploadedImageUrls,
       }); 
       */
+
+        const response = await ingestApi.post(`/shops/${shopId}/service`, {
+          ...serviceData,
+          uid: uid,
+          images: uploadedImageUrls,
+      }); 
 
          router.push('/(tabs)/services');
       

@@ -143,8 +143,8 @@ export default function LoginScreen() {
       >
         {/* Header Section */}
         <View className="rounded-b-[40px] pt-36 pb-12 items-center px-6">
-          <View className="w-28 h-28 rounded-full bg-white items-center justify-center mb-6">
-            <View className="w-24 h-24 rounded-full overflow-hidden">
+          <View className="w-28 h-28 rounded-md  bg-white items-center justify-center mb-6">
+            <View className="w-24 h-24  overflow-hidden">
               <Image
                 source={require("../../assets/images/etaas.png")}
                 className="w-full h-full p-1"

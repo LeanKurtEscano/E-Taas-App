@@ -1,33 +1,27 @@
 
 
 export const validateContactNumber = (contactNumber: string): string => {
-    
-    const regex = /^09\d{9}$/; 
-
     if (!contactNumber) return "Contact number is required.";
 
-    const trimmedContactNumber = contactNumber.trim();
-    
+    const trimmedNumber = contactNumber.trim();
 
-    if (/[^0-9]/.test(trimmedContactNumber)) {
+    // Already in '9123456789' format (without leading 0)
+    if (/[^0-9]/.test(trimmedNumber)) {
         return "Contact number must not contain letters or special characters.";
     }
-  
-    if (!regex.test(trimmedContactNumber)) {
+
+    // Must be exactly 10 digits after +63
+    if (trimmedNumber.length !== 10) {
         return "Contact number must be a valid Philippine mobile number.";
     }
 
-   
-    if (/(\d)\1{3,}/.test(trimmedContactNumber)) {
+    // Check for 4 or more repeating digits
+    if (/(\d)\1{3,}/.test(trimmedNumber)) {
         return "Contact number must not contain 4 or more repeating digits.";
     }
 
-   
- 
-
     return "";
 };
-
 
 
 
@@ -84,16 +78,12 @@ export const validateCity = (city: string) => {
 
 
 export const validateBarangay = (barangay: string) => {
-  const invalidCharsRegex = /[^A-Za-z0-9\s\-']/; 
-  const repeatedCharRegex = /(.)\1{2,}/;
-  const maxLength = 60;
+
+  const maxLength = 100;
 
   if (!barangay || !barangay.trim()) return "Barangay is required.";
 
   const value = barangay.trim();
-
-  if (invalidCharsRegex.test(value))
-    return "Barangay must only contain letters, numbers, spaces, hyphens, or apostrophes.";
 
   if (value.length < 3)
     return "Barangay must be at least 3 characters long.";
@@ -101,8 +91,6 @@ export const validateBarangay = (barangay: string) => {
   if (value.length > maxLength)
     return `Barangay must be at most ${maxLength} characters long.`;
 
-  if (repeatedCharRegex.test(value.toLowerCase()))
-    return "Barangay must not contain repeated characters.";
 
   return "";
 };
@@ -117,27 +105,15 @@ export const validateStreetBuildingHouse = (value: string) => {
 
   const trimmed = value.trim();
 
-  // Allow: letters, numbers, spaces, hyphens, slashes, dots, apostrophes, #
-  const validCharsRegex = /^[A-Za-z0-9\s\-\/\.'#]+$/;
 
-  // No invalid symbols
-  if (!validCharsRegex.test(trimmed)) {
-    return "Address must only contain letters, numbers, spaces, hyphens, slashes, apostrophes, periods, or # symbol.";
-  }
 
-  // Length constraints
+
   if (trimmed.length < 3) {
     return "Address must be at least 3 characters long.";
   }
 
   if (trimmed.length > 80) {
     return "Address must be at most 80 characters long.";
-  }
-
-  // Prevent spam like "aaaa", "1111", "----"
-  const repeatedCharRegex = /(.)\1{3,}/;
-  if (repeatedCharRegex.test(trimmed.toLowerCase())) {
-    return "Address must not contain long repeated characters.";
   }
 
   return "";

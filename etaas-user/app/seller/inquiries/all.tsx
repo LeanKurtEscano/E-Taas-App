@@ -1,17 +1,25 @@
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, documentId } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 import { Inquiry } from '@/types/seller/inquiries';
+import { ConversationModal } from '@/components/general/ConversationModal';
+import { UserData } from '@/hooks/useCurrentUser';
+
 const AllInquriesScreen = () => {
   const { userData } = useCurrentUser();
   const router = useRouter();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
+
+  // Use useRef to persist userMap across renders without causing re-renders
+  const userMapRef = useRef<Map<string, UserData>>(new Map());
 
   const fetchInquiries = async () => {
     try {
@@ -26,17 +34,56 @@ const AllInquriesScreen = () => {
 
       const querySnapshot = await getDocs(q);
       const fetchedInquiries: Inquiry[] = [];
+      const newCustomerIds: string[] = [];
 
       querySnapshot.forEach((doc) => {
-        fetchedInquiries.push({
+        const inquiry = {
           id: doc.id,
           ...doc.data(),
-        } as Inquiry);
+        } as Inquiry;
+        
+        fetchedInquiries.push(inquiry);
+        
+        // Only add customer IDs that aren't already in our cache
+        if (inquiry.customerId && !userMapRef.current.has(inquiry.customerId)) {
+          newCustomerIds.push(inquiry.customerId);
+        }
       });
+6
+      if (newCustomerIds.length > 0) {
+        // Remove duplicates
+        const uniqueCustomerIds = [...new Set(newCustomerIds)];
+        
+        // Firestore 'in' queries support max 30 items, so batch if needed
+        const BATCH_SIZE = 30;
+        const batches = [];
+        
+        for (let i = 0; i < uniqueCustomerIds.length; i += BATCH_SIZE) {
+          batches.push(uniqueCustomerIds.slice(i, i + BATCH_SIZE));
+        }
+
+        // Fetch all batches in parallel using a single query per batch
+        await Promise.all(
+          batches.map(async (batch) => {
+            const usersRef = collection(db, 'users');
+            const usersQuery = query(usersRef, where(documentId(), 'in', batch));
+            const usersSnapshot = await getDocs(usersQuery);
+            
+            usersSnapshot.forEach((doc) => {
+              const user = {
+                uid: doc.id,
+                ...doc.data(),
+              } as UserData;
+              
+              userMapRef.current.set(doc.id, user);
+            });
+          })
+        );
+      }
 
       setInquiries(fetchedInquiries);
     } catch (error) {
-
+      console.error('Error fetching inquiries:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,19 +99,6 @@ const AllInquriesScreen = () => {
     fetchInquiries();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'approved':
-        return 'bg-green-100 text-green-700';
-      case 'rejected':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -76,10 +110,28 @@ const AllInquriesScreen = () => {
     });
   };
 
+  // Handle inquiry click - no API call needed, data is already cached
+  const handleInquiryClick = (inquiry: Inquiry) => {
+    if (!inquiry.customerId) {
+      console.error('No customerId in inquiry');
+      return;
+    }
+
+    const user = userMapRef.current.get(inquiry.customerId);
+    
+    if (user) {
+      setSelectedUser(user);
+      setShowChatModal(true);
+    } else {
+      console.error('User data not found in cache');
+    }
+  };
+
   const renderInquiryCard = ({ item }: { item: Inquiry }) => (
     <TouchableOpacity
       className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100"
       activeOpacity={0.7}
+      onPress={() => handleInquiryClick(item)}
     >
       <View className="flex-row justify-between items-start mb-3">
         <View className="flex-1">
@@ -90,7 +142,9 @@ const AllInquriesScreen = () => {
             {item.serviceName}
           </Text>
         </View>
-       
+        <View className="bg-pink-100 rounded-full px-3 py-1">
+          <Ionicons name="chatbubble-outline" size={16} color="#ec4899" />
+        </View>
       </View>
 
       <View className="space-y-2 mb-3">
@@ -114,10 +168,15 @@ const AllInquriesScreen = () => {
         </Text>
       </View>
 
-      <View className="flex-row items-center">
-        <Ionicons name="time-outline" size={14} color="#9ca3af" />
-        <Text className="text-xs text-gray-400 ml-1">
-          {formatDate(item.createdAt)}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center">
+          <Ionicons name="time-outline" size={14} color="#9ca3af" />
+          <Text className="text-xs text-gray-400 ml-1">
+            {formatDate(item.createdAt)}
+          </Text>
+        </View>
+        <Text className="text-xs text-pink-500 font-medium">
+          Tap to chat
         </Text>
       </View>
     </TouchableOpacity>
@@ -208,6 +267,17 @@ const AllInquriesScreen = () => {
         }
         showsVerticalScrollIndicator={false}
       />
+      
+      {selectedUser && (
+        <ConversationModal
+          visible={showChatModal}
+          onClose={() => {
+            setShowChatModal(false);
+            setSelectedUser(null);
+          }}
+          sellerData={selectedUser}
+        />
+      )}
     </View>
   );
 };

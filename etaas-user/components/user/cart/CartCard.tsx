@@ -75,7 +75,7 @@ export default function CartCard({ sellerId, items, userId, onUpdate}: CartCardP
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push(`/shop/${sellerId}`)}
+          onPress={() => router.push(`/seller/store?id=${sellerId}`)}
           className="flex-row items-center"
           activeOpacity={0.7}
         >

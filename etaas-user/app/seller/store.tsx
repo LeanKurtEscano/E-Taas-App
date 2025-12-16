@@ -306,7 +306,7 @@ const MyShopScreen: React.FC = () => {
             <ActivityIndicator size="large" color="#E91E8C" />
           </View>
         ) : !filteredProducts || filteredProducts.length === 0 ? (
-          <EmptyState />
+          <EmptyState isOwner={isOwner} />
         ) : (
           <View className="p-3">
             {viewMode === 'grid' ? (

@@ -86,30 +86,39 @@ const NotificationScreen = () => {
 
 
 
+
   const handleNotificationPress = (notification: Notification) => {
-    const title = notification.title.toLowerCase();
+  const title = notification.title.toLowerCase();
 
-    const routeMap: { [key: string]: string } = {
-      shipped: '/orders/toship',
-      confirmed: '/orders/toship',
-      'variant': `/products`,
-      'out of stock': `/seller/product/?productId=${notification.directId}`,
-      'inquiry': `/seller/inquiries/${notification.directId}`,
-      'placed successfully': '/orders/order',
-      'order received': '/seller/orders',
-      'order delivered': '/seller/orders',
-      cancelled: '/seller/orders',
-    };
-
-    for (const key in routeMap) {
-      if (title.includes(key)) {
-        router.push(routeMap[key]);
-        return;
-      }
+  if (title.includes('cancelled')) {
+    if (notification.message.includes('by the seller')) {
+      router.push('/orders/order'); 
+    } else {
+      router.push('/seller/orders');
     }
+    return;
+  }
 
-    console.warn('No matching route for notification:', notification.title);
+  const routeMap: { [key: string]: string } = {
+    shipped: '/orders/toship',
+    confirmed: '/orders/toship',
+    variant: '/products',
+    'out of stock': `/seller/product/?productId=${notification.directId}`,
+    inquiry: `/seller/inquiries/${notification.directId}`,
+    'placed successfully': '/orders/order',
+    'order received': '/seller/orders',
+    'order delivered': '/seller/orders',
   };
+
+  for (const key in routeMap) {
+    if (title.includes(key)) {
+      router.push(routeMap[key]);
+      return;
+    }
+  }
+
+  console.warn('No matching route for notification:', notification.title);
+};
 
 
   if (loading) {

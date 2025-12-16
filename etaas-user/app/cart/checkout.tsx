@@ -97,7 +97,7 @@ export default function CheckoutScreen() {
       if (!selectedAddress) {
         showToast('Please add a shipping address before placing your order', 'error');
         setTimeout(() => {
-          router.push('/address/new');
+          router.push('/address/form');
         }, 3000);
         return;
       }

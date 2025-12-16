@@ -193,36 +193,36 @@ export const useConversation = (currentUserId: string, sellerId: string) => {
     }
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    try {
-      setUploadingImage(true);
+const uploadImage = async (): Promise<string | null> => {
+  try {
+    setUploadingImage(true);
 
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Sorry, we need camera roll permissions to upload images.');
-        return null;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (result.canceled) {
-        return null;
-      }
-
-      return result.assets[0].uri;
-    } catch (error) {
-      
-      alert('Failed to pick image. Please try again.');
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Sorry, we need camera roll permissions to upload images.');
       return null;
-    } finally {
-      setUploadingImage(false);
     }
-  };
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,  // 👈 disable cropping
+      quality: 1,            // 👈 full quality (optional)
+    });
+
+    if (result.canceled) {
+      return null;
+    }
+
+    return result.assets[0].uri;
+
+  } catch (error) {
+    alert('Failed to pick image. Please try again.');
+    return null;
+  } finally {
+    setUploadingImage(false);
+  }
+};
+
 
   return {
     messages,

@@ -636,6 +636,20 @@ const InquireServiceScreen = () => {
 
        
        */}
+
+        <ChatButton 
+          onPress={() => setAssistantModalVisible(true)} 
+          bottomOffset={isTablet ? 120 : 100} 
+        />
+        
+        
+        <AssistantChatModal
+          visible={isAssistantModalVisible}
+          onClose={() => setAssistantModalVisible(false)}
+          userId={userData?.uid}
+          shopId={service.shopId}
+        />
+        
         <CheckoutToast
           visible={toastVisible}
           onHide={() => setToastVisible(false)}

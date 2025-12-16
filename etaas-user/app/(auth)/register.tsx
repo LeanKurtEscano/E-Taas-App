@@ -190,7 +190,7 @@ export default function RegisterScreen() {
     setConfirmPasswordError('Please confirm your password.');
     hasError = true;
   } else if (password !== confirmPassword) {
-    setConfirmPasswordError('Passwords do not match.');
+    setConfirmPasswordError('Passwords does not match.');
     hasError = true;
   }
 
@@ -305,8 +305,8 @@ export default function RegisterScreen() {
       <StatusBar barStyle="light-content" />
      
         <View className="rounded-b-[40px] pt-20 pb-8 items-center px-6">
-          <View className="w-28 h-28 rounded-full bg-white items-center justify-center mb-6">
-            <View className="w-24 h-24 rounded-full overflow-hidden">
+          <View className="w-28 h-28 rounded-lg bg-white items-center justify-center mb-6">
+            <View className="w-24 h-24  overflow-hidden">
               <Image
                 source={require("../../assets/images/etaas.png")}
                 className="w-full h-full p-1"
@@ -506,7 +506,7 @@ export default function RegisterScreen() {
           <View className="flex-row justify-center items-center mb-8">
             <Text className="text-gray-600 text-sm">Already have an account? </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)')}>
-              <Text className="text-pink-400 text-sm font-semibold">Log In</Text>
+              <Text className="text-pink-400 text-sm font-semibold">Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>

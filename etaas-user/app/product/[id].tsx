@@ -635,6 +635,19 @@ const ViewProductScreen = () => {
           userId={userData?.uid}
           shopId={shopData?.sellerInfo?.sellerId || ''}
         /> */}
+
+         <ChatButton 
+          onPress={() => setAssistantModalVisible(true)} 
+       
+        />
+
+
+       <AssistantChatModal
+          visible={isAssistantModalVisible}
+          onClose={() => setAssistantModalVisible(false)}
+          userId={userData?.uid}
+          shopId={shopData?.sellerInfo?.sellerId || ''}
+        />
        
     </SafeAreaView>
   );

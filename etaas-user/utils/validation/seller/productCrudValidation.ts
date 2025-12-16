@@ -1,6 +1,7 @@
 export const validateProductName = (name: string) => {
-  const invalidCharsRegex = /[^A-Za-z0-9\s\-&]/; // Only letters, numbers, spaces, -, &
-  const repeatedCharRegex = /(.)\1{3,}/; // Repeated 4 or more same chars
+ 
+  const invalidCharsRegex = /[^A-Za-z0-9\s\-\&\(\)\.,'\/%]/;
+  const repeatedCharRegex = /(.)\1{3,}/; // 4+ repeated chars
   const maxLength = 100;
   const minLength = 3;
 
@@ -20,7 +21,7 @@ export const validateProductName = (name: string) => {
   if (repeatedCharRegex.test(trimmedName))
     return "Product name must not contain long repeated characters.";
 
-
+  return null; 
 };
 
 export const validateDescription = (description: string) => {

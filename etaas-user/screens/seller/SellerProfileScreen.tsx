@@ -18,7 +18,7 @@ const SellerProfileScreen: React.FC = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSwitchModal, setShowSwitchModal] = useState(false);
 
-    const handleOptionPress = (route:string) => {
+    const handleOptionPress = (route: string) => {
         router.push(route);
     };
 
@@ -27,7 +27,7 @@ const SellerProfileScreen: React.FC = () => {
     };
 
 
-  
+
 
     const handleGoToShop = () => {
         router.push(`/seller/store`);
@@ -40,7 +40,7 @@ const SellerProfileScreen: React.FC = () => {
             await signOut(auth);
             router.push('/(auth)');
         } catch (error: any) {
-         
+
             Alert.alert(
                 'Logout Error',
                 error.message || 'Failed to logout. Please try again.'
@@ -110,9 +110,9 @@ const SellerProfileScreen: React.FC = () => {
                             </Text>
                         </TouchableOpacity>
 
-                 
 
-                          <TouchableOpacity
+
+                        <TouchableOpacity
                             onPress={handleAddService}
                             className="flex-row items-center justify-center mb-3 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl"
                             style={{ backgroundColor: '#a855f7' }}
@@ -160,7 +160,7 @@ const SellerProfileScreen: React.FC = () => {
                                     key={option.id}
                                     onPress={() => handleOptionPress(option.route)}
                                     className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
-                               
+
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -185,17 +185,22 @@ const SellerProfileScreen: React.FC = () => {
                     <View className="mb-6">
                         {sellerOptions.slice(4, 7).map((option) => {
                             const IconComponent = option.icon;
+
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                    
                                     className="bg-white rounded-2xl p-4 flex-row items-center border border-gray-300 justify-between mb-3"
-                                 
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className=" w-12 h-12 rounded-xl items-center justify-center">
-                                            <IconComponent size={22} color="#a855f7" />
+                                        <View className="w-12 h-12 rounded-xl items-center justify-center">
+                                            {IconComponent === DollarSign ? (
+                                                <Text style={{ fontSize: 22, color: "#a855f7", fontWeight: "bold" }}>
+                                                    ₱
+                                                </Text>
+                                            ) : (
+                                                <IconComponent size={22} color="#a855f7" />
+                                            )}
                                         </View>
                                         <Text className="text-gray-800 font-semibold text-base ml-4">
                                             {option.title}
@@ -208,6 +213,7 @@ const SellerProfileScreen: React.FC = () => {
                     </View>
 
 
+
                     <Text className="text-gray-900 font-bold text-lg mb-4">
                         Settings & Support
                     </Text>
@@ -218,9 +224,9 @@ const SellerProfileScreen: React.FC = () => {
                             return (
                                 <TouchableOpacity
                                     key={option.id}
-                                  
+
                                     className="bg-white rounded-2xl border border-gray-300 p-4 flex-row items-center justify-between mb-3"
-                               
+
                                     activeOpacity={0.7}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -241,7 +247,7 @@ const SellerProfileScreen: React.FC = () => {
                     <TouchableOpacity
                         onPress={() => setShowLogoutModal(true)}
                         className="bg-white rounded-2xl p-4 border border-gray-300  flex-row items-center justify-center mb-2"
-                    
+
                         activeOpacity={0.7}
                     >
                         <LogOut size={20} color="#ef4444" />

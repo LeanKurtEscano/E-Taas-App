@@ -2,6 +2,7 @@ export interface Inquiry {
   id: string;
   businessName: string;
   customerName: string;
+  customerId: string;
   customerEmail: string;
   customerPhone: string;
   message: string;

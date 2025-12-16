@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.etaasuser"
+      "bundleIdentifier": "com.anonymous.etaasuser",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "ETAAS needs access to your location to help you set your delivery address and show nearby laundry shops.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "ETAAS needs access to your location to help you set your delivery address and show nearby laundry shops."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +25,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.etaasuser",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
+      
+      "package": "com.dti.etaasuser",
       "versionCode": 2
     },
     "web": {
@@ -43,7 +53,16 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow ETAAS to use your location to show nearby laundry shops and provide delivery services.",
+          "locationWhenInUsePermission": "Allow ETAAS to use your location to show nearby laundry shops and provide delivery services.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
