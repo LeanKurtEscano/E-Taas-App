@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { ShoppingBag, Package, Truck, Wallet, Clock, HelpCircle, Settings, LogOut, ChevronRight, Store } from 'lucide-react-native';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/config/firebaseConfig';

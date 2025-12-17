@@ -1,10 +1,11 @@
 import { View, Text, ActivityIndicator } from 'react-native'
 import React from 'react'
 import HomeScreen from '@/screens/buyer/HomeScreen'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+
 import SellerDashboard from '@/screens/seller/SellerDashboard'
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 const index = () => {
-    const { userData, loading } = useCurrentUser()
+    const { userData, loading } = useCurrentUser();
 
   if (loading) {
     return (

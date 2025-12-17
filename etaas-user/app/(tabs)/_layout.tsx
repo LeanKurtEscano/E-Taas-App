@@ -1,61 +1,27 @@
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, View, Platform, StatusBar } from 'react-native'
-import { Tabs, Redirect, router } from 'expo-router'
+import React, { useState } from 'react'
+import { Platform, StatusBar, View, ActivityIndicator } from 'react-native'
+import { Tabs, Redirect } from 'expo-router'
 import Feather from '@expo/vector-icons/Feather'
-import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from '@/config/firebaseConfig'
 import { AppHeader } from '@/components/general/AppHeader'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { db } from '@/config/firebaseConfig'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 
 const TabsLayout = () => {
-  const [user, setUser] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const { cartLength, totalUnreadCount, userData } = useCurrentUser()
-  const [loading, setLoading] = useState(true)
-  const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const { userData, loading } = useCurrentUser()
   
   // Get safe area insets for proper bottom spacing
   const insets = useSafeAreaInsets()
 
+  // TODO: Implement cart and notifications functionality
+  const cartLength = 0
+  const totalUnreadCount = 0
+  const unreadNotifications = 0
+
   const handleCartPress = (): void => {
-    router.push('/cart/cart')
+    // TODO: Navigate to cart
+    console.log('Cart pressed')
   }
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (!user) return
-
-    const notifRef = doc(db, 'notifications', user.uid)
-
-    const unsubscribe = onSnapshot(notifRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        const notifications = data.notifications || []
-
-        // Count only unread notifications
-        const unreadCount = notifications.filter(
-          (notif: any) => notif.status === 'unread'
-        ).length
-
-        setUnreadNotifications(unreadCount)
-      } else {
-        setUnreadNotifications(0)
-      }
-    })
-
-    return () => unsubscribe()
-  }, [user])
 
   const showSearch = userData?.isSeller ? false : true
 
@@ -67,7 +33,7 @@ const TabsLayout = () => {
     )
   }
 
-  if (!user) {
+  if (!userData) {
     return <Redirect href="/(auth)" />
   }
 
@@ -93,7 +59,7 @@ const TabsLayout = () => {
         onCartPress={handleCartPress}
         totalUnreadCount={totalUnreadCount}
         showSearch={showSearch}
-        user={user}
+        user={userData}
       />
 
       <Tabs
@@ -141,7 +107,7 @@ const TabsLayout = () => {
           name="index"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Feather
                 name="home"
                 size={focused ? 26 : 24}
@@ -154,7 +120,7 @@ const TabsLayout = () => {
           name="products"
           options={{
             title: 'Products',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Feather
                 name="shopping-bag"
                 size={focused ? 26 : 24}
@@ -168,7 +134,7 @@ const TabsLayout = () => {
           name="services"
           options={{
             title: 'Services',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Feather
                 name="briefcase"
                 size={focused ? 26 : 24}
@@ -182,7 +148,7 @@ const TabsLayout = () => {
           name="notification"
           options={{
             title: 'Notifications',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Feather
                 name="bell"
                 size={focused ? 26 : 24}
@@ -197,7 +163,7 @@ const TabsLayout = () => {
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ color, focused }) => (
               <Feather
                 name="user"
                 size={focused ? 26 : 24}

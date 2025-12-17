@@ -2,7 +2,7 @@ import React from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import BuyerProfileScreen from '@/screens/buyer/ProfileScreen'
 import SellerProfileScreen from '@/screens/seller/SellerProfileScreen'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 
 const Profile = () => {
   const { userData, loading } = useCurrentUser()

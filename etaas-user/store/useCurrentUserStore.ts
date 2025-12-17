@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { SellerInfo, AppUser } from "@/types/user/currentUser";
-import { authApiClient } from "@/config/general/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authorizeApiClient } from "@/config/general/auth";
+import * as SecureStore from 'expo-secure-store';
 type State = {
   userData: AppUser | null;
   loading: boolean;
@@ -35,7 +35,7 @@ export const useCurrentUser = create<State>((set, get) => ({
     })),
 
   clearUser: async () => {
-    await AsyncStorage.removeItem('etaas_access_token');
+    await SecureStore.deleteItemAsync('etaas_access_token');
     set({ userData: null, loading: false });
   },
 
@@ -70,17 +70,17 @@ export const useCurrentUser = create<State>((set, get) => ({
     fetchCurrentUser: async () => {
     try {
       set({ loading: true });
-      
-      // Check if token exists
-      const token = await AsyncStorage.getItem('etaas_access_token');
+
+         const token = await SecureStore.getItemAsync('etaas_access_token');
+
       
       if (!token) {
-        // No token, user is not logged in
+        
         set({ userData: null, loading: false });
         return;
       }
       
-      const response = await authApiClient.get('/user-details');
+      const response = await authorizeApiClient.get('/user-details');
       if (response.data && response.data.user) {
         get().mapUserFromBackend(response.data.user);
       } else {
@@ -89,7 +89,7 @@ export const useCurrentUser = create<State>((set, get) => ({
     } catch (error) {
       console.log("Failed to fetch current user:", error);
       // Clear invalid token
-      await AsyncStorage.removeItem('etaas_access_token');
+      await SecureStore.deleteItemAsync('etaas_access_token');
       set({ userData: null, loading: false });
     }
   },

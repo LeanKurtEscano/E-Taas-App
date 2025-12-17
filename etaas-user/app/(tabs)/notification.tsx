@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@/config/firebaseConfig'
 import Feather from '@expo/vector-icons/Feather'
@@ -25,9 +25,9 @@ const NotificationScreen = () => {
   const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false)
 
   useEffect(() => {
-    if (!userData?.uid) return
+    if (!userData?.id) return
 
-    const notificationRef = doc(db, 'notifications', userData.uid)
+    const notificationRef = doc(db, 'notifications', userData.id)
 
     const unsubscribe = onSnapshot(
       notificationRef,
@@ -78,7 +78,7 @@ const NotificationScreen = () => {
     )
 
     return () => unsubscribe()
-  }, [userData?.uid, hasMarkedAsRead])
+  }, [userData?.id, hasMarkedAsRead])
 
   const onRefresh = () => {
     setRefreshing(true)

@@ -17,19 +17,19 @@ import { Image } from 'react-native';
 import { router } from 'expo-router';
 import { authApiClient } from '@/config/general/auth';
 import { useCurrentUser } from '@/store/useCurrentUserStore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import * as SecureStore from 'expo-secure-store';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const mapUserFromBackend = useCurrentUser((state) => state.mapUserFromBackend);
+  
   // Error states
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
-  const {setUserData} = useCurrentUser();
+ 
   // Clear errors when user types
   const handleEmailChange = (text: string) => {
     setEmail(text);
@@ -86,11 +86,10 @@ export default function LoginScreen() {
         password: password,
       });
 
-      if (response.data.success) {
+      if (response.status === 200) {
         mapUserFromBackend(response.data.user);
-        AsyncStorage.setItem('etaas_access_token', response.data.user.access_token);
+        await SecureStore.setItemAsync('etaas_access_token', response.data.access_token);
         
-        router.push('/(tabs)');
       }
     } catch (error: any) {
     

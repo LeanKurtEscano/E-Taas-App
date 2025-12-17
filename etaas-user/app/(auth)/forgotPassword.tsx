@@ -19,6 +19,7 @@ import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { validateEmail } from '@/utils/validation/authValidation';
 import { router } from 'expo-router';
+import { authApiClient } from '@/config/general/auth';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -33,18 +34,6 @@ export default function ForgotPasswordScreen() {
   };
 
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email.toLowerCase().trim()));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-     
-      return false;
-    }
-  };
-
   const handleResetPassword = async () => {
 
 
@@ -56,43 +45,49 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-
     setLoading(true);
     try {
+      const response = await authApiClient.post('/forgot-password', { email });
+      if (response.status === 200) {
 
-      const emailExists = await checkEmailExists(email);
-      if (!emailExists) {
-        setEmailError('No account found with this email address.');
-        setLoading(false);
-        return;
-      }
-      await sendPasswordResetEmail(auth, email);
-      setEmailSent(true);
-      Alert.alert(
-        'Email Sent',
-        'Password reset instructions have been sent to your email.',
-        [
-          {
-            text: 'OK',
-            onPress: () =>
-              router.push({
-                pathname: '/(auth)/emailSent',
-                params: { email: email, type: 'reset' },
-              })
+        router.replace({
+          pathname: '/(auth)/otp',
+          params: {
+            email: email.toLowerCase().trim(),
+            type: 'forgot-password',
           },
-        ]
-      );
+        });
+
+
+      }
+      setEmailSent(true);
+
 
       setEmail('');
     } catch (error: any) {
 
-      if (error.code === 'auth/user-not-found') {
-        Alert.alert('Error', 'No account found with this email address');
-      } else if (error.code === 'auth/invalid-email') {
-        Alert.alert('Error', 'Invalid email address');
+      if (error.response) {
+        // The server responded with a status code out of 2xx range
+        const status = error.response.status;
+
+        if (status === 422) {
+          setEmailError('No account found with this email address.');
+        } else if (status === 500) {
+          setEmailError('Server error. Please try again later.');
+        } else {
+          setEmailError('An unexpected server error occurred.');
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        setEmailError('Network error. Please check your internet connection.');
       } else {
-        Alert.alert('Error', error.message || 'Failed to send password reset email');
+        // Something else happened while setting up the request
+        setEmailError(`Something went wrong: Please Try again later.`);
       }
+
+
+
+
     } finally {
       setLoading(false);
     }
@@ -121,7 +116,7 @@ export default function ForgotPasswordScreen() {
             Forgot your password?
           </Text>
           <Text className="text-white text-sm opacity-90 text-center leading-5">
-            A link will be sent to your email address to reset your password
+            A otp  will be sent to your email address to reset your password
           </Text>
         </View>
 

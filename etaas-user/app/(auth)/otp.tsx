@@ -26,8 +26,10 @@ export default function OTPScreen() {
   const [resendLoading, setResendLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
-  
-  const { email, username, password, type } = useLocalSearchParams<OtpParams>();
+
+  const { email, username, password, type = 'registration' } = useLocalSearchParams<OtpParams>();
+
+  const isForgotPassword = type === 'forgot-password';
 
   // Timer countdown
   useEffect(() => {
@@ -75,6 +77,71 @@ export default function OTPScreen() {
     }
   };
 
+  const handleVerifyRegistrationOTP = async (otpCode: string) => {
+    if (!email || !username || !password) {
+      setHasError(true);
+      Alert.alert('Error', 'Missing registration information. Please start over.');
+      router.replace('/(auth)/register');
+      return;
+    }
+
+    const response = await authApiClient.post('/verify-email-otp', {
+      email: email,
+      username: username,
+      password: password,
+      otp: otpCode,
+    });
+
+    console.log('OTP verification response:', response.data);
+
+    // Show success message
+    Alert.alert(
+      'Success!',
+      'Your account has been created successfully. Please log in.',
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.replace('/(auth)');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleVerifyForgotPasswordOTP = async (otpCode: string) => {
+    if (!email) {
+      setHasError(true);
+      Alert.alert('Error', 'Email not found. Please start over.');
+        router.replace({
+              pathname: '/(auth)/forgotPassword',
+              params: {
+                email: email?.toLowerCase().trim(),
+              },
+            });
+      return;
+    }
+
+    const response = await authApiClient.post('/verify-password-reset-otp', {
+      email: email,
+      otp: otpCode,
+    });
+
+    if(response.status === 200) {
+
+    router.replace({
+      pathname: '/(auth)/resetPassword',
+      params: {
+        email: email?.toLowerCase().trim(),
+      },
+    });
+  }
+
+    console.log('Password reset OTP verification response:', response.data);
+
+  
+  };
+
   const handleVerifyOTP = async () => {
     const otpCode = otp.join('');
 
@@ -84,60 +151,32 @@ export default function OTPScreen() {
       return;
     }
 
-    if (!email || !username || !password) {
-      setHasError(true);
-      Alert.alert('Error', 'Missing registration information. Please start over.');
-      router.replace('/(auth)/register');
-      return;
-    }
-
     setLoading(true);
     setHasError(false);
-    try {
-      const response = await authApiClient.post('/verify-email-otp', {
-        email: email,
-        username: username,
-        password: password,
-        otp: otpCode,
-      });
-
-      console.log('OTP verification response:', response.data);
-
-      // Show success message
-      Alert.alert(
-        'Success!',
-        'Your account has been created successfully. Please log in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Navigate to login screen
-              router.replace('/(auth)');
-            },
-          },
-        ]
-      );
-    } catch (error: any) {
     
+    try {
+      if (isForgotPassword) {
+        await handleVerifyForgotPasswordOTP(otpCode);
+      } else {
+        await handleVerifyRegistrationOTP(otpCode);
+      }
+    } catch (error: any) {
       setHasError(true);
 
       if (error.response) {
         const { status, data } = error.response;
 
         if (status === 400) {
-          // Invalid or expired OTP
           Alert.alert('Invalid OTP', data.detail || 'The OTP is invalid or has expired');
         } else if (status === 500) {
-          // Server error
           Alert.alert(
             'Error',
-            data.detail || 'An error occurred while creating your account'
+            data.detail || 'An error occurred while verifying the OTP'
           );
         } else {
           Alert.alert('Error', data.detail || 'Failed to verify OTP');
         }
       } else if (error.request) {
-        // Network error
         Alert.alert(
           'Network Error',
           'Unable to connect to the server. Please check your internet connection.'
@@ -153,18 +192,27 @@ export default function OTPScreen() {
   const handleResendOTP = async () => {
     if (!email) {
       Alert.alert('Error', 'Email not found. Please start over.');
-      router.replace('/(auth)/register');
+      router.replace(isForgotPassword ? '/(auth)/forgotassword' : '/(auth)/register');
       return;
     }
 
     setResendLoading(true);
     try {
-      // Call the register endpoint again to resend OTP
-      const response = await authApiClient.post('/register', {
-        email: email,
-        username: username,
-        password: password,
-      });
+      let response;
+      
+      if (isForgotPassword) {
+        // Call the forgot password endpoint to resend OTP
+        response = await authApiClient.post('/forgot-password', {
+          email: email,
+        });
+      } else {
+        // Call the register endpoint to resend OTP
+        response = await authApiClient.post('/register', {
+          email: email,
+          username: username,
+          password: password,
+        });
+      }
 
       console.log('Resend OTP response:', response.data);
 
@@ -193,6 +241,24 @@ export default function OTPScreen() {
     }
   };
 
+  const getTitle = () => {
+    return isForgotPassword ? 'Reset Password' : 'Verify Email';
+  };
+
+  const getDescription = () => {
+    return isForgotPassword
+      ? `We've sent a 6-digit code to ${email} to verify your identity`
+      : `We've sent a 6-digit code to ${email} to complete your registration`;
+  };
+
+  const getBackRoute = () => {
+    return isForgotPassword ? '/(auth)/forgot-password' : '/(auth)';
+  };
+
+  const getBackText = () => {
+    return isForgotPassword ? 'Back to Forgot Password' : 'Back to Login';
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -211,12 +277,12 @@ export default function OTPScreen() {
 
         {/* Subtitle */}
         <Text className="text-white text-lg font-semibold mb-2">
-          Enter OTP Code
+          {getTitle()}
         </Text>
 
         {/* Description */}
-        <Text className="text-white/90 text-center text-sm mb-2">
-          We've sent a 6-digit code to {email}
+        <Text className="text-white/90 text-center text-sm mb-2 px-4">
+          {getDescription()}
         </Text>
 
         {/* Timer */}
@@ -288,13 +354,15 @@ export default function OTPScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Back to Login */}
+        {/* Back Button */}
         <TouchableOpacity
           className="mt-6"
-          onPress={() => router.replace('/(auth)')}
+          onPress={() => router.replace(getBackRoute())}
           disabled={loading || resendLoading}
         >
-          <Text className="text-white/80 text-sm underline">Back to Login</Text>
+          <Text className="text-white/80 text-sm underline">
+            {getBackText()}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

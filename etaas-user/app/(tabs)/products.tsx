@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useCurrentUser } from '@/store/useCurrentUserStore'
 import { ActivityIndicator } from 'react-native'
 import SellerProductScreen from '@/screens/seller/SellerProductScreen'
 import BrowseProductsScreen from '@/screens/buyer/BrowseProductsScreen'
