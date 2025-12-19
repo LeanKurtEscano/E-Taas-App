@@ -186,7 +186,7 @@ const ProfileScreen: React.FC = () => {
                 onCancel={() => setShowSwitchModal(false)}
                 title='Switch to Seller Mode?'
                 description='Are you sure you want to switch to seller mode?'
-                onConfirm={() => switchToRole(userData,  setSwitching, true)}
+                onConfirm={() => switchToRole(setSwitching, true)}
             />
 
             <ReusableModal

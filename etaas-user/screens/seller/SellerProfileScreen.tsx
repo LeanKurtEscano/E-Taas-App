@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Store, Package, TrendingUp, DollarSign, Users, BarChart3, Settings, HelpCircle, LogOut, ChevronRight, RefreshCw } from 'lucide-react-native';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/store/useCurrentUserStore';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '@/config/firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
 import { switchToRole } from '@/utils/general/switch';
 import { sellerOptions } from '@/constants/sellerHomeScreen';
 import { getInitials } from '@/utils/general/initials';
@@ -89,11 +88,7 @@ const SellerProfileScreen: React.FC = () => {
                             <Text className="text-xs text-gray-500 mt-1">
                                 📍 {userData?.sellerInfo?.addressLocation || 'No location'}
                             </Text>
-                            {userData?.emailVerified && (
-                                <View className="bg-green-100 px-3 py-1 rounded-full mt-2 self-start">
-                                    <Text className="text-xs text-green-700 font-medium">✓ Verified Seller</Text>
-                                </View>
-                            )}
+                           
                         </View>
                     </View>
 

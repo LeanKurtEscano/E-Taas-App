@@ -3,6 +3,10 @@ import "../global.css";
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useCurrentUser } from "@/store/useCurrentUserStore";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+
+const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { userData, loading, fetchCurrentUser } = useCurrentUser();
@@ -61,5 +65,9 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  return <RootLayoutNav />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootLayoutNav />
+    </QueryClientProvider>
+  );
 }
