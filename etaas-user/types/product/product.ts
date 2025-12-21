@@ -10,7 +10,7 @@ export interface Variant {
   combination: string[];
   price: number;
   stock: number;
-  image?: string;
+  imageUri?: string;
 }
 
 

@@ -10,20 +10,33 @@ import {
 import { router } from "expo-router";
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteModal }) => {
-   const productStock  = product.hasVariants ? product.variants.reduce((acc, variant) => acc + (variant.stock || 0), 0) : product.quantity;
+  // Calculate stock based on API structure
+  const productStock = product.has_variants 
+    ? (product.variants || []).reduce((acc, variant) => acc + (Number(variant.stock) || 0), 0) 
+    : (Number(product.stock) || 0);
+  
+  // Determine if product is out of stock
+  const isOutOfStock = productStock === 0;
+  
+  // Get product image from API structure
+  const productImage = product.images?.[0]?.image_url || product.images?.[0];
+  
+  // Get category name from nested structure
+  const categoryName = product.category?.category_name || product.category || 'Uncategorized';
+  
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-300">
       <View className="flex-row">
      
         <View className="relative">
           <Image
-            source={{ uri: product.images?.[0] }}
+            source={{ uri: productImage }}
             className="w-24 h-24 rounded-xl"
             resizeMode="cover"
           />
-          {product.availability === 'out of stock' && (
+          {isOutOfStock && (
             <View className="absolute top-2 left-2 bg-red-500 px-2 py-1 rounded-md">
-              <Text className="text-white text-xs font-semibold">Sold</Text>
+              <Text className="text-white text-xs font-semibold">Out of Stock</Text>
             </View>
           )}
         </View>
@@ -31,14 +44,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
        
         <View className="flex-1 ml-4">
           <Text className="text-base font-bold text-gray-900 mb-1" numberOfLines={1}>
-            {product.name}
+            {product.product_name || product.name || 'Unnamed Product'}
           </Text>
-          <Text className="text-xs text-gray-500 mb-2">{product.category}</Text>
+          <Text className="text-xs text-gray-500 mb-2">{categoryName}</Text>
           <Text className="text-lg font-bold mb-1" style={{ color: '#E84393' }}>
-            ₱{product.price.toLocaleString()}
+            ₱{(Number(product.base_price) || 0).toLocaleString()}
           </Text>
           <Text className="text-xs text-gray-400">
-            Quantity: {productStock} • {product.availability === 'out of stock' ? 'Out of Stock' : 'In Stock'}
+            Stock: {productStock} • {isOutOfStock ? 'Out of Stock' : 'In Stock'}
           </Text>
         </View>
       </View>
@@ -75,7 +88,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, showDeleteMod
       {/* Analytics Button */}
       <TouchableOpacity 
         className="mt-3 py-3 rounded-xl border border-gray-200 items-center flex-row justify-center"
-      
       >
         <BarChart3 size={16} color="#374151" strokeWidth={2} />
         <Text className="text-gray-700 font-semibold text-sm ml-1">Product Analytics</Text>

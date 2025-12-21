@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import useSellerStore from '@/hooks/seller/useSellerStore';
 import { useRouter } from 'expo-router';
-import { db } from '@/config/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
 import { VariantCategory, Variant } from '@/types/product/product';
 import { validateProductName, validatePrice, validateStock, validateDescription } from '@/utils/validation/seller/productCrudValidation';
 import { useRef } from 'react';
 import { TextInput } from 'react-native';
-import { ingestApi, sellerApi } from '@/config/apiConfig';
-
+import { productApiClient } from '@/config/seller/product';
+import { QueryClient } from '@tanstack/react-query';
 interface UseProductCrudProps {
     sellerId: string | undefined;
     sellerIdInt?: number;
@@ -22,12 +19,9 @@ interface UseProductCrudProps {
     }>>;
 }
 
-
-
 export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, setFieldErrors }: UseProductCrudProps) => {
     const router = useRouter();
-    const sellerStore = useSellerStore();
-
+    const queryClient = new QueryClient();
 
     const [productName, setProductName] = useState('');
     const [productPrice, setProductPrice] = useState('');
@@ -36,18 +30,15 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
     const [productAvailability, setProductAvailability] = useState<'available' | 'out of stock' | 'unavailable'>(null);
     const [productQuantity, setProductQuantity] = useState(0);
 
-
     const [imageUris, setImageUris] = useState<string[]>([]);
     const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
     const [imageError, setImageError] = useState('');
 
-
     const [variantModalVisible, setVariantModalVisible] = useState(false);
     const [hasVariants, setHasVariants] = useState(false);
     const [variantCategories, setVariantCategories] = useState<VariantCategory[]>([]);
     const [variants, setVariants] = useState<Variant[]>([]);
-
 
     const [loading, setLoading] = useState(false);
     const [fetchingProduct, setFetchingProduct] = useState(false);
@@ -65,32 +56,73 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
 
             setFetchingProduct(true);
             try {
-                const productRef = doc(db, 'products', productId);
-                const productSnap = await getDoc(productRef);
+                const response = await productApiClient.get(`/${productId}`);
+                
+                if (response.data && response.data.product) {
+                    const productData = response.data.product;
+                    const variantsData = response.data.variants || [];
+                    
+                    setProductName(productData.product_name || '');
+                    setProductPrice(productData.base_price?.toString() || '');
+                    setProductDescription(productData.description || '');
+                    
+                    const categoryName = productData.category?.name || 'Clothing';
+                    setProductCategory(categoryName);
+                    
+                    setProductAvailability(productData.stock > 0 ? 'available' : 'out of stock');
+                    setProductQuantity(productData.stock || 0);
+                    setHasVariants(productData.has_variants || false);
 
-                if (productSnap.exists()) {
-                    const data = productSnap.data();
-                    setProductName(data.name || '');
-                    setProductPrice(data.price?.toString() || '');
-                    setProductDescription(data.description || '');
-                    setProductCategory(data.category || 'Clothing');
-                    setProductAvailability(data.availability || 'available');
-                    setProductQuantity(data.quantity || 0);
+                    if (productData.has_variants && productData.variant_categories) {
+                        const mappedCategories: VariantCategory[] = productData.variant_categories.map((cat: any) => ({
+                            id: cat.id?.toString() || Math.random().toString(),
+                            name: cat.category_name,
+                            values: cat.attributes?.map((attr: any) => attr.value) || []
+                        }));
+                        
+                        setVariantCategories(mappedCategories);
 
+                        if (variantsData.length > 0) {
+                            const mappedVariants: Variant[] = variantsData.map((variant: any) => {
+                                const attributeCombination: Record<string, string> = {};
+                                
+                                if (variant.attributes && variant.attributes.length > 0) {
+                                    variant.attributes.forEach((attr: any) => {
+                                        const categoryName = attr.category?.category_name;
+                                        const attributeValue = attr.value;
+                                        
+                                        if (categoryName && attributeValue) {
+                                            attributeCombination[categoryName] = attributeValue;
+                                        }
+                                    });
+                                }
 
-                    setHasVariants(data.hasVariants || false);
-                    setVariantCategories(data.variantCategories || []);
-                    setVariants(data.variants || []);
+                                return {
+                                    id: variant.id?.toString() || Math.random().toString(),
+                                    name: variant.variant_name || '',
+                                    stock: variant.stock || 0,
+                                    price: variant.price || 0,
+                                    combination: attributeCombination,
+                                    imageUri: variant.image_url || undefined,
+                                    backendId: variant.id // Store backend ID for image uploads
+                                };
+                            });
+                            
+                            setVariants(mappedVariants);
+                        }
+                    }
 
-                    const existingImages = data.images || [];
-                    setImageUris(existingImages);
-                    setExistingImageUrls(existingImages);
+                    if (productData.images && productData.images.length > 0) {
+                        const imageUrls = productData.images.map((img: any) => img.image_url);
+                        setImageUris(imageUrls);
+                        setExistingImageUrls(imageUrls);
+                    }
                 } else {
                     showToast('Product not found', 'error');
                     router.back();
                 }
             } catch (error) {
-               
+                console.error('Failed to fetch product:', error);
                 showToast('Failed to load product data', 'error');
                 router.back();
             } finally {
@@ -100,7 +132,6 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
 
         fetchProductData();
     }, [productId]);
-
 
     const pickImages = async () => {
         try {
@@ -117,7 +148,6 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 quality: 0.8,
             };
 
-
             const result = await ImagePicker.launchImageLibraryAsync({
                 ...pickerOptions,
                 mediaTypes: ["images"],
@@ -129,12 +159,9 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 setImageError('');
             }
         } catch (error) {
-           
             showToast('Failed to pick images', 'error');
         }
-
     }
-
 
     const removeImage = (index: number) => {
         const imageToRemove = imageUris[index];
@@ -146,20 +173,18 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
         setImageUris(prev => prev.filter((_, i) => i !== index));
     };
 
-
     const incrementQuantity = () => {
-    const MAX_QUANTITY = 9999;
-    setProductQuantity(prev => (prev < MAX_QUANTITY ? prev + 1 : prev));
-    setProductAvailability('available');
-};
+        const MAX_QUANTITY = 9999;
+        setProductQuantity(prev => (prev < MAX_QUANTITY ? prev + 1 : prev));
+        setProductAvailability('available');
+    };
 
     const decrementQuantity = () => {
         setProductQuantity(prev => (prev > 1 ? prev - 1 : 0));
-        if(productQuantity - 1 == 0) {
+        if (productQuantity - 1 == 0) {
             setProductAvailability('out of stock');
         }
     }
-
 
     const handleSaveVariants = (categories: VariantCategory[], variantsList: Variant[]) => {
         setVariantCategories(categories);
@@ -168,24 +193,19 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
         showToast('Variants saved successfully!', 'success');
     };
 
-    // Toggle variants
     const toggleVariants = () => {
         if (hasVariants) {
-            // Show confirmation before disabling
-            // Note: You'll need to handle this in the component since we can't use Alert in the hook
-            return 'confirm'; // Return signal to show confirmation dialog
+            return 'confirm';
         } else {
             setHasVariants(true);
         }
     };
 
-    // Disable variants
     const disableVariants = () => {
         setHasVariants(false);
         setVariantCategories([]);
         setVariants([]);
     };
-
 
     const validateForm = (): boolean => {
         if (!sellerId) {
@@ -216,7 +236,6 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
             showToast(validateDescriptionResult, 'error');
             return false;
         }
-
 
         if (!productName.trim()) {
             showToast('Please enter product name', 'error');
@@ -255,104 +274,199 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
         return true;
     };
 
+    // Helper function to upload variant images
+    const uploadVariantImages = async (variantsList: Variant[], createdVariants: any[]) => {
+        try {
+            // Match created variants with variants that have images
+            for (let i = 0; i < variantsList.length; i++) {
+                const variant = variantsList[i];
+                const createdVariant = createdVariants[i];
+                
+                // Check if variant has a new image (not a URL)
+                if (variant.imageUri && !variant.imageUri.startsWith('http')) {
+                    const variantId = createdVariant.id;
+                    
+                    const formData = new FormData();
+                    const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
+                    const match = /\.(\w+)$/.exec(filename);
+                    const type = match ? `image/${match[1]}` : 'image/jpeg';
+                    
+                    formData.append('image', {
+                        uri: variant.imageUri,
+                        name: filename,
+                        type,
+                    } as any);
+                    
+                    await productApiClient.post(`/add-variant-image/${variantId}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to upload variant images:', error);
+            throw error;
+        }
+    };
 
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
-
         setLoading(true);
 
         try {
-            const productData = {
-                name: productName.trim(),
-                price: Number(productPrice),
-                description: productDescription.trim(),
-                category: productCategory,
-                availability: productAvailability,
-                quantity: hasVariants ? 0 : productQuantity,
-                sellerId: sellerId!,
-                hasVariants,
-                ...(hasVariants && {
-                    variantCategories,
-                    variants,
-                }),
+            const categoryMap: Record<string, number> = {
+                'Clothing': 1,
+                'Accessories': 2,
+                'Electronics': 3,
+                'Home': 4,
+                'Food & Beverages': 5,
+                'Others': 6,
             };
 
-           /* 
-          
-
-            */
-
-             const ragProductData = {
-                name: productName.trim(),
-                price: Number(productPrice),
-                description: productDescription.trim(),
-                category: productCategory,
-                availability: productAvailability,
-                quantity: hasVariants ? 0 : productQuantity,
-                sellerId: sellerIdInt,
-                hasVariants,
-                ...(hasVariants && {
-                    variantCategories,
-                    variants,
-                }),
+            const productPayload = {
+                product: {
+                    product_name: productName.trim(),
+                    description: productDescription.trim(),
+                    base_price: Number(productPrice),
+                    stock: hasVariants ? 0 : productQuantity,
+                    has_variants: hasVariants,
+                    category_id: categoryMap[productCategory] || 1,
+                },
+                variant_categories: hasVariants ? variantCategories.map(cat => ({
+                    category_name: cat.name,
+                    attributes: cat.values.map(value => ({ value }))
+                })) : [],
+                variants: hasVariants ? variants.map(variant => ({
+                    stock: variant.stock,
+                    price: variant.price
+                })) : []
             };
-
 
             if (productId) {
-                // Separate existing images from new ones
-                const existingImages = imageUris.filter(uri => existingImageUrls.includes(uri));
+                // Update existing product
+                await productApiClient.put(`/update-product/${productId}`, productPayload);
+                
+                // Upload new product images
                 const newImages = imageUris.filter(uri => !existingImageUrls.includes(uri));
+                if (newImages.length > 0) {
+                    const formData = new FormData();
+                    for (const uri of newImages) {
+                        const filename = uri.split('/').pop() || 'image.jpg';
+                        const match = /\.(\w+)$/.exec(filename);
+                        const type = match ? `image/${match[1]}` : 'image/jpeg';
+                        
+                        formData.append('images', {
+                            uri,
+                            name: filename,
+                            type,
+                        } as any);
+                    }
+                    
+                    await productApiClient.post(`/add-images/${productId}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                }
 
-                await sellerStore.updateProduct(
-                    productId,
-                    productData,
-                    newImages,
-                    existingImages,
-                    imagesToDelete
-                );
+                // Upload variant images for updated/new variants
+                if (hasVariants && variants.length > 0) {
+                    for (const variant of variants) {
+                        // Only upload if variant has a new image (local URI, not URL)
+                        if (variant.imageUri && !variant.imageUri.startsWith('http')) {
+                            const formData = new FormData();
+                            const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
+                            const match = /\.(\w+)$/.exec(filename);
+                            const type = match ? `image/${match[1]}` : 'image/jpeg';
+                            
+                            formData.append('image', {
+                                uri: variant.imageUri,
+                                name: filename,
+                                type,
+                            } as any);
+                            
+                            await productApiClient.post(`/add-variant-image/${variant.id}`, formData, {
+                                headers: {
+                                    'Content-Type': 'multipart/form-data',
+                                },
+                            });
+                        }
+                    }
+                }
+                
                 showToast('Product updated successfully!', 'success');
             } else {
-              
-                const uid = await sellerStore.addProduct(productData, imageUris);
-                
-                await sellerStore.addRagProduct({ ...ragProductData, uid: uid }, imageUris);
-                  
+                // Create new product
+                const response = await productApiClient.post('/add-product', productPayload);
+                const newProductId = response.data.product.id;
+                const createdVariants = response.data.variants || [];
+
+                // Upload product images
+                if (imageUris.length > 0) {
+                    const formData = new FormData();
+                    for (const uri of imageUris) {
+                        const filename = uri.split('/').pop() || 'image.jpg';
+                        const match = /\.(\w+)$/.exec(filename);
+                        const type = match ? `image/${match[1]}` : 'image/jpeg';
+                        
+                        formData.append('images', {
+                            uri,
+                            name: filename,
+                            type,
+                        } as any);
+                    }
+                    
+                    await productApiClient.post(`/add-images/${newProductId}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                }
+
+                // Upload variant images
+                if (hasVariants && variants.length > 0) {
+                    await uploadVariantImages(variants, createdVariants);
+                }
+
+
+               queryClient.invalidateQueries({
+  queryKey: ['seller-products'],
+});
+
                 showToast('Product added successfully!', 'success');
             }
 
             router.back();
         } catch (error) {
-          
+            console.error('Failed to save product:', error);
             showToast('Failed to save product. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-   const handleQuantityChange = (text: string) => {
-    const MAX_QUANTITY = 9999;
-    
-    // Remove non-numeric characters
-    const numericValue = text.replace(/[^0-9]/g, '');
-    
-    if (numericValue === '') {
-        setProductQuantity(0);
-        return;
-    }
-    
-    const quantity = parseInt(numericValue, 10);
-    
-    if (isNaN(quantity)) {
-        setProductQuantity(0);
-    } else if (quantity > MAX_QUANTITY) {
-        // Don't update if it exceeds max - just stop at max
-        setProductQuantity(MAX_QUANTITY);
-    } else {
-        setProductQuantity(quantity);
-    }
-};
+    const handleQuantityChange = (text: string) => {
+        const MAX_QUANTITY = 9999;
 
+        const numericValue = text.replace(/[^0-9]/g, '');
+
+        if (numericValue === '') {
+            setProductQuantity(0);
+            return;
+        }
+
+        const quantity = parseInt(numericValue, 10);
+
+        if (isNaN(quantity)) {
+            setProductQuantity(0);
+        } else if (quantity > MAX_QUANTITY) {
+            setProductQuantity(MAX_QUANTITY);
+        } else {
+            setProductQuantity(quantity);
+        }
+    };
 
     const visibleImages = imageUris.slice(0, 2);
     const remainingCount = imageUris.length - 2;
@@ -404,6 +518,4 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
         productDescriptionRef,
         handleQuantityChange,
     };
-
-
 };

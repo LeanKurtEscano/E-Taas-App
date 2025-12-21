@@ -87,7 +87,9 @@ export default function LoginScreen() {
       });
 
       if (response.status === 200) {
+        console.log(response.data.user)
         mapUserFromBackend(response.data.user);
+    
         await SecureStore.setItemAsync('etaas_access_token', response.data.access_token);
         
       }
@@ -114,6 +116,8 @@ export default function LoginScreen() {
         setGeneralError('Network error. Please check your internet connection');
       } else {
         // Other errors
+        console.log(error);
+        
         setGeneralError('An unexpected error occurred. Please try again');
       }
     } finally {

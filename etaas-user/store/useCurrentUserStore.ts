@@ -53,15 +53,15 @@ export const useCurrentUser = create<State>((set, get) => ({
       contactNumber: data.contact_number,
       isAdmin: data.is_admin,
       isSeller: data.is_seller,
-      sellerInfo: data.seller_data
+      sellerInfo: data.seller
         ? {
-          sellerId: data.seller_data.id,
-          businessName: data.seller_data.business_name,
-          addressLocation: data.seller_data.business_address,
-          contactNumber: data.seller_data.business_contact,
-          name: data.seller_data.display_name,
-          addressOfOwner: data.seller_data.owner_address,
-          isSellerMode: data.seller_data.is_seller_mode,
+          sellerId: data.seller.id,
+          businessName: data.seller.business_name,
+          addressLocation: data.seller.business_address,
+          contactNumber: data.seller.business_contact,
+          name: data.seller.display_name,
+          addressOfOwner: data.seller.owner_address,
+          isSellerMode: data.seller.is_seller_mode,
         }
         : null,
     };

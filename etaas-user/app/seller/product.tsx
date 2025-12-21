@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, Upload, Trash2, Plus, Minus } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/store/useCurrentUserStore';
 import VariantModal from '@/components/seller/manageProductsScreen/ProductVariant';
 import GeneralToast from '@/components/general/GeneralToast';
 import useToast from '@/hooks/general/useToast';
@@ -24,9 +24,9 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 const ProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
   const params = useLocalSearchParams();
-  const sellerId = userData?.uid;
+  const sellerId = userData?.id;
 
-  const sellerIdInt = userData?.sellerInfo.sellerId;
+  const sellerIdInt = userData?.sellerInfo?.sellerId;
   const productId = params.productId as string | undefined;
   const router = useRouter();
 

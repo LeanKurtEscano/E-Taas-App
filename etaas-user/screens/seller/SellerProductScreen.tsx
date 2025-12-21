@@ -42,9 +42,10 @@ const SellerProductScreen: React.FC = () => {
     error,
     refetch 
   } = useQuery({
-    queryKey: ['seller-products', userData?.id],
+    queryKey: ['seller-products'],
     queryFn: async () => {
       const response = await sellerApiClient.get('/my-products');
+      console.log('Fetched products:', response.data);
       return response.data;
     },
     enabled: !!userData?.id,
@@ -60,7 +61,7 @@ const SellerProductScreen: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller-products'] });
-      showToast( 'Product deleted successfully','success');
+      showToast('Product deleted successfully','success');
       setShowDeleteProduct(false);
       setProductIdToDelete(null);
     },
@@ -69,31 +70,47 @@ const SellerProductScreen: React.FC = () => {
                           error.message === 'Network Error' 
                             ? 'No internet connection. Please check your network.'
                             : 'Failed to delete product. Please try again.';
-      showToast( errorMessage,'error',);
+      showToast(errorMessage,'error');
     },
   });
 
   const statistics = useMemo<Statistics>(() => {
-    const totalProducts = products.length;
-    const inStock = products.filter((p: Product) => p.availability !== 'out of stock').length;
-    const outOfStock = products.filter((p: Product) => p.availability === 'out of stock').length;
-    const totalValue = products.reduce((sum: number, p: Product) => 
-      sum + (p.price * p.quantity), 0) + products.reduce((sum: number, p: Product) => 
-      sum + (p.hasVariants ? p.variants!.reduce((variantSum, v) => 
-        variantSum + (v.price * v.stock), 0) : 0), 0);
+    const totalProducts = products?.length || 0;
+    
+    // Check for out of stock using stock field (0 or undefined means out of stock)
+    const inStock = products?.filter((p: any) => (p?.stock || 0) > 0).length || 0;
+    const outOfStock = products?.filter((p: any) => (p?.stock || 0) === 0).length || 0;
+    
+    // Calculate total value using base_price and stock
+    const totalValue = products?.reduce((sum: number, p: any) => {
+      const productValue = (Number(p?.base_price) || 0) * (Number(p?.stock) || 0);
+      const variantsValue = (p?.has_variants && Array.isArray(p?.variants)) 
+        ? p.variants.reduce((variantSum: number, v: any) => 
+            variantSum + ((Number(v?.price) || 0) * (Number(v?.stock) || 0)), 0)
+        : 0;
+      return sum + productValue + variantsValue;
+    }, 0) || 0;
 
     return { totalProducts, inStock, outOfStock, totalValue };
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product: Product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return products.filter((product: any) => {
+      // Use product_name instead of name
+      const productName = product.product_name || '';
+      const productDesc = product.description || '';
+      
+      const matchesSearch = productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           productDesc.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Use category.category_name for matching
+      const productCategory = product.category?.category_name || '';
+      const matchesCategory = selectedCategory === 'All' || productCategory === selectedCategory;
+      
+      // Check availability based on stock
+      const isInStock = (product.stock || 0) > 0;
       const matchesAvailability = selectedAvailability === 'All' || 
-                                 (selectedAvailability === 'In Stock' ? 
-                                   product.availability !== 'out of stock' : 
-                                   product.availability === 'out of stock');
+                                 (selectedAvailability === 'In Stock' ? isInStock : !isInStock);
       
       return matchesSearch && matchesCategory && matchesAvailability;
     });
@@ -204,7 +221,7 @@ const SellerProductScreen: React.FC = () => {
             />
             <StatCard
               title="TOTAL VALUE"
-              value={`₱${statistics.totalValue.toLocaleString()}`}
+              value={`₱${(statistics?.totalValue || 0).toLocaleString()}`}
               subtitle="Inventory worth"
               icon={<DollarSign size={24} color="#EC4899" strokeWidth={2} />}
             />
@@ -307,7 +324,7 @@ const SellerProductScreen: React.FC = () => {
               </Text>
             </View>
           ) : (
-            filteredProducts.map((product: Product, index: number) => (
+            filteredProducts.map((product: any, index: number) => (
               <ProductCard 
                 key={product.id || index} 
                 product={product} 
@@ -328,7 +345,7 @@ const SellerProductScreen: React.FC = () => {
           }}
           onConfirm={confirmDeleteProduct}
           title="Confirm Deletion"
-          description={`Are you sure you want to delete ${products.find((product: Product) => product.id === productIdToDelete)?.name}?`}
+          description={`Are you sure you want to delete ${products.find((product: any) => product.id === productIdToDelete)?.product_name}?`}
           confirmButtonColor='bg-red-500'
           confirmText='Delete'
           isLoading={deleteProductMutation.isPending}
