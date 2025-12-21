@@ -16,7 +16,7 @@ const index = () => {
   }
 
 
-  if (userData?.isSeller) {
+  if (userData?.sellerInfo?.isSellerMode) {
     return <SellerDashboard />
   }
 

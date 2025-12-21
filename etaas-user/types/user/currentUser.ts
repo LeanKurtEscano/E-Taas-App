@@ -8,7 +8,7 @@ export type SellerInfo = {
   registeredAt?: string;
   shopName?: string;
   sellerId?:number;
-  uid?: string;
+  isSellerMode:boolean;
 };
 
 export type AppUser = {

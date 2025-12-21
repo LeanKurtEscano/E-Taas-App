@@ -16,7 +16,7 @@ const Products = () => {
   }
 
 
-  if (userData?.isSeller) {
+  if (userData?.sellerInfo?.isSellerMode) {
     return <SellerProductScreen />
   }
 

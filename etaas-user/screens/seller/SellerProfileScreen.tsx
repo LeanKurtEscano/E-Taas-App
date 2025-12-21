@@ -16,7 +16,8 @@ const SellerProfileScreen: React.FC = () => {
     const [switching, setSwitching] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSwitchModal, setShowSwitchModal] = useState(false);
-
+    const { mapUserFromBackend, clearUser } = useCurrentUser();
+    
     const handleOptionPress = (route: string) => {
         router.push(route);
     };
@@ -36,7 +37,8 @@ const SellerProfileScreen: React.FC = () => {
 
 
         try {
-            await signOut(auth);
+            clearUser();
+            
             router.push('/(auth)');
         } catch (error: any) {
 
@@ -258,7 +260,7 @@ const SellerProfileScreen: React.FC = () => {
                 onCancel={() => setShowSwitchModal(false)}
                 title='Switch to User Mode?'
                 description='Are you sure you want to switch to user mode?'
-                onConfirm={() => switchToRole(userData, setSwitching, false)}
+                onConfirm={() => switchToRole(setSwitching, false, mapUserFromBackend)}
             />
 
             <ReusableModal

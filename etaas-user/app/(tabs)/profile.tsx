@@ -16,7 +16,7 @@ const Profile = () => {
   }
 
 
-  if (userData?.isSeller) {
+  if (userData?.sellerInfo?.isSellerMode) {
     return <SellerProfileScreen />
   }
 

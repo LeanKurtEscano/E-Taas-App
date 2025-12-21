@@ -20,7 +20,8 @@ import useToast from '@/hooks/general/useToast';
 import GeneralToast from '@/components/general/GeneralToast';
 import { sellerApiClient } from '@/config/seller/seller';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
+import { authorizeApiClient } from '@/config/general/auth';
+import { useCurrentUser } from '@/store/useCurrentUserStore';
 interface SellerFormData {
   businessName: string;
   shopName: string;
@@ -41,6 +42,9 @@ const RegisterAsSeller = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const { showToast, toastVisible, toastMessage, toastType, setToastVisible } = useToast();
+
+
+  const mappedUserFromBackend = useCurrentUser((state) => state.mapUserFromBackend);
   const [formData, setFormData] = useState<SellerFormData>({
     businessName: '',
     shopName: '',
@@ -187,11 +191,22 @@ const RegisterAsSeller = () => {
       const response = await sellerApiClient.post('/apply', sellerInfo);
 
       if (response.status === 201) {
-        showToast('Successfully registered as seller!', 'success');
-        
-        setTimeout(() => {
-          router.replace('/(tabs)/profile');
-        }, 1500);
+
+
+        const refetchedData = await authorizeApiClient.get('/user-details');
+       
+        if (refetchedData.status === 200) {
+          mappedUserFromBackend(refetchedData.data.user);
+          showToast('Successfully registered as seller!', 'success');
+
+          setTimeout(() => {
+            router.replace('/(tabs)/profile');
+          }, 1500);
+
+
+        }
+
+
       }
 
     } catch (error: any) {
@@ -302,9 +317,8 @@ const RegisterAsSeller = () => {
               onChangeText={(value) => handleInputChange('businessName', value)}
               onBlur={() => handleBlur('businessName')}
               placeholder="ABC Trading Company"
-              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-              }`}
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.businessName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
               placeholderTextColor="#9CA3AF"
             />
             {errors.businessName ? (
@@ -332,9 +346,8 @@ const RegisterAsSeller = () => {
               onChangeText={(value) => handleInputChange('shopName', value)}
               onBlur={() => handleBlur('shopName')}
               placeholder="John's Amazing Store"
-              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-              }`}
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.shopName ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
               placeholderTextColor="#9CA3AF"
             />
             {errors.shopName ? (
@@ -360,9 +373,8 @@ const RegisterAsSeller = () => {
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
-                errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-              }`}
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressLocation ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
               placeholderTextColor="#9CA3AF"
             />
             {errors.addressLocation ? (
@@ -386,9 +398,8 @@ const RegisterAsSeller = () => {
               onBlur={() => handleBlur('contactNumber')}
               placeholder="09123456789"
               keyboardType="phone-pad"
-              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${
-                errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-              }`}
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg ${errors.contactNumber ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
               placeholderTextColor="#9CA3AF"
             />
             {errors.contactNumber ? (
@@ -414,9 +425,8 @@ const RegisterAsSeller = () => {
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${
-                errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
-              }`}
+              className={`text-base text-gray-900 px-3 py-2 rounded-lg min-h-[60px] ${errors.addressOfOwner ? 'bg-red-50 border border-red-300' : 'bg-gray-50'
+                }`}
               placeholderTextColor="#9CA3AF"
             />
             {errors.addressOfOwner ? (

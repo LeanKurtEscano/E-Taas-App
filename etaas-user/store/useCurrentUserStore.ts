@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { SellerInfo, AppUser } from "@/types/user/currentUser";
 import { authorizeApiClient } from "@/config/general/auth";
 import * as SecureStore from 'expo-secure-store';
+import { userApiClient } from "@/config/user/user";
 type State = {
   userData: AppUser | null;
   loading: boolean;
@@ -25,12 +26,12 @@ export const useCurrentUser = create<State>((set, get) => ({
     set((state) => ({
       userData: state.userData
         ? {
-            ...state.userData,
-            sellerInfo: {
-              ...state.userData.sellerInfo,
-              ...info,
-            },
-          }
+          ...state.userData,
+          sellerInfo: {
+            ...(state.userData.sellerInfo || {}),
+            ...info,
+          } as SellerInfo,
+        }
         : null,
     })),
 
@@ -54,33 +55,34 @@ export const useCurrentUser = create<State>((set, get) => ({
       isSeller: data.is_seller,
       sellerInfo: data.seller_data
         ? {
-            sellerId: data.seller_data.id,
-            businessName: data.seller_data.business_name,
-            addressLocation: data.seller_data.business_address,
-            contactNumber: data.seller_data.business_contact,
-            name: data.seller_data.display_name,
-            addressOfOwner: data.seller_data.owner_address,
-          }
+          sellerId: data.seller_data.id,
+          businessName: data.seller_data.business_name,
+          addressLocation: data.seller_data.business_address,
+          contactNumber: data.seller_data.business_contact,
+          name: data.seller_data.display_name,
+          addressOfOwner: data.seller_data.owner_address,
+          isSellerMode: data.seller_data.is_seller_mode,
+        }
         : null,
     };
 
     set({ userData: mappedUser, loading: false });
   },
 
-    fetchCurrentUser: async () => {
+  fetchCurrentUser: async () => {
     try {
       set({ loading: true });
 
-         const token = await SecureStore.getItemAsync('etaas_access_token');
+      const token = await SecureStore.getItemAsync('etaas_access_token');
 
-      
+
       if (!token) {
-        
+
         set({ userData: null, loading: false });
         return;
       }
-      
-      const response = await authorizeApiClient.get('/user-details');
+
+      const response = await userApiClient.get('/user-details');
       if (response.data && response.data.user) {
         get().mapUserFromBackend(response.data.user);
       } else {

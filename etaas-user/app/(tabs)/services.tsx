@@ -7,6 +7,7 @@ import BrowseServicesScreen from '@/screens/buyer/BrowseServicesScreen'
 const services = () => {
   
 const { userData, loading } = useCurrentUser()
+  
 
   if (loading) {
     return (
@@ -17,7 +18,7 @@ const { userData, loading } = useCurrentUser()
   }
 
 
-  if (userData?.isSeller) {
+  if (userData?.sellerInfo?.isSellerMode) {
     return <SellerServicesScreen />
   }
 
