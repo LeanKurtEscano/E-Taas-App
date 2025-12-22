@@ -8,12 +8,11 @@ import {
   Image,
   Switch,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useOfferService } from '@/hooks/seller/useOfferService';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/store/useCurrentUserStore';
 import useToast from '@/hooks/general/useToast';
 import CheckoutToast from '@/components/general/CheckOutToast';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,8 +41,6 @@ const OfferServiceScreen = () => {
     removeImage,
     submitService,
   } = useOfferService({
-    userId: userData?.uid || '',
-    shopId: userData?.sellerInfo.sellerId || "",
     serviceId,
     showToast
   });
@@ -52,6 +49,8 @@ const OfferServiceScreen = () => {
     await submitService();
     if (isEditMode) {
       router.back();
+    } else {
+      router.push('/(tabs)/services');
     }
   };
 
@@ -65,14 +64,12 @@ const OfferServiceScreen = () => {
   }
 
   return (
-    <View
-      className="flex-1 bg-white"
-    >
+    <View className="flex-1 bg-white">
       {/* Header with Back Button */}
       <View className="flex-row items-center px-6 pt-12 pb-4 bg-white border-b border-gray-100">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="mr-4 p-2 rounded-full "
+          className="mr-4 p-2 rounded-full"
         >
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
@@ -224,16 +221,16 @@ const OfferServiceScreen = () => {
                 <TouchableOpacity
                   key={cat}
                   onPress={() => selectCategory(cat)}
-                  className={`px-4 py-2 rounded-full border ${formData.category === cat
+                  className={`px-4 py-2 rounded-full border ${
+                    formData.category === cat
                       ? 'bg-pink-500 border-pink-500'
                       : 'bg-white border-gray-300'
-                    }`}
+                  }`}
                 >
                   <Text
-                    className={`text-sm font-medium ${formData.category === cat
-                        ? 'text-white'
-                        : 'text-gray-700'
-                      }`}
+                    className={`text-sm font-medium ${
+                      formData.category === cat ? 'text-white' : 'text-gray-700'
+                    }`}
                   >
                     {cat}
                   </Text>
@@ -353,8 +350,9 @@ const OfferServiceScreen = () => {
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={loading || uploadingImages}
-          className={`rounded-2xl py-4 items-center ${loading || uploadingImages ? 'bg-pink-300' : 'bg-pink-500'
-            }`}
+          className={`rounded-2xl py-4 items-center ${
+            loading || uploadingImages ? 'bg-pink-300' : 'bg-pink-500'
+          }`}
           style={{
             shadowColor: '#ec4899',
             shadowOffset: { width: 0, height: 4 },
@@ -367,7 +365,11 @@ const OfferServiceScreen = () => {
             <View className="flex-row items-center">
               <ActivityIndicator color="white" />
               <Text className="text-white font-bold text-lg ml-2">
-                {uploadingImages ? 'Uploading Images...' : isEditMode ? 'Updating...' : 'Submitting...'}
+                {uploadingImages
+                  ? 'Uploading Images...'
+                  : isEditMode
+                  ? 'Updating...'
+                  : 'Submitting...'}
               </Text>
             </View>
           ) : (

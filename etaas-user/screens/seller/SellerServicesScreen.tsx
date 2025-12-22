@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,72 +11,89 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import CheckoutToast from '@/components/general/CheckOutToast';
-import { ingestApi } from '@/config/apiConfig';
+import { sellerApiClient } from '@/config/seller/seller';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+interface ServiceImage {
+  id: number;
+  service_id: number;
+  image_url: string;
+}
+
 interface Service {
-  id: string;
-  serviceName: string;
-  serviceDescription: string;
-  category: string;
-  priceRange: string;
-  images: string[];
-  bannerImage: string;
-  availability: boolean;
-  address: string;
-  businessName: string;
-  contactNumber: string;
-  ownerName: string;
-  inquiryCount?: number;
+  id: number;
+  seller_id: number;
+  category_id: number;
+  service_name: string;
+  owner_name: string;
+  service_contact: string | null;
+  service_address: string | null;
+  description: string | null;
+  price_range: string | null;
+  fb_link: string | null;
+  banner_image: string | null;
+  is_available: boolean;
+  ratings: number;
+  created_at: string;
+  images: ServiceImage[];
 }
 
 const ManageInquiriesScreen = () => {
   const router = useRouter();
   const { userData } = useCurrentUser();
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
 
-  const fetchServices = async () => {
-    if (!userData?.uid) return;
 
-    try {
-      const servicesRef = collection(db, 'services');
-      const q = query(servicesRef, where('userId', '==', userData.uid));
-      const querySnapshot = await getDocs(q);
-
-      const servicesData: Service[] = [];
-      
-      for (const docSnap of querySnapshot.docs) {
-        const serviceData = { id: docSnap.id, ...docSnap.data() } as Service;
+  const {
+    data: services = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: ['seller-services'],
+    queryFn: async () => {
     
-        const inquiriesRef = collection(db, 'inquiries');
-        const inquiriesQuery = query(inquiriesRef, where('serviceId', '==', serviceData.id));
-        const inquiriesSnapshot = await getDocs(inquiriesQuery);
-        serviceData.inquiryCount = inquiriesSnapshot.size;
-        
-        servicesData.push(serviceData);
-      }
+      const response = await sellerApiClient.get<Service[]>(
+        `my-services`
+      );
+      return response.data;
+    },
+  });
 
-      setServices(servicesData);
-    } catch (error) {
-   
-      setToastMessage('Failed to load services');
+  
+  const deleteMutation = useMutation({
+    mutationFn: async (serviceId: number) => {
+     
+      await sellerApiClient.delete(
+        `${serviceId}`
+      );
+      return serviceId;
+    },
+    onSuccess: (deletedServiceId) => {
+      // Update cache optimistically
+      queryClient.setQueryData(
+        ['seller-services'],
+        (old: Service[] = []) => old.filter(service => service.id !== deletedServiceId)
+      );
+      
+      setToastMessage('Service deleted successfully');
+      setToastType('success');
+      setToastVisible(true);
+    },
+    onError: (error) => {
+      console.error('Delete service error:', error);
+      setToastMessage('Failed to delete service');
       setToastType('error');
       setToastVisible(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    },
+  });
 
-  const handleDeleteService = async (serviceId: string, serviceName: string) => {
+  const handleDeleteService = (serviceId: number, serviceName: string) => {
     Alert.alert(
       'Delete Service',
       `Are you sure you want to delete "${serviceName}"? This action cannot be undone.`,
@@ -88,40 +105,17 @@ const ManageInquiriesScreen = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            setDeletingServiceId(serviceId);
-            try {
-              await deleteDoc(doc(db, 'services', serviceId));
-              const response = await ingestApi.delete(`/shops/${userData?.sellerInfo.sellerId}/service/${serviceId}`);
-              setServices(services.filter(service => service.id !== serviceId));
-              
-              setToastMessage('Service deleted successfully');
-              setToastType('success');
-              setToastVisible(true);
-            } catch (error) {
-            
-              setToastMessage('Failed to delete service');
-              setToastType('error');
-              setToastVisible(true);
-            } finally {
-              setDeletingServiceId(null);
-            }
-          },
+          onPress: () => deleteMutation.mutate(serviceId),
         },
       ]
     );
   };
 
-  useEffect(() => {
-    fetchServices();
-  }, [userData?.uid]);
-
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchServices();
+    refetch();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
         <ActivityIndicator size="large" color="#ec4899" />
@@ -185,7 +179,7 @@ const ManageInquiriesScreen = () => {
               </View>
               <View>
                 <Text className="text-2xl font-bold text-gray-800">
-                  {services.reduce((sum, service) => sum + (service.inquiryCount || 0), 0)}
+                  0
                 </Text>
                 <Text className="text-xs text-gray-600">
                   Total Inquiries
@@ -216,7 +210,7 @@ const ManageInquiriesScreen = () => {
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefetching}
             onRefresh={onRefresh}
             tintColor="#ec4899"
             colors={['#ec4899']}
@@ -242,10 +236,10 @@ const ManageInquiriesScreen = () => {
               className="mb-4 bg-white border border-gray-300 rounded-3xl overflow-hidden"
             >
               {/* Banner Image */}
-              {service.bannerImage ? (
+              {service.banner_image ? (
                 <View className="relative">
                   <Image
-                    source={{ uri: service.bannerImage }}
+                    source={{ uri: service.banner_image }}
                     className="w-full h-48"
                     resizeMode="cover"
                   />
@@ -257,8 +251,8 @@ const ManageInquiriesScreen = () => {
                   {/* Delete Button on Banner */}
                   <View className="absolute top-4 right-4">
                     <TouchableOpacity
-                      onPress={() => handleDeleteService(service.id, service.serviceName)}
-                      disabled={deletingServiceId === service.id}
+                      onPress={() => handleDeleteService(service.id, service.service_name)}
+                      disabled={deleteMutation.isPending}
                       className="bg-red-500 p-2.5 rounded-full"
                       style={{
                         shadowColor: '#000',
@@ -268,7 +262,7 @@ const ManageInquiriesScreen = () => {
                         elevation: 5,
                       }}
                     >
-                      {deletingServiceId === service.id ? (
+                      {deleteMutation.isPending && deleteMutation.variables === service.id ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
                         <Ionicons name="trash" size={18} color="white" />
@@ -292,10 +286,10 @@ const ManageInquiriesScreen = () => {
                         <Ionicons name="mail" size={12} color="white" />
                       </View>
                       <Text className="text-sm font-bold text-gray-800">
-                        {service.inquiryCount || 0}
+                        0
                       </Text>
                       <Text className="text-xs text-gray-600 ml-1">
-                        {service.inquiryCount === 1 ? 'Inquiry' : 'Inquiries'}
+                        Inquiries
                       </Text>
                     </View>
                   </View>
@@ -309,8 +303,8 @@ const ManageInquiriesScreen = () => {
                   {/* Delete Button for no banner */}
                   <View className="absolute top-4 right-4">
                     <TouchableOpacity
-                      onPress={() => handleDeleteService(service.id, service.serviceName)}
-                      disabled={deletingServiceId === service.id}
+                      onPress={() => handleDeleteService(service.id, service.service_name)}
+                      disabled={deleteMutation.isPending}
                       className="bg-red-500 p-2.5 rounded-full"
                       style={{
                         shadowColor: '#000',
@@ -320,7 +314,7 @@ const ManageInquiriesScreen = () => {
                         elevation: 5,
                       }}
                     >
-                      {deletingServiceId === service.id ? (
+                      {deleteMutation.isPending && deleteMutation.variables === service.id ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
                         <Ionicons name="trash" size={18} color="white" />
@@ -335,10 +329,10 @@ const ManageInquiriesScreen = () => {
                 {/* Business Name & Service Name */}
                 <View className="mb-3">
                   <Text className="text-xl font-bold text-gray-800 mb-1">
-                    {service.businessName}
+                    {service.owner_name}
                   </Text>
                   <Text className="text-sm text-gray-500">
-                    {service.serviceName}
+                    {service.service_name}
                   </Text>
                 </View>
 
@@ -348,39 +342,39 @@ const ManageInquiriesScreen = () => {
                     <Ionicons name="pricetag" size={14} color="#ec4899" />
                   </View>
                   <Text className="text-sm font-semibold text-gray-700">
-                    {service.category}
+                    Category #{service.category_id}
                   </Text>
                 </View>
 
                 {/* Price Range */}
-                {service.priceRange && service.priceRange.trim() !== '' && (
+                {service.price_range && service.price_range.trim() !== '' && (
                   <View className="flex-row items-center mb-3">
                     <View className="bg-green-100 p-2 rounded-lg mr-2">
                       <Ionicons name="cash" size={14} color="#10b981" />
                     </View>
                     <Text className="text-sm font-semibold text-gray-700">
-                      {service.priceRange}
+                      {service.price_range}
                     </Text>
                   </View>
                 )}
 
                 {/* Address */}
-                {service.address && (
+                {service.service_address && (
                   <View className="flex-row items-start mb-4">
                     <View className="bg-blue-100 p-2 rounded-lg mr-2 mt-0.5">
                       <Ionicons name="location" size={14} color="#3b82f6" />
                     </View>
                     <Text className="text-sm pt-2 text-gray-600 flex-1" numberOfLines={2}>
-                      {service.address}
+                      {service.service_address}
                     </Text>
                   </View>
                 )}
 
                 {/* Description */}
-                {service.serviceDescription && (
+                {service.description && (
                   <View className="bg-gray-50 rounded-xl p-3 mb-4">
                     <Text className="text-xs text-gray-600 leading-5" numberOfLines={3}>
-                      {service.serviceDescription}
+                      {service.description}
                     </Text>
                   </View>
                 )}

@@ -5,6 +5,7 @@ import { Variant, VariantCategory } from '@/types/product/product';
 import useToast from '../general/useToast';
 import { validateCategoryName, validateCategoryValues } from '@/utils/validation/seller/productVariant';
 import { validateStock, validatePrice } from '@/utils/validation/seller/productCrudValidation';
+
 const useVariant = () => {
     const [step, setStep] = useState<1 | 2>(1);
     const [categories, setCategories] = useState<VariantCategory[]>([]);
@@ -18,27 +19,24 @@ const useVariant = () => {
     const [showCustomVariant, setShowCustomVariant] = useState(false);
     const [selectedCategoryValues, setSelectedCategoryValues] = useState<{ [key: string]: string }>({});
     const { toastVisible, toastMessage, toastType, setToastVisible, showToast } = useToast();
+    
     // Bulk deletion states
     const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
+    
     const [fieldErrors, setFieldErrors] = useState({
         categoryName: false,
         categoryValues: false,
-    })
+    });
 
     const categoryRef = useRef<TextInput>(null);
-
     const categoryValuesRef = useRef<TextInput>(null);
-
     const rowErrorsRef = useRef<boolean[]>([]);
 
     const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-
     const handleCategoryNameChange = (text: string) => {
         setCurrentCategoryName(text);
-
-        // Clear error while typing
         if (fieldErrors.categoryName) {
             setFieldErrors(prev => ({ ...prev, categoryName: false }));
         }
@@ -46,24 +44,31 @@ const useVariant = () => {
 
     const handleCategoryValuesChange = (text: string) => {
         setCurrentCategoryValues(text);
-
         if (fieldErrors.categoryValues) {
             setFieldErrors(prev => ({ ...prev, categoryValues: false }));
         }
     };
 
-
-    const generateCombinations = (cats: VariantCategory[]): string[][] => {
+    const generateCombinations = (cats: VariantCategory[]): Record<string, string>[] => {
         if (cats.length === 0) return [];
-        const valueArrays = cats.map(cat => cat.values);
+        
+        const valueArrays = cats.map(cat => ({
+            name: cat.name,
+            values: cat.values
+        }));
+        
         const combinations = valueArrays.reduce(
-            (acc, values) => acc.flatMap(combo => values.map(value => [...combo, value])),
-            [[]] as string[][]
+            (acc, { name, values }) => 
+                acc.flatMap(combo => 
+                    values.map(value => ({ ...combo, [name]: value }))
+                ),
+            [{}] as Record<string, string>[]
         );
+        
         return combinations;
     };
 
-    // 🔥 NEW: Generate only MISSING variants (preserves existing data)
+    // Generate only MISSING variants (preserves existing data)
     const generateMissingVariants = (cats: VariantCategory[], basePrice: number) => {
         if (cats.length === 0) return;
 
@@ -76,22 +81,21 @@ const useVariant = () => {
             .filter(combo => !existingCombinationsSet.has(JSON.stringify(combo)))
             .map(combo => ({
                 id: generateId(),
+                name: Object.values(combo).join(' - '),
                 combination: combo,
                 price: basePrice,
                 stock: 0,
-                image: "",
+                imageUri: undefined,
             }));
 
         if (newVariants.length > 0) {
             setVariants(prev => [...prev, ...newVariants]);
             showToast(`${newVariants.length} new variant${newVariants.length !== 1 ? 's' : ''} generated. Existing variants preserved.`, 'success');
-
         }
     };
 
-    // 🔥 NEW: Smart category save with incremental variant generation
+    // Smart category save with incremental variant generation
     const handleSaveCategory = (basePrice: number, onValueChange?: () => void) => {
-       
         const categoryNameError = validateCategoryName(
             currentCategoryName,
             categories
@@ -101,6 +105,7 @@ const useVariant = () => {
 
         if (categoryNameError) {
             setFieldErrors(prev => ({ ...prev, categoryName: true }));
+            categoryRef.current?.focus();
             showToast(categoryNameError, 'error');
             return;
         }
@@ -108,6 +113,7 @@ const useVariant = () => {
         const categoryValuesError = validateCategoryValues(currentCategoryValues);
         if (categoryValuesError) {
             setFieldErrors(prev => ({ ...prev, categoryValues: true }));
+            categoryValuesRef.current?.focus();
             showToast(categoryValuesError, 'error');
             return;
         }
@@ -118,6 +124,8 @@ const useVariant = () => {
             .filter(v => v.length > 0);
 
         if (values.length === 0) {
+            setFieldErrors(prev => ({ ...prev, categoryValues: true }));
+            categoryValuesRef.current?.focus();
             showToast('Please enter at least one value (comma-separated)', 'error');
             return;
         }
@@ -135,35 +143,32 @@ const useVariant = () => {
             const removedValues = oldCategory.values.filter(v => !newValues.has(v));
 
             if (removedValues.length > 0) {
-                // 🔥 Delete variants that use removed values
-                const categoryIndex = categories.findIndex(cat => cat.id === editingCategoryId);
+                // Delete variants that use removed values
+                const categoryName = oldCategory.name;
                 setVariants(prev => prev.filter(variant => {
-                    const valueInThisCategory = variant.combination[categoryIndex];
+                    const valueInThisCategory = variant.combination[categoryName];
                     return !removedValues.includes(valueInThisCategory);
                 }));
             }
 
             // Update category
-            setCategories(prev =>
-                prev.map(cat =>
-                    cat.id === editingCategoryId
-                        ? { ...cat, name: currentCategoryName.trim(), values }
-                        : cat
-                )
+            const updatedCategories = categories.map(cat =>
+                cat.id === editingCategoryId
+                    ? { ...cat, name: currentCategoryName.trim(), values }
+                    : cat
             );
+            
+            setCategories(updatedCategories);
 
-            // 🔥 Generate ONLY missing variants if values were added
+            // Generate ONLY missing variants if values were added
             if (addedValues.length > 0) {
-                const updatedCategories = categories.map(cat =>
-                    cat.id === editingCategoryId
-                        ? { ...cat, name: currentCategoryName.trim(), values }
-                        : cat
-                );
                 setTimeout(() => {
                     generateMissingVariants(updatedCategories, basePrice);
                     onValueChange?.();
                 }, 100);
             }
+
+            showToast('Category updated successfully', 'success');
 
         } else {
             // Adding new category
@@ -175,25 +180,26 @@ const useVariant = () => {
             const updatedCategories = [...categories, newCategory];
             setCategories(updatedCategories);
 
-            // 🔥 Generate ONLY missing variants
+            // Generate ONLY missing variants
             setTimeout(() => {
                 generateMissingVariants(updatedCategories, basePrice);
                 onValueChange?.();
             }, 100);
+
+            showToast('Category added successfully', 'success');
         }
 
         setCurrentCategoryName('');
         setCurrentCategoryValues('');
         setEditingCategoryId(null);
+        setFieldErrors({ categoryName: false, categoryValues: false });
     };
 
-    // 🔥 NEW: Remove category with confirmation (deletes ALL variants)
     const removeCategory = (id: string, onConfirm?: () => void) => {
-
         setCategories(prev => prev.filter(cat => cat.id !== id));
         setVariants([]);
+        showToast('Category removed. All variants deleted.', 'success');
         onConfirm?.();
-
     };
 
     const editCategory = (category: VariantCategory) => {
@@ -202,10 +208,10 @@ const useVariant = () => {
         setEditingCategoryId(category.id);
     };
 
-    // 🔥 MANUAL: Full regeneration (replaces all variants)
+    // Full regeneration (replaces all variants)
     const handleGenerateVariants = (basePrice: number) => {
         if (categories.length === 0) {
-            Alert.alert('Error', 'Please add at least one variant category');
+            showToast('Please add at least one variant category', 'error');
             return;
         }
 
@@ -220,14 +226,15 @@ const useVariant = () => {
                         const combinations = generateCombinations(categories);
                         const newVariants: Variant[] = combinations.map(combo => ({
                             id: generateId(),
+                            name: Object.values(combo).join(' - '),
                             combination: combo,
                             price: basePrice,
                             stock: 0,
-                            image: "",
+                            imageUri: undefined,
                         }));
                         setVariants(newVariants);
                         setStep(2);
-                        Alert.alert('Success', `Generated ${newVariants.length} variants`);
+                        showToast(`Generated ${newVariants.length} variants`, 'success');
                     },
                 },
             ]
@@ -242,7 +249,6 @@ const useVariant = () => {
         );
     };
 
-    // Individual variant deletion
     const deleteVariant = (variantId: string) => {
         Alert.alert(
             'Delete Variant',
@@ -254,6 +260,7 @@ const useVariant = () => {
                     style: 'destructive',
                     onPress: () => {
                         setVariants(prev => prev.filter(variant => variant.id !== variantId));
+                        showToast('Variant deleted', 'success');
                     },
                 },
             ]
@@ -271,29 +278,28 @@ const useVariant = () => {
             const price = parseFloat(editPrice) || 0;
             const stock = parseInt(editStock) || 0;
 
-            const priceError = validatePrice(price);
-            const stockError = validateStock(stock);
+            const priceError = validatePrice(price.toString());
+            const stockError = validateStock(stock.toString());
 
             if (priceError) {
                 showToast(priceError, 'error');
-                 
                 return;
             }
-              
+
             if (stockError) {
                 showToast(stockError, 'error');
                 return;
             }
 
-              rowErrorsRef.current[Number(editingVariantId)] = Boolean(priceError || stockError);
-
-   
+            const variantIndex = variants.findIndex(v => v.id === editingVariantId);
+            rowErrorsRef.current[variantIndex] = false;
 
             updateVariant(editingVariantId, 'price', price);
             updateVariant(editingVariantId, 'stock', stock);
             setEditingVariantId(null);
             setEditPrice('');
             setEditStock('');
+            showToast('Variant updated', 'success');
         }
     };
 
@@ -307,23 +313,23 @@ const useVariant = () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Permission needed', 'Please grant camera roll permissions');
+                showToast('Please grant camera roll permissions', 'error');
                 return;
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 quality: 0.8,
-                aspect: [1, 1],
+                aspect: [1, 1] as [number, number],
             });
 
             if (!result.canceled && result.assets[0]) {
-                updateVariant(variantId, 'image', result.assets[0].uri);
+                updateVariant(variantId, 'imageUri', result.assets[0].uri);
+                showToast('Image added', 'success');
             }
         } catch (error) {
-          
-            Alert.alert('Error', 'Failed to pick image');
+            showToast('Failed to pick image', 'error');
         }
     };
 
@@ -337,7 +343,8 @@ const useVariant = () => {
                     text: 'Remove',
                     style: 'destructive',
                     onPress: () => {
-                        updateVariant(variantId, 'image', '');
+                        updateVariant(variantId, 'imageUri', undefined);
+                        showToast('Image removed', 'success');
                     },
                 },
             ]
@@ -349,28 +356,22 @@ const useVariant = () => {
         let firstErrorMessage = "";
 
         variants.forEach((variant, index) => {
-            const priceError = validatePrice(variant.price);
-            const stockError = validateStock(variant.stock);
+            const priceError = validatePrice(variant.price.toString());
+            const stockError = validateStock(variant.stock.toString());
 
-            // store per-row error state
             rowErrorsRef.current[index] = Boolean(priceError || stockError);
 
-            // record first error found
             if (!hasError && (priceError || stockError)) {
                 hasError = true;
                 firstErrorMessage = priceError || stockError || "";
             }
         });
 
-        // update UI for red borders
-
-
         if (hasError) {
             showToast(firstErrorMessage, "error");
-            return; // stop save
+            return;
         }
 
-        // all good → proceed
         onSaveFn(categories, variants);
         onCloseFn();
     };
@@ -378,14 +379,18 @@ const useVariant = () => {
     const handleAddCustomVariant = (basePrice: number) => {
         const selectedValues = Object.values(selectedCategoryValues).filter(value => value);
 
-        if (selectedValues.length === 0) {
-            Alert.alert('Error', 'Please select at least one variant option');
+        if (selectedValues.length !== categories.length) {
+            showToast('Please select a value for each category', 'error');
             return;
         }
 
-        const combination = categories.map(category =>
-            selectedCategoryValues[category.id] || ''
-        ).filter(value => value);
+        const combination: Record<string, string> = {};
+        categories.forEach(category => {
+            const value = selectedCategoryValues[category.id];
+            if (value) {
+                combination[category.name] = value;
+            }
+        });
 
         const exists = variants.some(variant =>
             JSON.stringify(variant.combination) === JSON.stringify(combination)
@@ -398,10 +403,11 @@ const useVariant = () => {
 
         const newVariant: Variant = {
             id: generateId(),
+            name: Object.values(combination).join(' - '),
             combination,
             price: basePrice,
             stock: 0,
-            image: "",
+            imageUri: undefined,
         };
 
         setVariants(prev => [...prev, newVariant]);
@@ -464,6 +470,7 @@ const useVariant = () => {
                         setVariants(prev => prev.filter(variant => !selectedVariantIds.has(variant.id)));
                         setSelectedVariantIds(new Set());
                         setIsSelectionMode(false);
+                        showToast(`Deleted ${selectedVariantIds.size} variants`, 'success');
                     },
                 },
             ]
@@ -471,25 +478,43 @@ const useVariant = () => {
     };
 
     return {
+        // State
         step,
-        setStep,
         categories,
-        setCategories,
         variants,
-        setVariants,
-        generateCombinations,
         currentCategoryName,
-        setCurrentCategoryName,
         currentCategoryValues,
-        setCurrentCategoryValues,
         editingCategoryId,
-        setEditingCategoryId,
         editingVariantId,
-        setEditingVariantId,
         editPrice,
-        setEditPrice,
         editStock,
+        showCustomVariant,
+        selectedCategoryValues,
+        selectedVariantIds,
+        isSelectionMode,
+        fieldErrors,
+        toastVisible,
+        toastMessage,
+        toastType,
+        
+        // Refs
+        categoryRef,
+        categoryValuesRef,
+        rowErrorsRef,
+        
+        // Setters
+        setStep,
+        setCategories,
+        setVariants,
+        setShowCustomVariant,
+        setSelectedCategoryValues,
+        setToastVisible,
+        setEditPrice,
         setEditStock,
+        
+        // Functions
+        handleCategoryNameChange,
+        handleCategoryValuesChange,
         handleSaveCategory,
         removeCategory,
         editCategory,
@@ -504,30 +529,14 @@ const useVariant = () => {
         handleSave,
         handleAddCustomVariant,
         handleCategoryValueSelect,
-        showCustomVariant,
-        setShowCustomVariant,
-        selectedCategoryValues,
-        setSelectedCategoryValues,
-        selectedVariantIds,
-        isSelectionMode,
         toggleVariantSelection,
         selectAllVariants,
         deselectAllVariants,
         toggleSelectionMode,
         deleteSelectedVariants,
         generateMissingVariants,
-        toastVisible,
-        toastMessage,
-        toastType,
-        setToastVisible,
-        fieldErrors,
-        rowErrorsRef,
-        categoryRef,
-        categoryValuesRef,
-        handleCategoryNameChange,
-        handleCategoryValuesChange,
-
-    }
-}
+        generateCombinations,
+    };
+};
 
 export default useVariant;

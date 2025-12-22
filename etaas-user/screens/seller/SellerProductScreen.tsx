@@ -22,6 +22,7 @@ import { ProductCard } from '@/components/seller/manageProductsScreen/ProductCar
 import ReusableModal from '@/components/general/Modal';
 import useToast from '@/hooks/general/useToast';
 import { sellerApiClient } from '@/config/seller/seller';
+import { productApiClient } from '@/config/seller/product';
 
 const SellerProductScreen: React.FC = () => {
   const { userData } = useCurrentUser();
@@ -45,19 +46,14 @@ const SellerProductScreen: React.FC = () => {
     queryKey: ['seller-products'],
     queryFn: async () => {
       const response = await sellerApiClient.get('/my-products');
-      console.log('Fetched products:', response.data);
       return response.data;
     },
-    enabled: !!userData?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      await sellerApiClient.delete(`/products/${productId}`);
+      await productApiClient.delete(`/delete-product/${productId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller-products'] });

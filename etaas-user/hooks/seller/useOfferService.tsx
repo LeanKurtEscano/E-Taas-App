@@ -1,21 +1,16 @@
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { db } from '@/config/firebaseConfig';
-import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
-import useCloudinary from '../image-upload/useCloudinary';
 import { ServiceFormData } from '@/types/seller/services';
-import { ingestApi } from '@/config/apiConfig';
-import { router } from 'expo-router';
-
-
+import { serviceApiClient } from '@/config/seller/service';
+import { useQueryClient } from '@tanstack/react-query';
 interface UseOfferServiceProps {
-  userId: string;
-  shopId?: Number;
   serviceId?: string; // Optional serviceId for edit mode
   showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOfferServiceProps) => {
+export const useOfferService = ({ serviceId, showToast }: UseOfferServiceProps) => { 
+   
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<ServiceFormData>({
     serviceName: '',
     businessName: '',
@@ -30,8 +25,6 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
     bannerImage: '',
     images: [],
   });
-  
-  const { uploadImageToCloudinary } = useCloudinary();
 
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -57,33 +50,31 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
 
   const fetchServiceData = async () => {
     if (!serviceId) return;
-    
+
     setFetchingService(true);
     try {
-      const serviceDoc = await getDoc(doc(db, 'services', serviceId));
-      
-      if (serviceDoc.exists()) {
-        const data = serviceDoc.data() as ServiceFormData;
-        setFormData({
-          serviceName: data.serviceName || '',
-          businessName: data.businessName || '',
-          ownerName: data.ownerName || '',
-          contactNumber: data.contactNumber || '',
-          address: data.address || '',
-          serviceDescription: data.serviceDescription || '',
-          category: data.category || '',
-          priceRange: data.priceRange || '',
-          facebookLink: data.facebookLink || '',
-          availability: data.availability ?? true,
-          bannerImage: data.bannerImage || '',
-          images: data.images || [],
-        });
-      } else {
-        showToast('Service not found', 'error');
-      }
-    } catch (error) {
-     
-      showToast('Failed to load service data', 'error');
+      const response = await serviceApiClient.get(`/${serviceId}`);
+      const data = response.data;
+
+      setFormData({
+        serviceName: data.service_name || '',
+        businessName: data.business_name || '',
+        ownerName: data.owner_name || '',
+        contactNumber: data.service_contact || '',
+        address: data.service_address || '',
+        serviceDescription: data.description || '',
+        category: data.category?.name || '',
+        priceRange: data.price_range || '',
+        facebookLink: data.fb_link || '',
+        availability: data.is_available ?? true,
+        bannerImage: data.banner_image || '',
+        images: data.images?.map((img: any) => img.image_url) || [],
+      });
+
+      showToast('Service loaded successfully', 'success');
+    } catch (error: any) {
+      console.error('Failed to fetch service:', error);
+      showToast(error.response?.data?.detail || 'Failed to load service data', 'error');
     } finally {
       setFetchingService(false);
     }
@@ -99,7 +90,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
 
   const pickBannerImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       showToast('Camera roll permissions are required to upload images', 'error');
       return;
@@ -131,7 +122,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       showToast('Camera roll permissions are required to upload images', 'error');
       return;
@@ -141,7 +132,7 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.8,
-      selectionLimit: 3,
+      selectionLimit: 3 - formData.images.length,
     });
 
     if (!result.canceled) {
@@ -198,100 +189,120 @@ export const useOfferService = ({ userId,shopId, serviceId, showToast }: UseOffe
     return uri.startsWith('http://') || uri.startsWith('https://');
   };
 
+  // Helper function to create FormData compatible file object for React Native
+  const createFileFromUri = (uri: string, filename: string) => {
+    // Extract file extension from URI
+    const uriParts = uri.split('.');
+    const fileType = uriParts[uriParts.length - 1];
+    
+    return {
+      uri,
+      name: filename,
+      type: `image/${fileType}`,
+    };
+  };
+
   const submitService = async () => {
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       setUploadingImages(true);
-      
-      // Upload banner image only if it's a new local image
-      let uploadedBannerUrl = formData.bannerImage;
-      if (!isImageUrl(formData.bannerImage)) {
-        uploadedBannerUrl = await uploadImageToCloudinary(formData.bannerImage);
-      }
 
-      // Upload service images only if they're new local images
-      let uploadedImageUrls: string[] = [];
-      if (formData.images.length > 0) {
-        uploadedImageUrls = await Promise.all(
-          formData.images.map(async (uri) => {
-            if (isImageUrl(uri)) {
-              return uri; // Already uploaded, keep the URL
-            }
-            return await uploadImageToCloudinary(uri);
-          })
-        );
-      }
-      
-      setUploadingImages(false);
-
-   
-      const serviceData = {
-        ...formData,
-        bannerImage: uploadedBannerUrl,
-        images: uploadedImageUrls,
-        userId,
-        shopId: shopId,
-        updatedAt: new Date().toISOString(),
+      // Step 1: Create/Update the service (without images first)
+      const servicePayload = {
+        service_name: formData.serviceName,
+        owner_name: formData.ownerName,
+        service_contact: formData.contactNumber,
+        service_address: formData.address,
+        description: formData.serviceDescription,
+        category_id: getCategoryId(formData.category),
+        price_range: formData.priceRange || null,
+        fb_link: formData.facebookLink || null,
+        is_available: formData.availability,
       };
 
+      let createdServiceId: number;
+
       if (isEditMode && serviceId) {
-      
-        const docRef = await updateDoc(doc(db, 'services', serviceId), serviceData);
-        const uid = serviceId;
-        /*
-        const response = await ingestApi.put(`/shops/${shopId}/service`, {
-          ...serviceData,
-          uid: uid,
-          images: uploadedImageUrls,
-      });
-      */
-
-       const response = await ingestApi.put(`/shops/${shopId}/service`, {
-          ...serviceData,
-          uid: uid,
-          images: uploadedImageUrls,
-      });
-
-      
+        // Update existing service
+        const response = await serviceApiClient.put(`/${serviceId}`, servicePayload);
+        createdServiceId = parseInt(serviceId);
         showToast('Service updated successfully!', 'success');
       } else {
-       
-        const docRef = await addDoc(collection(db, 'services'), {
-          ...serviceData,
-          createdAt: new Date().toISOString(),
-        });
+        // Create new service
+        const response = await serviceApiClient.post('/add-service', servicePayload);
+        createdServiceId = response.data.id;
+        showToast('Service created successfully!', 'success');
+      }
 
-        const uid = docRef.id;
-        /*
-        const response = await ingestApi.post(`/shops/${shopId}/service`, {
-          ...serviceData,
-          uid: uid,
-          images: uploadedImageUrls,
-      }); 
-      */
+      // Step 2: Upload images if there are any new local images
+      const newLocalImages = [formData.bannerImage, ...formData.images].filter(
+        (uri) => uri && !isImageUrl(uri)
+      );
 
-        const response = await ingestApi.post(`/shops/${shopId}/service`, {
-          ...serviceData,
-          uid: uid,
-          images: uploadedImageUrls,
-      }); 
+      if (newLocalImages.length > 0) {
+        const formDataImages = new FormData();
 
-         router.push('/(tabs)/services');
-      
-        showToast('Service added successfully!', 'success');
+        // Add banner image if it's a new local file
+        if (!isImageUrl(formData.bannerImage)) {
+          const bannerFile = createFileFromUri(formData.bannerImage, 'banner.jpg');
+          formDataImages.append('files', bannerFile as any);
+        }
+
+        // Add service images if they're new local files
+        for (let i = 0; i < formData.images.length; i++) {
+          const imageUri = formData.images[i];
+          if (!isImageUrl(imageUri)) {
+            const imageFile = createFileFromUri(imageUri, `service-${i}.jpg`);
+            formDataImages.append('files', imageFile as any);
+          }
+        }
+
+        // Upload images to the service
+        await serviceApiClient.post(
+          `/add-service-images/${createdServiceId}`,
+          formDataImages,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+      }
+
+      setUploadingImages(false);
+
+      // Reset form if creating new service
+      if (!isEditMode) {
         resetForm();
       }
-    } catch (error) {
-
+    } catch (error: any) {
+      console.error('Failed to submit service:', error);
       showToast(
-        isEditMode ? 'Failed to update service. Please try again.' : 'Failed to add service. Please try again.',
+        error.response?.data?.detail || 
+        (isEditMode ? 'Failed to update service' : 'Failed to create service'),
         'error'
       );
     } finally {
       setLoading(false);
+      setUploadingImages(false);
     }
+  };
+
+  // Helper to map category name to category_id (you'll need to adjust this)
+  const getCategoryId = (categoryName: string): number => {
+    const categoryMap: { [key: string]: number } = {
+      'Food': 1,
+      'Travel & Tours': 2,
+      'Therapy': 3,
+      'School Supplies': 4,
+      'Agricultural': 5,
+      'Clothing': 6,
+      'Others': 7,
+    };
+    return categoryMap[categoryName] || 7;
   };
 
   const resetForm = () => {

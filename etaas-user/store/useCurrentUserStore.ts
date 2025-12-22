@@ -83,8 +83,8 @@ export const useCurrentUser = create<State>((set, get) => ({
       }
 
       const response = await userApiClient.get('/user-details');
-      if (response.data && response.data.user) {
-        get().mapUserFromBackend(response.data.user);
+      if (response.data && response.data) {
+        get().mapUserFromBackend(response.data);
       } else {
         set({ userData: null, loading: false });
       }

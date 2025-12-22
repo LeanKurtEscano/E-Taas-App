@@ -1,14 +1,14 @@
 // components/VariantModal.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   Modal,
-  TouchableOpacity,
-  TextInput,
   ScrollView,
+  TextInput,
+  TouchableOpacity,
   Image,
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -16,20 +16,7 @@ import { X, Plus, Trash2, Upload, Edit3, Check, X as XIcon, Square, CheckSquare,
 import useVariant from '@/hooks/seller/useVariant';
 import ReusableModal from '@/components/general/Modal';
 import GeneralToast from '@/components/general/GeneralToast';
-
-export interface VariantCategory {
-  id: string;
-  name: string;
-  values: string[];
-}
-
-export interface Variant {
-  id: string;
-  combination: string[];
-  price: number;
-  stock: number;
-  image?: string;
-}
+import { VariantCategory, Variant } from '@/types/product/product';
 
 interface VariantModalProps {
   visible: boolean;
@@ -49,29 +36,67 @@ const VariantModal: React.FC<VariantModalProps> = ({
   basePrice,
 }) => {
   const {
-    step, setStep, categories, setCategories,
-    variants, setVariants, currentCategoryName, setCurrentCategoryName,
-    currentCategoryValues, setCurrentCategoryValues,
-    editingCategoryId, setEditingCategoryId,
-    editingVariantId, setEditingVariantId, editPrice, setEditPrice,
-    editStock, setEditStock, handleSaveCategory, removeCategory,
-    editCategory, handleGenerateVariants, updateVariant, deleteVariant,
-    startEditingVariant, saveEditingVariant, cancelEditingVariant,
-    pickVariantImage, removeVariantImage, handleSave, showCustomVariant, setShowCustomVariant,
-    selectedCategoryValues, setSelectedCategoryValues, handleAddCustomVariant, handleCategoryValueSelect,
-    selectedVariantIds, isSelectionMode, toggleVariantSelection,
-    selectAllVariants, deselectAllVariants, toggleSelectionMode, deleteSelectedVariants,
-    generateCombinations, toastVisible, toastMessage, toastType, setToastVisible, rowErrorsRef, categoryRef,categoryValuesRef, fieldErrors,
-    handleCategoryNameChange, handleCategoryValuesChange
-
+    // State
+    step,
+    categories,
+    variants,
+    currentCategoryName,
+    currentCategoryValues,
+    editingCategoryId,
+    editingVariantId,
+    editPrice,
+    editStock,
+    showCustomVariant,
+    selectedCategoryValues,
+    selectedVariantIds,
+    isSelectionMode,
+    fieldErrors,
+    toastVisible,
+    toastMessage,
+    toastType,
+    
+    // Refs
+    categoryRef,
+    categoryValuesRef,
+    rowErrorsRef,
+    
+    // Setters
+    setStep,
+    setCategories,
+    setVariants,
+    setShowCustomVariant,
+    setSelectedCategoryValues,
+    setToastVisible,
+    setEditPrice,
+    setEditStock,
+    
+    // Functions
+    handleCategoryNameChange,
+    handleCategoryValuesChange,
+    handleSaveCategory,
+    removeCategory,
+    editCategory,
+    handleGenerateVariants,
+    startEditingVariant,
+    saveEditingVariant,
+    cancelEditingVariant,
+    pickVariantImage,
+    removeVariantImage,
+    handleSave,
+    handleAddCustomVariant,
+    handleCategoryValueSelect,
+    toggleVariantSelection,
+    selectAllVariants,
+    deselectAllVariants,
+    toggleSelectionMode,
+    deleteSelectedVariants,
+    deleteVariant,
+    generateCombinations,
   } = useVariant();
 
-  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [categoryId, setCategoryId] = useState(null);
-  const [isCategoryDeleteModalVisible, setIsCategoryDeleteModalVisible] = useState(false);
+  const [categoryIdToDelete, setCategoryIdToDelete] = React.useState<string | null>(null);
+  const [showCategoryDeleteModal, setShowCategoryDeleteModal] = React.useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = React.useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -79,11 +104,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
       setVariants(initialVariants);
       setStep(initialCategories.length > 0 ? 2 : 1);
       setSelectedCategoryValues({});
-      setHasGeneratedOnce(initialVariants.length > 0);
     }
   }, [visible, initialCategories, initialVariants]);
-
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const renderCategorySetup = () => (
     <KeyboardAvoidingView
@@ -100,6 +122,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             Add categories like Color, Size, Material, etc. New values will automatically generate missing variants.
           </Text>
 
+          {/* Existing Categories */}
           {categories.map((category) => (
             <View
               key={category.id}
@@ -118,12 +141,17 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   <TouchableOpacity
                     onPress={() => editCategory(category)}
                     className="bg-blue-500 rounded-lg px-3 py-1.5"
+                    activeOpacity={0.7}
                   >
                     <Text className="text-white text-xs font-semibold">Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => { setCategoryId(category.id); setIsCategoryDeleteModalVisible(true); }}
+                    onPress={() => {
+                      setCategoryIdToDelete(category.id);
+                      setShowCategoryDeleteModal(true);
+                    }}
                     className="bg-red-500 rounded-lg p-1.5"
+                    activeOpacity={0.7}
                   >
                     <Trash2 size={16} color="white" />
                   </TouchableOpacity>
@@ -132,18 +160,21 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </View>
           ))}
 
-          {categories.length < 3 || editingCategoryId ? (
-            <View  className={`bg-white rounded-xl p-4 border border-gray-200 mb-4`}>
+          {/* Add/Edit Category Form */}
+          {(categories.length < 3 || editingCategoryId) && (
+            <View className="bg-white rounded-xl p-4 border border-gray-200 mb-4">
               <Text className="text-sm font-semibold text-gray-900 mb-3">
                 {editingCategoryId ? 'Edit Category' : 'Add New Category'}
               </Text>
 
               <Text className="text-xs text-gray-600 mb-2">Category Name</Text>
               <TextInput
-                className = {`bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border ${fieldErrors.categoryName ? 'border-red-500' : 'border-gray-200'} mb-4`}
+                ref={categoryRef}
+                className={`bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border ${
+                  fieldErrors.categoryName ? 'border-red-500' : 'border-gray-200'
+                } mb-4`}
                 placeholder="e.g., Color, Size, Material"
                 value={currentCategoryName}
-                ref={categoryRef}
                 onChangeText={handleCategoryNameChange}
                 placeholderTextColor="#9CA3AF"
               />
@@ -152,23 +183,25 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 Values (comma-separated)
               </Text>
               <TextInput
-                className={`bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border ${fieldErrors.categoryValues ? 'border-red-500' : 'border-gray-200'} mb-4`}
-                placeholder="e.g., Red, Blue, Green"
                 ref={categoryValuesRef}
+                className={`bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-sm border ${
+                  fieldErrors.categoryValues ? 'border-red-500' : 'border-gray-200'
+                } mb-4`}
+                placeholder="e.g., Red, Blue, Green"
                 value={currentCategoryValues}
                 onChangeText={handleCategoryValuesChange}
                 placeholderTextColor="#9CA3AF"
                 multiline
               />
             </View>
-          ) : (
-            null
           )}
 
+          {/* View Variants Button */}
           {categories.length > 0 && variants.length > 0 && (
             <TouchableOpacity
               onPress={() => setStep(2)}
               className="bg-pink-500 rounded-xl py-4 items-center mb-4"
+              activeOpacity={0.7}
             >
               <Text className="text-white font-bold text-base">
                 View & Edit Variants ({variants.length})
@@ -176,6 +209,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </TouchableOpacity>
           )}
 
+          {/* Generate Variants Prompt */}
           {categories.length > 0 && variants.length === 0 && (
             <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
               <Text className="text-blue-900 font-semibold mb-2">
@@ -187,6 +221,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <TouchableOpacity
                 onPress={() => handleGenerateVariants(basePrice)}
                 className="bg-green-500 rounded-lg py-3 items-center flex-row justify-center"
+                activeOpacity={0.7}
               >
                 <RefreshCw size={18} color="white" />
                 <Text className="text-white font-semibold text-sm ml-2">
@@ -198,20 +233,23 @@ const VariantModal: React.FC<VariantModalProps> = ({
         </View>
       </ScrollView>
 
-      <View className="bg-white border-t border-gray-200 px-6 py-4 ">
-
+      {/* Fixed Bottom Button */}
+      <View className="bg-white border-t border-gray-200 px-6 py-4">
         <TouchableOpacity
           disabled={categories.length >= 3 && !editingCategoryId}
-          onPress={() => handleSaveCategory(basePrice, () => {
-            if (variants.length > 0) {
-              setTimeout(() => setStep(2), 3000);
-            }
-          })}
-          className={`rounded-lg py-4 items-center 
-      ${categories.length >= 3 && !editingCategoryId
+          onPress={() =>
+            handleSaveCategory(basePrice, () => {
+              if (variants.length > 0) {
+                setTimeout(() => setStep(2), 300);
+              }
+            })
+          }
+          className={`rounded-lg py-4 items-center ${
+            categories.length >= 3 && !editingCategoryId
               ? 'bg-gray-300'
               : 'bg-pink-500'
-            }`}
+          }`}
+          activeOpacity={0.8}
         >
           <Text className="text-white font-semibold text-sm">
             {editingCategoryId ? 'Update Category' : 'Add Category'}
@@ -221,38 +259,35 @@ const VariantModal: React.FC<VariantModalProps> = ({
         {editingCategoryId && (
           <TouchableOpacity
             onPress={() => {
-              setCurrentCategoryName('');
-              setCurrentCategoryValues('');
-              setEditingCategoryId(null);
+              handleCategoryNameChange('');
+              handleCategoryValuesChange('');
             }}
             className="mt-2 py-2 items-center"
+            activeOpacity={0.7}
           >
             <Text className="text-gray-600 text-sm">Cancel</Text>
           </TouchableOpacity>
         )}
       </View>
-      {categoryId && (
+
+      {/* Category Delete Modal */}
+      {categoryIdToDelete && (
         <ReusableModal
-          isVisible={isCategoryDeleteModalVisible}
-          onCancel={() => setIsCategoryDeleteModalVisible(false)}
+          isVisible={showCategoryDeleteModal}
+          onCancel={() => {
+            setShowCategoryDeleteModal(false);
+            setCategoryIdToDelete(null);
+          }}
           title="Delete Category"
           description="Are you sure you want to delete this category? This will also remove all associated variants."
           onConfirm={() => {
-            removeCategory(categoryId);
-            setIsCategoryDeleteModalVisible(false);
-            setCategoryId(null);
+            removeCategory(categoryIdToDelete);
+            setShowCategoryDeleteModal(false);
+            setCategoryIdToDelete(null);
           }}
+          confirmButtonColor="bg-red-500"
         />
       )}
-
-      <GeneralToast
-        visible={toastVisible}
-        onHide={() => setToastVisible(false)}
-        message={toastMessage}
-        type={toastType}
-  
-      />
-
     </KeyboardAvoidingView>
   );
 
@@ -266,6 +301,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             setSelectedCategoryValues({});
           }}
           className="p-1"
+          activeOpacity={0.7}
         >
           <X size={20} color="#6B7280" />
         </TouchableOpacity>
@@ -285,16 +321,19 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <TouchableOpacity
                 key={value}
                 onPress={() => handleCategoryValueSelect(category.id, value)}
-                className={`px-3 py-2 rounded-lg border ${selectedCategoryValues[category.id] === value
-                  ? 'bg-pink-500 border-pink-500'
-                  : 'bg-gray-50 border-gray-300'
-                  }`}
+                className={`px-3 py-2 rounded-lg border ${
+                  selectedCategoryValues[category.id] === value
+                    ? 'bg-pink-500 border-pink-500'
+                    : 'bg-gray-50 border-gray-300'
+                }`}
+                activeOpacity={0.7}
               >
                 <Text
-                  className={`text-sm font-medium ${selectedCategoryValues[category.id] === value
-                    ? 'text-white'
-                    : 'text-gray-700'
-                    }`}
+                  className={`text-sm font-medium ${
+                    selectedCategoryValues[category.id] === value
+                      ? 'text-white'
+                      : 'text-gray-700'
+                  }`}
                 >
                   {value}
                 </Text>
@@ -304,15 +343,15 @@ const VariantModal: React.FC<VariantModalProps> = ({
         </View>
       ))}
 
-      {Object.values(selectedCategoryValues).filter(value => value).length > 0 && (
+      {Object.keys(selectedCategoryValues).length > 0 && (
         <View className="bg-gray-50 rounded-lg p-3 mb-4">
           <Text className="text-sm font-semibold text-gray-900 mb-1">
             Selected Combination:
           </Text>
           <Text className="text-sm text-gray-600">
             {categories
-              .map(category => selectedCategoryValues[category.id])
-              .filter(value => value)
+              .map((category) => selectedCategoryValues[category.id])
+              .filter((value) => value)
               .join(' • ')}
           </Text>
         </View>
@@ -320,16 +359,23 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
       <TouchableOpacity
         onPress={() => handleAddCustomVariant(basePrice)}
-        className={`rounded-lg py-3 items-center ${categories.every(category => selectedCategoryValues[category.id])
-          ? 'bg-pink-500'
-          : 'bg-gray-300'
-          }`}
-        disabled={!categories.every(category => selectedCategoryValues[category.id])}
+        className={`rounded-lg py-3 items-center ${
+          categories.every((category) => selectedCategoryValues[category.id])
+            ? 'bg-pink-500'
+            : 'bg-gray-300'
+        }`}
+        disabled={
+          !categories.every((category) => selectedCategoryValues[category.id])
+        }
+        activeOpacity={0.8}
       >
-        <Text className={`font-semibold text-sm ${categories.every(category => selectedCategoryValues[category.id])
-          ? 'text-white'
-          : 'text-gray-500'
-          }`}>
+        <Text
+          className={`font-semibold text-sm ${
+            categories.every((category) => selectedCategoryValues[category.id])
+              ? 'text-white'
+              : 'text-gray-500'
+          }`}
+        >
           Add Custom Variant
         </Text>
       </TouchableOpacity>
@@ -339,6 +385,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
   const renderVariantTable = () => (
     <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
       <View className="p-6">
+        {/* Header */}
         <View className="flex-row justify-between items-center mb-4">
           <View>
             <Text className="text-xl font-bold text-gray-900">
@@ -351,6 +398,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           <TouchableOpacity
             onPress={() => setStep(1)}
             className="bg-gray-200 rounded-lg px-4 py-2"
+            activeOpacity={0.7}
           >
             <Text className="text-gray-700 font-semibold text-xs">
               Manage Categories
@@ -358,6 +406,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Info Banner */}
         {categories.length > 0 && (
           <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
             <Text className="text-blue-900 font-semibold text-sm mb-2">
@@ -371,10 +420,12 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
 
+        {/* Action Buttons */}
         <View className="flex-row gap-2 mb-4">
           <TouchableOpacity
             onPress={() => setShowCustomVariant(!showCustomVariant)}
             className="flex-1 bg-blue-500 rounded-xl py-3 px-4 items-center flex-row justify-center"
+            activeOpacity={0.7}
           >
             <Plus size={20} color="white" />
             <Text className="text-white font-semibold text-sm ml-2">
@@ -386,6 +437,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             <TouchableOpacity
               onPress={() => handleGenerateVariants(basePrice)}
               className="flex-1 bg-orange-500 rounded-xl py-3 px-4 items-center flex-row justify-center"
+              activeOpacity={0.7}
             >
               <RefreshCw size={18} color="white" />
               <Text className="text-white font-semibold text-sm ml-2">
@@ -395,6 +447,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
           )}
         </View>
 
+        {/* Custom Variant Form */}
         {showCustomVariant && renderCustomVariantForm()}
 
         {/* Bulk Selection Controls */}
@@ -403,7 +456,10 @@ const VariantModal: React.FC<VariantModalProps> = ({
             <View className="flex-row gap-2">
               <TouchableOpacity
                 onPress={toggleSelectionMode}
-                className={`flex-1 ${isSelectionMode ? 'bg-gray-500' : 'bg-purple-500'} rounded-lg py-3 px-4 items-center flex-row justify-center`}
+                className={`flex-1 ${
+                  isSelectionMode ? 'bg-gray-500' : 'bg-purple-500'
+                } rounded-lg py-3 px-4 items-center flex-row justify-center`}
+                activeOpacity={0.7}
               >
                 {isSelectionMode ? (
                   <CheckSquare size={20} color="white" />
@@ -417,11 +473,18 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
               {isSelectionMode && (
                 <TouchableOpacity
-                  onPress={selectedVariantIds.size === variants.length ? deselectAllVariants : selectAllVariants}
+                  onPress={
+                    selectedVariantIds.size === variants.length
+                      ? deselectAllVariants
+                      : selectAllVariants
+                  }
                   className="bg-blue-500 rounded-lg py-3 px-4 items-center justify-center"
+                  activeOpacity={0.7}
                 >
                   <Text className="text-white font-semibold text-sm">
-                    {selectedVariantIds.size === variants.length ? 'Deselect All' : 'Select All'}
+                    {selectedVariantIds.size === variants.length
+                      ? 'Deselect All'
+                      : 'Select All'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -431,6 +494,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <TouchableOpacity
                 onPress={deleteSelectedVariants}
                 className="bg-red-500 rounded-lg py-3 px-4 items-center flex-row justify-center"
+                activeOpacity={0.7}
               >
                 <Trash2 size={20} color="white" />
                 <Text className="text-white font-semibold text-sm ml-2">
@@ -441,69 +505,81 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
 
+        {/* Delete All Button */}
         {variants.length > 0 && !isSelectionMode && (
           <View className="mb-4">
             <TouchableOpacity
-              onPress={() => setShowDeleteModal(true)}
+              onPress={() => setShowDeleteAllModal(true)}
               className="bg-red-500 rounded-lg py-4 px-4 items-center flex-row justify-center"
+              activeOpacity={0.7}
             >
               <Trash2 size={16} color="white" />
               <Text className="text-white font-semibold text-sm ml-2">
                 Delete All Variants
               </Text>
             </TouchableOpacity>
-            <ReusableModal isVisible={showDeleteModal} 
-            onCancel={() => setShowDeleteModal(false)} 
-            title='Delete All Variants'
-            description='Are you sure you want to delete all variants? This action cannot be undone.'
-            onConfirm={() => {
-              setVariants([]);
-              setShowDeleteModal(false);
-            }}
-            confirmButtonColor='bg-red-500'
-            
-            />
           </View>
         )}
 
+        {/* Table Header */}
         {variants.length > 0 && (
           <View className="bg-gray-100 rounded-lg p-4 mb-2 flex-row border border-gray-200">
             {isSelectionMode && (
-              <View className="w-12 ">
-                <Text className="text-xs font-bold text-gray-700 uppercase text-center">Select</Text>
+              <View className="w-12">
+                <Text className="text-xs font-bold text-gray-700 uppercase text-center">
+                  Select
+                </Text>
               </View>
             )}
             <View className="flex-1">
-              <Text className="text-xs font-bold text-gray-700 uppercase">Variant</Text>
+              <Text className="text-xs font-bold text-gray-700 uppercase">
+                Variant
+              </Text>
             </View>
             <View className="w-20">
-              <Text className="text-xs font-bold text-gray-700 uppercase text-center">Image</Text>
+              <Text className="text-xs font-bold text-gray-700 uppercase text-center">
+                Image
+              </Text>
             </View>
             <View className="w-24">
-              <Text className="text-xs font-bold text-gray-700 uppercase text-center">Price (₱)</Text>
+              <Text className="text-xs font-bold text-gray-700 uppercase text-center">
+                Price (₱)
+              </Text>
             </View>
             <View className="w-20">
-              <Text className="text-xs font-bold text-gray-700 uppercase text-center">Stock</Text>
+              <Text className="text-xs font-bold text-gray-700 uppercase text-center">
+                Stock
+              </Text>
             </View>
             {!isSelectionMode && (
               <View className="w-20">
-                <Text className="text-xs font-bold text-gray-700 uppercase text-center">Actions</Text>
+                <Text className="text-xs font-bold text-gray-700 uppercase text-center">
+                  Actions
+                </Text>
               </View>
             )}
           </View>
         )}
 
+        {/* Variant Rows */}
         {variants.length > 0 ? (
           variants.map((variant, index) => (
             <View
               key={variant.id}
-              className={`bg-white rounded-lg p-4 mb-2 border ${selectedVariantIds.has(variant.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
-                } ${rowErrorsRef.current[index] ? 'border-red-500 bg-red-50' : ''} flex-row items-center`}
+              className={`bg-white rounded-lg p-4 mb-2 border ${
+                selectedVariantIds.has(variant.id)
+                  ? 'border-pink-500 bg-pink-50'
+                  : 'border-gray-200'
+              } ${
+                rowErrorsRef.current[index] ? 'border-red-500 bg-red-50' : ''
+              } flex-row items-center`}
             >
+              {/* Selection Checkbox */}
               {isSelectionMode && (
                 <TouchableOpacity
                   onPress={() => toggleVariantSelection(variant.id)}
                   className="w-10 items-center justify-center"
+                  activeOpacity={0.7}
                 >
                   {selectedVariantIds.has(variant.id) ? (
                     <CheckSquare size={24} color="#EC4899" />
@@ -513,24 +589,27 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 </TouchableOpacity>
               )}
 
+              {/* Variant Name */}
               <View className="flex-1">
                 <Text className="text-sm font-medium text-gray-900">
-                  {variant.combination.join(' • ')}
+                  {Object.values(variant.combination).join(' • ')}
                 </Text>
                 <Text className="text-xs text-gray-500 mt-1">
                   Variant {index + 1}
                 </Text>
               </View>
 
+              {/* Image */}
               <View className="w-20 items-center">
-                {variant.image ? (
+                {variant.imageUri ? (
                   <TouchableOpacity
                     onPress={() => !isSelectionMode && pickVariantImage(variant.id)}
                     className="relative"
                     disabled={isSelectionMode}
+                    activeOpacity={0.7}
                   >
                     <Image
-                      source={{ uri: variant.image }}
+                      source={{ uri: variant.imageUri }}
                       className="w-12 h-12 rounded-lg"
                       resizeMode="cover"
                     />
@@ -538,6 +617,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                       <TouchableOpacity
                         onPress={() => removeVariantImage(variant.id)}
                         className="absolute -top-1 -right-1 bg-red-500 rounded-full p-1"
+                        activeOpacity={0.7}
                       >
                         <XIcon size={10} color="white" />
                       </TouchableOpacity>
@@ -548,12 +628,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
                     onPress={() => pickVariantImage(variant.id)}
                     className="w-12 h-12 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 items-center justify-center"
                     disabled={isSelectionMode}
+                    activeOpacity={0.7}
                   >
                     <Upload size={16} color="#9CA3AF" />
                   </TouchableOpacity>
                 )}
               </View>
 
+              {/* Price */}
               <View className="w-24 items-center">
                 {editingVariantId === variant.id && !isSelectionMode ? (
                   <TextInput
@@ -562,6 +644,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                     onChangeText={setEditPrice}
                     keyboardType="numeric"
                     placeholder="0.00"
+                    placeholderTextColor="#9CA3AF"
                   />
                 ) : (
                   <Text className="text-sm font-medium text-gray-900 text-center">
@@ -570,6 +653,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 )}
               </View>
 
+              {/* Stock */}
               <View className="w-20 items-center">
                 {editingVariantId === variant.id && !isSelectionMode ? (
                   <TextInput
@@ -578,6 +662,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                     onChangeText={setEditStock}
                     keyboardType="numeric"
                     placeholder="0"
+                    placeholderTextColor="#9CA3AF"
                   />
                 ) : (
                   <Text className="text-sm font-medium text-gray-900 text-center">
@@ -586,6 +671,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 )}
               </View>
 
+              {/* Actions */}
               {!isSelectionMode && (
                 <View className="w-20 items-center">
                   {editingVariantId === variant.id ? (
@@ -593,12 +679,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
                       <TouchableOpacity
                         onPress={saveEditingVariant}
                         className="bg-green-500 rounded p-1"
+                        activeOpacity={0.7}
                       >
                         <Check size={14} color="white" />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={cancelEditingVariant}
                         className="bg-red-500 rounded p-1"
+                        activeOpacity={0.7}
                       >
                         <XIcon size={14} color="white" />
                       </TouchableOpacity>
@@ -608,12 +696,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
                       <TouchableOpacity
                         onPress={() => startEditingVariant(variant)}
                         className="bg-blue-500 rounded p-1.5"
+                        activeOpacity={0.7}
                       >
                         <Edit3 size={14} color="white" />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => deleteVariant(variant.id)}
                         className="bg-red-500 rounded p-1.5"
+                        activeOpacity={0.7}
                       >
                         <Trash2 size={14} color="white" />
                       </TouchableOpacity>
@@ -624,6 +714,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </View>
           ))
         ) : (
+          // Empty State
           <View className="bg-gray-50 rounded-lg p-8 items-center justify-center border border-dashed border-gray-300">
             <Text className="text-gray-500 text-lg font-medium mb-2">
               No Variants Yet
@@ -635,6 +726,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <TouchableOpacity
                 onPress={() => setStep(1)}
                 className="bg-white border border-pink-500 rounded-lg px-6 py-3"
+                activeOpacity={0.7}
               >
                 <Text className="text-pink-500 font-semibold text-sm">
                   Manage Categories
@@ -644,6 +736,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 <TouchableOpacity
                   onPress={() => handleGenerateVariants(basePrice)}
                   className="bg-pink-500 rounded-lg px-6 py-3"
+                  activeOpacity={0.7}
                 >
                   <Text className="text-white font-semibold text-sm">
                     Generate All
@@ -651,22 +744,10 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 </TouchableOpacity>
               )}
             </View>
-
-             <ReusableModal isVisible={showGenerateModal} 
-            onCancel={() => setShowGenerateModal(false)} 
-            title='Delete All Variants'
-            description='Are you sure you want to delete all variants? This action cannot be undone.'
-            onConfirm={() => {
-              setVariants([]);
-              setShowGenerateModal(false);
-            }}
-            confirmButtonColor='bg-red-500'
-            
-            />
-
           </View>
         )}
 
+        {/* Summary */}
         {variants.length > 0 && (
           <View className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
             <Text className="text-sm font-semibold text-gray-900 mb-2">
@@ -674,7 +755,9 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </Text>
             <View className="flex-row justify-between">
               <Text className="text-sm text-gray-600">Total Variants:</Text>
-              <Text className="text-sm font-medium text-gray-900">{variants.length}</Text>
+              <Text className="text-sm font-medium text-gray-900">
+                {variants.length}
+              </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-sm text-gray-600">Total Stock:</Text>
@@ -685,19 +768,26 @@ const VariantModal: React.FC<VariantModalProps> = ({
             {isSelectionMode && selectedVariantIds.size > 0 && (
               <View className="flex-row justify-between">
                 <Text className="text-sm text-gray-600">Selected:</Text>
-                <Text className="text-sm font-medium text-pink-600">{selectedVariantIds.size}</Text>
+                <Text className="text-sm font-medium text-pink-600">
+                  {selectedVariantIds.size}
+                </Text>
               </View>
             )}
           </View>
         )}
       </View>
-      
-      <GeneralToast
-        visible={toastVisible}
-        onHide={() => setToastVisible(false)}
-        message={toastMessage}
-        type={toastType}
-  
+
+      {/* Delete All Modal */}
+      <ReusableModal
+        isVisible={showDeleteAllModal}
+        onCancel={() => setShowDeleteAllModal(false)}
+        title="Delete All Variants"
+        description="Are you sure you want to delete all variants? This action cannot be undone."
+        onConfirm={() => {
+          setVariants([]);
+          setShowDeleteAllModal(false);
+        }}
+        confirmButtonColor="bg-red-500"
       />
     </ScrollView>
   );
@@ -710,6 +800,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-white">
+        {/* Header */}
         <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6 flex-row items-center justify-between shadow-sm">
           <Text className="text-2xl font-bold text-gray-900">
             Product Variants
@@ -717,18 +808,22 @@ const VariantModal: React.FC<VariantModalProps> = ({
           <TouchableOpacity
             onPress={onClose}
             className="p-2 rounded-full active:bg-gray-200"
+            activeOpacity={0.7}
           >
             <X size={24} color="#374151" />
           </TouchableOpacity>
         </View>
 
+        {/* Content */}
         {step === 1 ? renderCategorySetup() : renderVariantTable()}
 
+        {/* Fixed Save Button */}
         {step === 2 && (
           <View className="bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
             <TouchableOpacity
               onPress={() => handleSave(onSave, onClose)}
               className="bg-pink-500 rounded-xl py-4 items-center"
+              activeOpacity={0.8}
             >
               <Text className="text-white font-bold text-base">
                 Save Variants
@@ -737,6 +832,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
           </View>
         )}
       </View>
+
+      {/* Toast */}
+      <GeneralToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </Modal>
   );
 };
