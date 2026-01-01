@@ -5,7 +5,7 @@ export interface ServiceFormData {
   contactNumber: string;
   address: string;
   serviceDescription: string;
-  category: string;
+  category: number;
   priceRange: string;
   facebookLink: string;
   availability: boolean;

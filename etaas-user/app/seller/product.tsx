@@ -87,6 +87,8 @@ const ProductScreen: React.FC = () => {
     productDescriptionRef,
   } = useProductCrud({ sellerId, sellerIdInt, productId, showToast, setFieldErrors });
 
+  console.log(variants);
+
   const handleToggleVariants = () => {
     const result = toggleVariants();
     if (result === 'confirm') {
@@ -301,50 +303,69 @@ const ProductScreen: React.FC = () => {
             Availability
           </Text>
           <View className="flex-row flex-wrap">
-            {availabilityOptions.map((option) => {
-              const noVariants = hasVariants && variants.length === 0;
-              const allVariantsOut = hasVariants && variants.length > 0 && variants.every(v => v.stock === 0);
+             {availabilityOptions.map((option) => {
+      let isDisabled = false;
 
-              let isDisabled = false;
+      if (hasVariants) {
+        // Variant mode logic
+        const hasNoVariants = variants.length === 0;
+        const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+        const hasStock = totalStock > 0;
 
-              if (noVariants) {
-                isDisabled = true;
-              } else if (allVariantsOut) {
-                isDisabled = !(option === "unavailable" || option === "out of stock");
-              } else {
-                isDisabled =
-                  ((option === "out of stock" || option === "unavailable") && productQuantity > 0) ||
-                  (option === "available" && productQuantity === 0);
-              }
+        if (hasNoVariants) {
+          // No variants configured yet - disable all options
+          isDisabled = true;
+        } else {
+          // Variants exist - enable options based on stock
+          if (option === "available") {
+            // Can only select "available" if there's stock
+            isDisabled = !hasStock;
+          } else if (option === "out of stock" || option === "unavailable") {
+            // Can always select these if variants exist
+            isDisabled = false;
+          }
+        }
+      } else {
+        // Non-variant mode logic
+        if (option === "available") {
+          // Can only select "available" if quantity > 0
+          isDisabled = productQuantity === 0;
+        } else if (option === "out of stock" || option === "unavailable") {
+          // Can only select these if quantity is 0
+          isDisabled = productQuantity > 0;
+        }
+      }
 
-              const isSelected = productAvailability === option;
+      const isSelected = productAvailability === option;
 
-              return (
-                <TouchableOpacity
-                  key={option}
-                  disabled={isDisabled}
-                  onPress={() => setProductAvailability(option)}
-                  activeOpacity={0.7}
-                  className={`px-5 py-3 rounded-full mr-2 mb-2 ${isDisabled
-                    ? "bg-gray-300 border border-gray-300 opacity-50"
-                    : isSelected
-                      ? "bg-pink-500"
-                      : "bg-gray-50 border border-gray-200"
-                    }`}
-                >
-                  <Text
-                    className={`font-semibold text-sm capitalize ${isDisabled
-                      ? "text-gray-500"
-                      : isSelected
-                        ? "text-white"
-                        : "text-gray-700"
-                      }`}
-                  >
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+      return (
+        <TouchableOpacity
+          key={option}
+          disabled={isDisabled}
+          onPress={() => setProductAvailability(option)}
+          activeOpacity={0.7}
+          className={`px-5 py-3 rounded-full mr-2 mb-2 ${
+            isDisabled
+              ? "bg-gray-300 border border-gray-300 opacity-50"
+              : isSelected
+                ? "bg-pink-500"
+                : "bg-gray-50 border border-gray-200"
+          }`}
+        >
+          <Text
+            className={`font-semibold text-sm capitalize ${
+              isDisabled
+                ? "text-gray-500"
+                : isSelected
+                  ? "text-white"
+                  : "text-gray-700"
+            }`}
+          >
+            {option.charAt(0).toUpperCase() + option.slice(1)}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
           </View>
         </View>
 
@@ -372,7 +393,7 @@ const ProductScreen: React.FC = () => {
                 Add variants like Color, Size, Material to create different product options.
               </Text>
 
-              {variantCategories.length > 0 && (
+              {variants.length > 0 && (
                 <View className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200">
                   <Text className="text-sm font-semibold text-gray-900 mb-2">
                     Current Variants ({variants.length})

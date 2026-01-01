@@ -26,6 +26,16 @@ export const useOfferService = ({ serviceId, showToast }: UseOfferServiceProps) 
     images: [],
   });
 
+  const categoryMap: { [key: string]: number } = {
+      'Food': 1,
+      'Travel & Tours': 2,
+      'Therapy': 3,
+      'School Supplies': 4,
+      'Agricultural': 5,
+      'Clothing': 6,
+      'Others': 7,
+    };
+
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [fetchingService, setFetchingService] = useState(false);
@@ -63,7 +73,7 @@ export const useOfferService = ({ serviceId, showToast }: UseOfferServiceProps) 
         contactNumber: data.service_contact || '',
         address: data.service_address || '',
         serviceDescription: data.description || '',
-        category: data.category?.name || '',
+        category: Number(categoryMap[data.category_id]) || 0,
         priceRange: data.price_range || '',
         facebookLink: data.fb_link || '',
         availability: data.is_available ?? true,
@@ -84,7 +94,7 @@ export const useOfferService = ({ serviceId, showToast }: UseOfferServiceProps) 
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const selectCategory = (category: string) => {
+  const selectCategory = (category: number) => {
     setFormData((prev) => ({ ...prev, category }));
   };
 
@@ -293,15 +303,7 @@ export const useOfferService = ({ serviceId, showToast }: UseOfferServiceProps) 
 
   // Helper to map category name to category_id (you'll need to adjust this)
   const getCategoryId = (categoryName: string): number => {
-    const categoryMap: { [key: string]: number } = {
-      'Food': 1,
-      'Travel & Tours': 2,
-      'Therapy': 3,
-      'School Supplies': 4,
-      'Agricultural': 5,
-      'Clothing': 6,
-      'Others': 7,
-    };
+    
     return categoryMap[categoryName] || 7;
   };
 

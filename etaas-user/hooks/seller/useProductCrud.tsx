@@ -7,6 +7,7 @@ import { useRef } from 'react';
 import { TextInput } from 'react-native';
 import { productApiClient } from '@/config/seller/product';
 import { useQueryClient } from '@tanstack/react-query';
+
 interface UseProductCrudProps {
     sellerId: string | undefined;
     sellerIdInt?: number;
@@ -39,7 +40,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
     const [hasVariants, setHasVariants] = useState(false);
     const [variantCategories, setVariantCategories] = useState<VariantCategory[]>([]);
     const [variants, setVariants] = useState<Variant[]>([]);
-    
+
     const [loading, setLoading] = useState(false);
     const [fetchingProduct, setFetchingProduct] = useState(false);
 
@@ -49,6 +50,12 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
     const productNameRef = useRef<TextInput>(null);
     const productPriceRef = useRef<TextInput>(null);
     const productDescriptionRef = useRef<TextInput>(null);
+
+    // Helper to check if ID is from database (numeric) or temporary
+    const isExistingVariant = (id: string): boolean => {
+        const numericId = Number(id);
+        return !isNaN(numericId) && numericId > 0;
+    };
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -75,7 +82,7 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
 
                     if (productData.has_variants && productData.variant_categories) {
                         const mappedCategories: VariantCategory[] = productData.variant_categories.map((cat: any) => ({
-                            id: cat.id?.toString() || Math.random().toString(),
+                            id: cat.id?.toString() || Math.random().toString(), // Keep DB ID as string
                             name: cat.category_name,
                             values: cat.attributes?.map((attr: any) => attr.value) || []
                         }));
@@ -98,13 +105,12 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                                 }
 
                                 return {
-                                    id: variant.id?.toString() || Math.random().toString(),
+                                    id: variant.id?.toString() || Math.random().toString(), // Keep DB ID as string
                                     name: variant.variant_name || '',
                                     stock: variant.stock || 0,
                                     price: variant.price || 0,
                                     combination: attributeCombination,
                                     imageUri: variant.image_url || undefined,
-                                    backendId: variant.id // Store backend ID for image uploads
                                 };
                             });
 
@@ -274,42 +280,6 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
         return true;
     };
 
-    // Helper function to upload variant images
-    const uploadVariantImages = async (variantsList: Variant[], createdVariants: any[]) => {
-        try {
-            // Match created variants with variants that have images
-            for (let i = 0; i < variantsList.length; i++) {
-                const variant = variantsList[i];
-                const createdVariant = createdVariants[i];
-
-                // Check if variant has a new image (not a URL)
-                if (variant.imageUri && !variant.imageUri.startsWith('http')) {
-                    const variantId = createdVariant.id;
-
-                    const formData = new FormData();
-                    const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
-                    const match = /\.(\w+)$/.exec(filename);
-                    const type = match ? `image/${match[1]}` : 'image/jpeg';
-
-                    formData.append('image', {
-                        uri: variant.imageUri,
-                        name: filename,
-                        type,
-                    } as any);
-
-                    await productApiClient.post(`/add-variant-image/${variantId}`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Failed to upload variant images:', error);
-            throw error;
-        }
-    };
-
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
@@ -325,30 +295,130 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                 'Others': 6,
             };
 
-            const productPayload = {
-                product: {
-                    product_name: productName.trim(),
-                    description: productDescription.trim(),
-                    base_price: Number(productPrice),
-                    stock: hasVariants ? 0 : productQuantity,
-                    has_variants: hasVariants,
-                    category_id: categoryMap[productCategory] || 1,
-                },
-                variant_categories: hasVariants ? variantCategories.map(cat => ({
-                    category_name: cat.name,
-                    attributes: cat.values.map(value => ({ value }))
-                })) : [],
-                variants: hasVariants ? variants.map(variant => ({
-                    stock: variant.stock,
-                    price: variant.price
-                })) : []
-            };
-
             if (productId) {
-                // Update existing product
-                await productApiClient.put(`/update-product/${productId}`, productPayload);
+                // ============================================
+                // UPDATE EXISTING PRODUCT
+                // ============================================
 
-                // Upload new product images
+                // 1. Update product info and variant categories
+                const updatePayload = {
+                    product: {
+                        product_name: productName.trim(),
+                        description: productDescription.trim(),
+                        base_price: Number(productPrice),
+                        stock: hasVariants ? 0 : productQuantity,
+                        has_variants: hasVariants,
+                        category_id: categoryMap[productCategory] || 1,
+                    },
+                    variant_categories: hasVariants ? variantCategories.map(cat => {
+                        const categoryId = Number(cat.id);
+                        const categoryData: any = {
+                            category_name: cat.name,
+                            attributes: cat.values.map(value => ({ value }))
+                        };
+
+                        // Include ID only for existing categories (numeric IDs)
+                        if (!isNaN(categoryId) && categoryId > 0) {
+                            categoryData.id = categoryId;
+                        }
+
+                        return categoryData;
+                    }) : []
+                };
+
+                await productApiClient.put(`/update-product/${productId}`, updatePayload);
+
+                // 2. Separate existing and new variants
+                const existingVariants = variants.filter(v => isExistingVariant(v.id));
+                const newVariants = variants.filter(v => !isExistingVariant(v.id));
+
+                // 3. Update existing variants (with images)
+                if (hasVariants && existingVariants.length > 0) {
+                    const formData = new FormData();
+
+                    const variantIds: number[] = [];
+                    const variantData: Array<{ stock: number; price: number }> = [];
+
+                    existingVariants.forEach(variant => {
+                        variantIds.push(Number(variant.id));
+                        variantData.push({
+                            stock: variant.stock,
+                            price: variant.price
+                        });
+                    });
+
+                    formData.append('variant_ids', JSON.stringify(variantIds));
+                    formData.append('variant_data', JSON.stringify(variantData));
+
+                    // Add variant images (only new local images, not existing URLs)
+                    existingVariants.forEach((variant) => {
+                        if (variant.imageUri && !variant.imageUri.startsWith('http')) {
+                            const filename = variant.imageUri.split('/').pop() || `variant-${variant.id}.jpg`;
+                            const match = /\.(\w+)$/.exec(filename);
+                            const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+                            formData.append('files', {
+                                uri: variant.imageUri,
+                                name: filename,
+                                type,
+                            } as any);
+                        }
+                    });
+
+                    await productApiClient.put('/update-variants', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                }
+
+                // 4. Add NEW variants (those with temporary IDs)
+                if (hasVariants && newVariants.length > 0) {
+                    const newVariantPayload = {
+                        variants: newVariants.map(variant => ({
+                            stock: variant.stock,
+                            price: variant.price
+                        }))
+                    };
+
+                    const response = await productApiClient.post(
+                        `/add-product-variants/${productId}`,
+                        newVariantPayload
+                    );
+
+                    const createdVariants = response.data.variants || [];
+
+                    // Upload images for newly created variants
+                    for (let i = 0; i < newVariants.length; i++) {
+                        const variant = newVariants[i];
+                        const createdVariant = createdVariants[i];
+
+                        if (variant.imageUri && !variant.imageUri.startsWith('http') && createdVariant?.id) {
+                            const formData = new FormData();
+                            const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
+                            const match = /\.(\w+)$/.exec(filename);
+                            const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+                            formData.append('image', {
+                                uri: variant.imageUri,
+                                name: filename,
+                                type,
+                            } as any);
+
+                            await productApiClient.post(
+                                `/add-variant-image/${createdVariant.id}`,
+                                formData,
+                                {
+                                    headers: {
+                                        'Content-Type': 'multipart/form-data',
+                                    },
+                                }
+                            );
+                        }
+                    }
+                }
+
+                // 5. Upload new product images
                 const newImages = imageUris.filter(uri => !existingImageUrls.includes(uri));
                 if (newImages.length > 0) {
                     const formData = new FormData();
@@ -371,43 +441,42 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                     });
                 }
 
-                // Upload variant images for updated/new variants
-                if (hasVariants && variants.length > 0) {
-                    for (const variant of variants) {
-                        // Only upload if variant has a new image (local URI, not URL)
-                        if (variant.imageUri && !variant.imageUri.startsWith('http')) {
-                            const formData = new FormData();
-                            const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
-                            const match = /\.(\w+)$/.exec(filename);
-                            const type = match ? `image/${match[1]}` : 'image/jpeg';
-
-                            formData.append('image', {
-                                uri: variant.imageUri,
-                                name: filename,
-                                type,
-                            } as any);
-
-                            await productApiClient.post(`/add-variant-image/${variant.id}`, formData, {
-                                headers: {
-                                    'Content-Type': 'multipart/form-data',
-                                },
-                            });
-                        }
-                    }
-                }
-
                 queryClient.invalidateQueries({
                     queryKey: ['seller-products'],
                 });
 
                 showToast('Product updated successfully!', 'success');
+
             } else {
-                // Create new product
+                // ============================================
+                // CREATE NEW PRODUCT
+                // ============================================
+
+                const productPayload = {
+                    product: {
+                        product_name: productName.trim(),
+                        description: productDescription.trim(),
+                        base_price: Number(productPrice),
+                        stock: hasVariants ? 0 : productQuantity,
+                        has_variants: hasVariants,
+                        category_id: categoryMap[productCategory] || 1,
+                    },
+                    variant_categories: hasVariants ? variantCategories.map(cat => ({
+                        category_name: cat.name,
+                        attributes: cat.values.map(value => ({ value }))
+                    })) : [],
+                    variants: hasVariants ? variants.map(variant => ({
+                        stock: variant.stock,
+                        price: variant.price
+                    })) : []
+                };
+
+                // 1. Create product
                 const response = await productApiClient.post('/add-product', productPayload);
                 const newProductId = response.data.product.id;
                 const createdVariants = response.data.variants || [];
 
-                // Upload product images
+                // 2. Upload product images
                 if (imageUris.length > 0) {
                     const formData = new FormData();
                     for (const uri of imageUris) {
@@ -429,11 +498,36 @@ export const useProductCrud = ({ sellerId, sellerIdInt, productId, showToast, se
                     });
                 }
 
-                // Upload variant images
+                // 3. Upload variant images
                 if (hasVariants && variants.length > 0) {
-                    await uploadVariantImages(variants, createdVariants);
-                }
+                    for (let i = 0; i < variants.length; i++) {
+                        const variant = variants[i];
+                        const createdVariant = createdVariants[i];
 
+                        if (variant.imageUri && !variant.imageUri.startsWith('http') && createdVariant?.id) {
+                            const formData = new FormData();
+                            const filename = variant.imageUri.split('/').pop() || 'variant-image.jpg';
+                            const match = /\.(\w+)$/.exec(filename);
+                            const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+                            formData.append('image', {
+                                uri: variant.imageUri,
+                                name: filename,
+                                type,
+                            } as any);
+
+                            await productApiClient.post(
+                                `/add-variant-image/${createdVariant.id}`,
+                                formData,
+                                {
+                                    headers: {
+                                        'Content-Type': 'multipart/form-data',
+                                    },
+                                }
+                            );
+                        }
+                    }
+                }
 
                 queryClient.invalidateQueries({
                     queryKey: ['seller-products'],

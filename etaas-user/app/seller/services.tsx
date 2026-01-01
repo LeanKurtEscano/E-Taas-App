@@ -217,19 +217,19 @@ const OfferServiceScreen = () => {
               Category *
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {categories.map((cat) => (
+              {categories.map((cat,idx) => (
                 <TouchableOpacity
                   key={cat}
-                  onPress={() => selectCategory(cat)}
+                  onPress={() => selectCategory(idx)}
                   className={`px-4 py-2 rounded-full border ${
-                    formData.category === cat
+                    formData.category === idx
                       ? 'bg-pink-500 border-pink-500'
                       : 'bg-white border-gray-300'
                   }`}
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      formData.category === cat ? 'text-white' : 'text-gray-700'
+                      formData.category === idx ? 'text-white' : 'text-gray-700'
                     }`}
                   >
                     {cat}

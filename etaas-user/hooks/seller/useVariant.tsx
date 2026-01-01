@@ -20,6 +20,7 @@ const useVariant = () => {
     const [selectedCategoryValues, setSelectedCategoryValues] = useState<{ [key: string]: string }>({});
     const { toastVisible, toastMessage, toastType, setToastVisible, showToast } = useToast();
     
+    console.log("Current variants:", variants);
     // Bulk deletion states
     const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -33,7 +34,19 @@ const useVariant = () => {
     const categoryValuesRef = useRef<TextInput>(null);
     const rowErrorsRef = useRef<boolean[]>([]);
 
-    const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Helper to check if ID is from database (numeric) or temporary (string with underscore)
+    const isExistingVariant = (id: string): boolean => {
+        const numericId = Number(id);
+        return !isNaN(numericId) && numericId > 0;
+    };
+
+    const isExistingCategory = (id: string): boolean => {
+        const numericId = Number(id);
+        return !isNaN(numericId) && numericId > 0;
+    };
+
+    // Generate temporary ID only for NEW variants/categories
+    const generateId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const handleCategoryNameChange = (text: string) => {
         setCurrentCategoryName(text);
@@ -80,7 +93,7 @@ const useVariant = () => {
         const newVariants: Variant[] = allCombinations
             .filter(combo => !existingCombinationsSet.has(JSON.stringify(combo)))
             .map(combo => ({
-                id: generateId(),
+                id: generateId(), // Always use temporary ID for NEW variants
                 name: Object.values(combo).join(' - '),
                 combination: combo,
                 price: basePrice,
@@ -151,10 +164,15 @@ const useVariant = () => {
                 }));
             }
 
-            // Update category
+            // Update category (preserve ID if it's from database)
             const updatedCategories = categories.map(cat =>
                 cat.id === editingCategoryId
-                    ? { ...cat, name: currentCategoryName.trim(), values }
+                    ? { 
+                        ...cat, 
+                        id: cat.id, // Preserve original ID (database or temp)
+                        name: currentCategoryName.trim(), 
+                        values 
+                      }
                     : cat
             );
             
@@ -171,7 +189,7 @@ const useVariant = () => {
             showToast('Category updated successfully', 'success');
 
         } else {
-            // Adding new category
+            // Adding new category - use temporary ID
             const newCategory: VariantCategory = {
                 id: generateId(),
                 name: currentCategoryName.trim(),
@@ -225,7 +243,7 @@ const useVariant = () => {
                     onPress: () => {
                         const combinations = generateCombinations(categories);
                         const newVariants: Variant[] = combinations.map(combo => ({
-                            id: generateId(),
+                            id: generateId(), // Use temporary IDs for all new variants
                             name: Object.values(combo).join(' - '),
                             combination: combo,
                             price: basePrice,
@@ -299,7 +317,7 @@ const useVariant = () => {
             setEditingVariantId(null);
             setEditPrice('');
             setEditStock('');
-            showToast('Variant updated', 'success');
+         
         }
     };
 
@@ -326,7 +344,7 @@ const useVariant = () => {
 
             if (!result.canceled && result.assets[0]) {
                 updateVariant(variantId, 'imageUri', result.assets[0].uri);
-                showToast('Image added', 'success');
+              
             }
         } catch (error) {
             showToast('Failed to pick image', 'error');
@@ -402,7 +420,7 @@ const useVariant = () => {
         }
 
         const newVariant: Variant = {
-            id: generateId(),
+            id: generateId(), // Use temporary ID for custom variant
             name: Object.values(combination).join(' - '),
             combination,
             price: basePrice,
@@ -536,6 +554,10 @@ const useVariant = () => {
         deleteSelectedVariants,
         generateMissingVariants,
         generateCombinations,
+        
+        // Helper functions (exposed for external use if needed)
+        isExistingVariant,
+        isExistingCategory,
     };
 };
 
